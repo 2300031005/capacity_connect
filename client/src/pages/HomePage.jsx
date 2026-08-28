@@ -400,7 +400,7 @@ const HomePage = () => {
       {/* ==================================================
           SECTION 6 — AI
           ================================================== */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="ai" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-20">
         <div className="bg-slate-900 text-white rounded-lg p-8 sm:p-10 border border-slate-800">
           <div className="max-w-3xl mb-8">
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800 mb-3">
@@ -453,7 +453,7 @@ const HomePage = () => {
       {/* ==================================================
           SECTION 7 — ROLES
           ================================================== */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="roles" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-20">
         <div className="border-b border-slate-200 pb-4 mb-10 text-center sm:text-left">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             One Platform. Three Connected Roles.

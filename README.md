@@ -69,49 +69,43 @@ A modern, robust full-stack portal for local and organizational digital capacity
 
 ---
 
-## MongoDB Connection
+---
+
+## MongoDB Atlas Connection
 
 Configure the `MONGO_URI` environment variable in `server/.env`:
-- **Local MongoDB**: `mongodb://127.0.0.1:27017/capacity_connect`
 - **MongoDB Atlas**: `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/capacity_connect?retryWrites=true&w=majority`
 
 ---
 
-## Project Structure
+## Authentication & Role-Based Access Control
+
+Capacity Connect uses JWT-based authentication combined with role-based access control (RBAC).
+
+### User Roles
+- **Trainee**: Discovers courses, completes modules, takes assessments, and tracks competency growth.
+- **Trainer**: Creates courses, organizes learning resources, generates AI-assisted quizzes, and reviews learner performance.
+- **Admin**: Governs the platform, monitors courses, manages users, and oversees competency frameworks.
+
+---
+
+## Authentication APIs
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | Register new Trainee or Trainer account (Admin creation blocked) |
+| `POST` | `/api/auth/login` | Public | Authenticate user & receive JWT token |
+| `GET` | `/api/auth/me` | Protected | Retrieve authenticated user profile session |
+
+---
+
+## Authorization
+
+Protected endpoints require a valid JSON Web Token sent via the standard HTTP `Authorization` header:
 
 ```text
-capacity-connect/
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── layouts/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── context/
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── public/
-│   ├── package.json
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   └── vite.config.js
-│
-├── server/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middleware/
-│   ├── services/
-│   ├── utils/
-│   ├── config/
-│   ├── uploads/
-│   ├── server.js
-│   ├── package.json
-│   └── .env.example
-│
-├── .gitignore
-└── README.md
+Authorization: Bearer <jwt_token>
 ```
+
+Role-based access is enforced server-side using the `authorizeRoles` middleware (e.g. `authorizeRoles('admin')`, `authorizeRoles('trainer', 'admin')`). Unauthenticated requests receive HTTP 401, and unauthorized role requests receive HTTP 403.
+
