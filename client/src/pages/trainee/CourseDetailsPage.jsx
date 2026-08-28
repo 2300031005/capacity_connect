@@ -21,6 +21,7 @@ import ResourceViewer from '../../components/ResourceViewer';
 import QuizTakeModal from '../../components/QuizTakeModal';
 import CertificateModal from '../../components/CertificateModal';
 import AssessmentReviewModal from '../../components/AssessmentReviewModal';
+import CourseAiDoubtChatbot from '../../components/CourseAiDoubtChatbot';
 import {
   ArrowLeft,
   BookOpen,
@@ -1474,6 +1475,11 @@ const CourseDetailsPage = () => {
           attemptId={reviewAttemptId}
           onClose={() => setReviewAttemptId(null)}
         />
+      )}
+
+      {/* In-Course Contextual AI Doubts Chatbot */}
+      {course && (
+        <CourseAiDoubtChatbot course={course} modules={modules} />
       )}
     </div>
   );

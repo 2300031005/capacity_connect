@@ -1651,6 +1651,217 @@ Analyze this learner's situation and return the JSON response specifying their i
   }
 };
 
+/**
+ * Deterministic fallback for Course Doubt Assistant
+ */
+const generateFallbackCourseDoubt = ({ course, question, traineeName }) => {
+  const qLower = (question || '').toLowerCase();
+  const title = course?.title || 'this course';
+  const category = course?.category || 'technology';
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+  const skills = Array.isArray(course?.skills)
+    ? course.skills.map((s) => (typeof s === 'string' ? s : s.name || s.skill?.name || '')).filter(Boolean)
+    : [];
+
+  let matchedModule = null;
+  for (const m of modules) {
+    const mTitle = (m.title || '').toLowerCase();
+    if (qLower.includes(mTitle) || (mTitle && qLower.split(' ').some((w) => w.length > 3 && mTitle.includes(w)))) {
+      matchedModule = m;
+      break;
+    }
+  }
+
+  let answer = '';
+  let followUps = [];
+
+  if (qLower.includes('summar') || qLower.includes('overview') || qLower.includes('what is this course') || qLower.includes('tell me about')) {
+    answer = `### 📘 Course Overview: "${title}"\n\n` +
+      `This course provides structured learning in **${category}**.\n\n` +
+      `**Key Details:**\n` +
+      `• **Curriculum Structure:** ${modules.length} hands-on modules designed for systematic progression.\n` +
+      (skills.length > 0 ? `• **Target Skills:** ${skills.join(', ')}\n` : '') +
+      `• **Proficiency Target:** Pass the final assessment with 80%+ to earn an official certificate and verify skills in your passport.\n\n` +
+      (course?.description ? `*Summary:* ${course.description}\n\n` : '') +
+      `**Next Step:** Explore Module 1 and check the resources tab before attempting the module quiz!`;
+    followUps = [
+      'What are the course prerequisites?',
+      'How is the final assessment structured?',
+      'Which skills will I earn upon completion?'
+    ];
+  } else if (qLower.includes('prerequisite') || qLower.includes('requirement') || qLower.includes('who is this for')) {
+    answer = `### 🎯 Prerequisites & Target Audience for "${title}"\n\n` +
+      `• **Course Level:** ${course?.level || 'General / All Levels'}\n` +
+      `• **Domain:** ${category}\n` +
+      `• **Preparation:** Basic familiarity with ${skills.slice(0, 2).join(' and ') || 'fundamental domain concepts'} is helpful. The modules guide you step-by-step from fundamentals to advanced application.`;
+    followUps = [
+      'What is covered in Module 1?',
+      'How do I earn my certificate?',
+      'What resources are available for this course?'
+    ];
+  } else if (qLower.includes('quiz') || qLower.includes('exam') || qLower.includes('assessment') || qLower.includes('certificate')) {
+    answer = `### 🏆 Assessment & Certification Guide for "${title}"\n\n` +
+      `1. **Module Quizzes:** After studying module lessons and resources, complete the quiz to lock in your progress.\n` +
+      `2. **Graduation Exam:** Complete all course modules to unlock the final course assessment.\n` +
+      `3. **Passing Standard:** Score **80% or higher** to graduate.\n` +
+      `4. **Certificate Issuance:** Passing instantly generates a tamper-evident digital certificate with ID and updates your Skill Passport.\n\n` +
+      `*Tip: If you score below 80%, review the AI diagnostic feedback and re-attempt!*`;
+    followUps = [
+      'Can I retake assessments if I fail?',
+      'How does AI explain my quiz results?',
+      'Which skills get verified upon passing?'
+    ];
+  } else if (matchedModule) {
+    answer = `### 📖 Module Focus: "${matchedModule.title}"\n\n` +
+      (matchedModule.description ? `**Description:** ${matchedModule.description}\n\n` : '') +
+      `**How to Master this Module:**\n` +
+      `1. **Review Materials:** Check all attachments and slides in the resources section.\n` +
+      `2. **Practice Hands-on:** Apply the concepts in a code environment or practical scenario.\n` +
+      `3. **Take Quiz:** Test your understanding with the module quiz to track completion.`;
+    followUps = [
+      `What resources are attached to ${matchedModule.title}?`,
+      'How do I test my knowledge on this module?',
+      'What is the next topic after this?'
+    ];
+  } else {
+    answer = `### 💡 Course Guidance for "${title}"\n\n` +
+      `Regarding your question: *"${question}"*\n\n` +
+      `• **Concept Context:** In this course, concepts revolve around **${skills.join(', ') || category}**.\n` +
+      `• **Best Practice:** Break complex topics into modular components, test each step, and verify against course lesson materials.\n` +
+      `• **Curriculum Pointer:** Check the curriculum modules on the left to review specific lecture notes and exercises.\n\n` +
+      `Feel free to ask more specific questions about any module topic or code snippet!`;
+    followUps = [
+      'Can you explain this in simpler terms?',
+      'Give me a practical example',
+      'What are common mistakes to avoid in this course?'
+    ];
+  }
+
+  return {
+    answer,
+    suggestedFollowUps: followUps,
+    source: 'fallback',
+  };
+};
+
+/**
+ * Contextual Course Doubt AI Assistant (Chatbot Q&A)
+ */
+const answerCourseDoubt = async ({ course, question, history = [], traineeName = 'Trainee', userId }) => {
+  if (userId && !checkRateLimit(userId).allowed) {
+    return generateFallbackCourseDoubt({ course, question, traineeName });
+  }
+
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+  if (!apiKey) {
+    return generateFallbackCourseDoubt({ course, question, traineeName });
+  }
+
+  try {
+    const modulesSummary = (course.modules || [])
+      .map((m, i) => `Module ${i + 1}: "${m.title}" - ${m.description || ''}`)
+      .join('\n');
+
+    const skillsSummary = (course.skills || [])
+      .map((s) => (typeof s === 'string' ? s : s.name || s.skill?.name || ''))
+      .filter(Boolean)
+      .join(', ');
+
+    const systemPrompt =
+      `You are an expert AI Teaching Assistant for Capacity Connect, embedded directly inside the course: "${course.title}".\n` +
+      `Your role is to answer trainee questions, resolve doubts, explain concepts clearly with examples and code snippets when helpful, and guide them through their learning.\n\n` +
+      `COURSE CONTEXT:\n` +
+      `- Title: ${course.title}\n` +
+      `- Category: ${course.category || 'General'}\n` +
+      `- Level: ${course.level || 'Intermediate'}\n` +
+      `- Description: ${course.description || 'Comprehensive training course.'}\n` +
+      `- Skills Mapped: ${skillsSummary || 'Course domain skills'}\n` +
+      `- Modules:\n${modulesSummary || 'Structured curriculum modules'}\n\n` +
+      `RESPONSE INSTRUCTIONS:\n` +
+      `1. Be encouraging, clear, and pedagogically precise.\n` +
+      `2. Format your response cleanly using markdown (bold headings, bullet points, and code blocks when applicable).\n` +
+      `3. At the end of your response, provide a JSON-like list of 3 brief follow-up questions the trainee might want to ask next in this exact JSON block at the very end:\n` +
+      `\`\`\`json\n{"suggestedFollowUps": ["Follow up 1?", "Follow up 2?", "Follow up 3?"]}\n\`\`\``;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+    ];
+
+    // Include recent history (last 6 messages)
+    if (Array.isArray(history) && history.length > 0) {
+      const recentHistory = history.slice(-6);
+      for (const turn of recentHistory) {
+        if (turn.role && turn.content) {
+          messages.push({
+            role: turn.role === 'assistant' ? 'assistant' : 'user',
+            content: String(turn.content).slice(0, 1000),
+          });
+        }
+      }
+    }
+
+    messages.push({ role: 'user', content: question });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 12000);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.5,
+        max_tokens: 1000,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Course Doubt AI responded with status ${response.status}. Using fallback.`);
+      return generateFallbackCourseDoubt({ course, question, traineeName });
+    }
+
+    const data = await response.json();
+    let content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    let suggestedFollowUps = [
+      'Can you give a practical example?',
+      'How does this relate to the final assessment?',
+      'What are the key best practices to remember?'
+    ];
+
+    // Extract suggestedFollowUps if present in json block
+    const jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        if (Array.isArray(parsed.suggestedFollowUps)) {
+          suggestedFollowUps = parsed.suggestedFollowUps;
+        }
+        content = content.replace(/```json\s*\{[\s\S]*?\}\s*```/, '').trim();
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
+    return {
+      answer: content,
+      suggestedFollowUps,
+      source: 'ai',
+    };
+  } catch (err) {
+    console.warn(`Course Doubt AI error (${err.message}). Using fallback.`);
+    return generateFallbackCourseDoubt({ course, question, traineeName });
+  }
+};
+
 module.exports = {
   getOpenAiConfig,
   generateQuestionExplanation,
@@ -1667,5 +1878,7 @@ module.exports = {
   generateFallbackCareerRoadmap,
   generateAdaptiveAdvisor,
   generateFallbackAdaptiveAdvisor,
+  generateFallbackCourseDoubt,
+  answerCourseDoubt,
   checkRateLimit,
 };

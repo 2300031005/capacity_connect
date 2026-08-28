@@ -9,6 +9,7 @@ const {
   setCareerGoal,
   getCareerRoadmap,
   getAdaptiveAdvisor,
+  askCourseDoubt,
 } = require('../controllers/recommendationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -99,6 +100,14 @@ router.get(
   protect,
   authorize('trainee'),
   getCourseRationale
+);
+
+// Contextual AI Course Doubts Chatbot
+router.post(
+  '/courses/:courseId/doubt-assistant',
+  protect,
+  authorize('trainee', 'trainer', 'admin'),
+  askCourseDoubt
 );
 
 module.exports = router;

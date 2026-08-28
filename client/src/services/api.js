@@ -495,6 +495,17 @@ export const refreshAiAdaptiveAdvisorApi = async () => {
 };
 
 // ==========================================
+// Contextual AI Course Doubts Chatbot API
+// ==========================================
+export const askCourseDoubtApi = async (courseId, message, history = []) => {
+  const response = await api.post(`/ai/courses/${courseId}/doubt-assistant`, {
+    message,
+    history,
+  });
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {

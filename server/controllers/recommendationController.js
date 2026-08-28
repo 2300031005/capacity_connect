@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
+const Module = require('../models/Module');
 const Enrollment = require('../models/Enrollment');
 const Assessment = require('../models/Assessment');
 const QuizAttempt = require('../models/QuizAttempt');
@@ -15,6 +16,7 @@ const {
   generateFallbackCareerRoadmap,
   generateAdaptiveAdvisor,
   generateFallbackAdaptiveAdvisor,
+  answerCourseDoubt,
   checkRateLimit,
 } = require('../services/openaiService');
 
@@ -1270,6 +1272,64 @@ const getAdaptiveAdvisor = async (req, res, next) => {
   }
 };
 
+/**
+ * Contextual Course Doubt Assistant (Chatbot Q&A)
+ * POST /api/ai/courses/:courseId/doubt-assistant
+ */
+const askCourseDoubt = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const { message, question, history } = req.body;
+    const userQuery = (message || question || '').trim();
+
+    if (!userQuery) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question message is required.',
+      });
+    }
+
+    // Fetch Course with populated skills and trainer
+    const course = await Course.findById(courseId)
+      .populate('skills.skill')
+      .populate('trainer', 'name email');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    // Fetch associated modules for full course context
+    const modules = await Module.find({ course: courseId }).sort({ order: 1 });
+    const courseObj = course.toObject ? course.toObject() : { ...course };
+    courseObj.modules = modules;
+
+    const aiResult = await answerCourseDoubt({
+      course: courseObj,
+      question: userQuery,
+      history: Array.isArray(history) ? history : [],
+      traineeName: req.user?.name || 'Trainee',
+      userId: req.user?._id?.toString(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        answer: aiResult.answer,
+        suggestedFollowUps: aiResult.suggestedFollowUps || [],
+        source: aiResult.source,
+        courseId: course._id,
+        courseTitle: course.title,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCourseRecommendations,
   getSkillGuidance,
@@ -1279,6 +1339,7 @@ module.exports = {
   setCareerGoal,
   getCareerRoadmap,
   getAdaptiveAdvisor,
+  askCourseDoubt,
   computeTraineeSkillsAndGaps,
   invalidateTraineeAICache,
 };
