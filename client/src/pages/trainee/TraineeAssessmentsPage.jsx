@@ -9,6 +9,7 @@ import ErrorMessage from '../../components/ErrorMessage';
 import Button from '../../components/Button';
 import QuizTakeModal from '../../components/QuizTakeModal';
 import CertificateModal from '../../components/CertificateModal';
+import AssessmentReviewModal from '../../components/AssessmentReviewModal';
 import {
   FileCheck,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   HelpCircle,
   Percent,
+  Eye,
 } from 'lucide-react';
 
 const TraineeAssessmentsPage = () => {
@@ -31,6 +33,7 @@ const TraineeAssessmentsPage = () => {
   const [availableList, setAvailableList] = useState([]);
   const [completedList, setCompletedList] = useState([]);
   const [activeTab, setActiveTab] = useState('available'); // 'available' | 'completed'
+  const [reviewAttemptId, setReviewAttemptId] = useState(null);
 
   // Modal State for taking quiz from assessment feed
   const [activeQuizModal, setActiveQuizModal] = useState({
@@ -426,6 +429,17 @@ const TraineeAssessmentsPage = () => {
                     </span>
 
                     <div className="flex items-center gap-2">
+                      {attempt?._id && (
+                        <button
+                          type="button"
+                          onClick={() => setReviewAttemptId(attempt._id)}
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-800 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Review</span>
+                        </button>
+                      )}
+
                       <Button
                         type="button"
                         variant="secondary"
@@ -476,6 +490,15 @@ const TraineeAssessmentsPage = () => {
             setActiveCertificateModal({ isOpen: false, certificate: null })
           }
           certificate={activeCertificateModal.certificate}
+        />
+      )}
+
+      {/* Assessment Question-by-Question Review Modal */}
+      {reviewAttemptId && (
+        <AssessmentReviewModal
+          isOpen={Boolean(reviewAttemptId)}
+          attemptId={reviewAttemptId}
+          onClose={() => setReviewAttemptId(null)}
         />
       )}
     </div>

@@ -41,6 +41,12 @@ const questionSchema = new mongoose.Schema({
     default: 1,
     min: [1, 'Marks must be at least 1'],
   },
+  explanation: {
+    type: String,
+    trim: true,
+    default: '',
+    maxlength: [1000, 'Explanation cannot exceed 1000 characters'],
+  },
 });
 
 const assessmentSchema = new mongoose.Schema(

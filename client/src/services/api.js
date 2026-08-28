@@ -24,14 +24,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 Unauthorized globally
+// Response Interceptor: Handle 401 & 403 Unauthorized / Deactivated accounts globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear expired / invalid token
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+    if (error.response) {
+      if (error.response.data?.isDeactivated) {
+        const msg =
+          error.response.data.message ||
+          'Your account has been deactivated by an administrator. Please contact your platform administrator for assistance.';
+        sessionStorage.setItem('deactivationNotice', msg);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:deactivated', { detail: msg }));
+        }
+      } else if (error.response.status === 401) {
+        // Clear expired / invalid token
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     return Promise.reject(error);
   }
@@ -367,6 +377,49 @@ export const getTrainerAnalyticsApi = async () => {
 
 export const getAdminAnalyticsApi = async () => {
   const response = await api.get('/analytics/admin');
+  return response.data;
+};
+
+// ==========================================
+// User & Trainer Management APIs (Phase 6.5)
+// ==========================================
+export const getAllUsersApi = async (params = {}) => {
+  const response = await api.get('/users', { params });
+  return response.data;
+};
+
+export const getUserByIdApi = async (userId) => {
+  const response = await api.get(`/users/${userId}`);
+  return response.data;
+};
+
+export const toggleUserStatusApi = async (userId, isActive) => {
+  const response = await api.patch(`/users/${userId}/status`, { isActive });
+  return response.data;
+};
+
+export const getTrainersApi = async () => {
+  const response = await api.get('/trainers');
+  return response.data;
+};
+
+export const getTrainerByIdApi = async (trainerId) => {
+  const response = await api.get(`/trainers/${trainerId}`);
+  return response.data;
+};
+
+export const getTrainerLearnersApi = async () => {
+  const response = await api.get('/trainer/learners');
+  return response.data;
+};
+
+export const getTrainerLearnerDetailsApi = async (learnerId) => {
+  const response = await api.get(`/trainer/learners/${learnerId}`);
+  return response.data;
+};
+
+export const getAssessmentAttemptReviewApi = async (attemptId) => {
+  const response = await api.get(`/assessments/attempts/${attemptId}/review`);
   return response.data;
 };
 

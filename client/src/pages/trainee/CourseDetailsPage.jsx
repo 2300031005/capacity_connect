@@ -16,10 +16,10 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
 import Loading from '../../components/Loading';
-import ErrorMessage from '../../components/ErrorMessage';
 import ResourceViewer from '../../components/ResourceViewer';
 import QuizTakeModal from '../../components/QuizTakeModal';
 import CertificateModal from '../../components/CertificateModal';
+import AssessmentReviewModal from '../../components/AssessmentReviewModal';
 import {
   ArrowLeft,
   BookOpen,
@@ -38,6 +38,7 @@ import {
   FileSpreadsheet,
   Play,
   Star,
+  Eye,
   MessageSquare,
   Send,
   Trash2,
@@ -105,6 +106,7 @@ const CourseDetailsPage = () => {
     isOpen: false,
     certificate: null,
   });
+  const [reviewAttemptId, setReviewAttemptId] = useState(null);
 
   const isOwnerTrainer =
     user?.role === 'trainer' &&
@@ -808,29 +810,42 @@ const CourseDetailsPage = () => {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPreviewResource(null);
-                        setActiveQuizModal({
-                          isOpen: true,
-                          assessment: moduleQuizzes[mod._id].quiz,
-                        });
-                      }}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs flex-shrink-0"
-                    >
-                      {moduleQuizzes[mod._id].latestAttempt ? (
-                        <>
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Retake Quiz</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5" />
-                          <span>Start Quiz</span>
-                        </>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {moduleQuizzes[mod._id].latestAttempt?._id && (
+                        <button
+                          type="button"
+                          onClick={() => setReviewAttemptId(moduleQuizzes[mod._id].latestAttempt._id)}
+                          className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Review</span>
+                        </button>
                       )}
-                    </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewResource(null);
+                          setActiveQuizModal({
+                            isOpen: true,
+                            assessment: moduleQuizzes[mod._id].quiz,
+                          });
+                        }}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                      >
+                        {moduleQuizzes[mod._id].latestAttempt ? (
+                          <>
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Retake Quiz</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5" />
+                            <span>Start Quiz</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
                   </div>
@@ -897,46 +912,61 @@ const CourseDetailsPage = () => {
                     <Lock className="w-3.5 h-3.5" />
                     <span>Locked</span>
                   </Button>
-                ) : finalAssessmentData.certificate ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActiveCertificateModal({
-                        isOpen: true,
-                        certificate: finalAssessmentData.certificate,
-                      })
-                    }
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Award className="w-4 h-4" />
-                    <span>View Certificate</span>
-                  </button>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="md"
-                    onClick={() => {
-                      setPreviewResource(null);
-                      setActiveQuizModal({
-                        isOpen: true,
-                        assessment: finalAssessmentData.assessment,
-                      });
-                    }}
-                    className="px-5 text-xs font-bold inline-flex items-center gap-1.5"
-                  >
-                    {finalAssessmentData.latestAttempt ? (
-                      <>
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Retake Final Assessment</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3.5 h-3.5" />
-                        <span>Start Final Assessment</span>
-                      </>
+                  <div className="flex items-center gap-2">
+                    {finalAssessmentData.latestAttempt?._id && (
+                      <button
+                        type="button"
+                        onClick={() => setReviewAttemptId(finalAssessmentData.latestAttempt._id)}
+                        className="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <Eye className="w-4 h-4 text-slate-600" />
+                        <span>Review Attempt</span>
+                      </button>
                     )}
-                  </Button>
+
+                    {finalAssessmentData.certificate ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveCertificateModal({
+                            isOpen: true,
+                            certificate: finalAssessmentData.certificate,
+                          })
+                        }
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Award className="w-4 h-4" />
+                        <span>View Certificate</span>
+                      </button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="md"
+                        onClick={() => {
+                          setPreviewResource(null);
+                          setActiveQuizModal({
+                            isOpen: true,
+                            assessment: finalAssessmentData.assessment,
+                          });
+                        }}
+                        className="px-5 text-xs font-bold inline-flex items-center gap-1.5"
+                      >
+                        {finalAssessmentData.latestAttempt ? (
+                          <>
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Retake Final Assessment</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5" />
+                            <span>Start Final Assessment</span>
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1354,6 +1384,15 @@ const CourseDetailsPage = () => {
             setActiveCertificateModal({ isOpen: false, certificate: null })
           }
           certificate={activeCertificateModal.certificate}
+        />
+      )}
+
+      {/* Assessment Question-by-Question Review Modal */}
+      {reviewAttemptId && (
+        <AssessmentReviewModal
+          isOpen={Boolean(reviewAttemptId)}
+          attemptId={reviewAttemptId}
+          onClose={() => setReviewAttemptId(null)}
         />
       )}
     </div>

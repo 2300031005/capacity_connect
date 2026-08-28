@@ -540,10 +540,15 @@ const submitAssessmentAttempt = async (req, res, next) => {
       processedAnswers.push({
         question: q._id,
         questionText: q.questionText,
+        optionA: q.optionA || '',
+        optionB: q.optionB || '',
+        optionC: q.optionC || '',
+        optionD: q.optionD || '',
         selectedOption: selected,
         correctOption: correct,
         isCorrect,
         marksAwarded: isCorrect ? qMarks : 0,
+        explanation: q.explanation || '',
       });
     });
 
@@ -755,6 +760,7 @@ const getCourseAssessmentResults = async (req, res, next) => {
           progress: e.progress || 0,
           moduleQuizzesAttempted: moduleAttempts.length,
           moduleQuizAvg,
+          finalAttemptId: finalAttempt ? finalAttempt._id : null,
           finalScore: finalAttempt ? finalAttempt.percentage : null,
           finalPassed: finalAttempt ? finalAttempt.passed : null,
           hasCertificate: Boolean(certificate),
@@ -1079,6 +1085,110 @@ const getAssessmentById = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get detailed assessment attempt review with question-by-question explanations
+ * @route   GET /api/assessments/attempts/:attemptId/review
+ * @access  Private (Owner Trainee, Course Trainer, Admin)
+ */
+const getAssessmentAttemptReview = async (req, res, next) => {
+  try {
+    const { attemptId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(attemptId)) {
+      return res.status(400).json({ success: false, message: 'Invalid attempt ID' });
+    }
+
+    const attempt = await QuizAttempt.findById(attemptId)
+      .populate('trainee', 'name email department')
+      .populate('course', 'title category level trainer')
+      .populate('module', 'title')
+      .populate('assessment', 'title description passingPercentage questions type');
+
+    if (!attempt) {
+      return res.status(404).json({ success: false, message: 'Assessment attempt not found' });
+    }
+
+    // Role-based access control
+    const userRole = req.user.role;
+    const userIdStr = req.user._id.toString();
+
+    if (userRole === 'trainee') {
+      if (attempt.trainee?._id?.toString() !== userIdStr) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only review your own assessment attempts.',
+        });
+      }
+    } else if (userRole === 'trainer') {
+      const courseTrainerId = attempt.course?.trainer?.toString();
+      if (courseTrainerId !== userIdStr) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only review attempts for courses you instruct.',
+        });
+      }
+    }
+    // Admin has platform-wide review permission
+
+    // Reconstruct question-by-question review with explanations
+    const assessmentQuestionsMap = new Map();
+    if (attempt.assessment && Array.isArray(attempt.assessment.questions)) {
+      attempt.assessment.questions.forEach((q) => {
+        assessmentQuestionsMap.set(q._id.toString(), q);
+      });
+    }
+
+    const questionsReview = (attempt.answers || []).map((ans, idx) => {
+      const qDoc = assessmentQuestionsMap.get(ans.question?.toString()) || {};
+      return {
+        questionIndex: idx + 1,
+        questionId: ans.question,
+        questionText: ans.questionText || qDoc.questionText || `Question ${idx + 1}`,
+        optionA: ans.optionA || qDoc.optionA || '',
+        optionB: ans.optionB || qDoc.optionB || '',
+        optionC: ans.optionC || qDoc.optionC || '',
+        optionD: ans.optionD || qDoc.optionD || '',
+        selectedOption: ans.selectedOption || '',
+        correctOption: ans.correctOption || qDoc.correctOption || '',
+        isCorrect: ans.isCorrect,
+        marksAwarded: ans.marksAwarded,
+        explanation: ans.explanation || qDoc.explanation || '',
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        attemptId: attempt._id,
+        assessmentTitle: attempt.assessment?.title || 'Assessment Review',
+        assessmentType: attempt.type,
+        courseTitle: attempt.course?.title || 'Course',
+        courseId: attempt.course?._id,
+        moduleTitle: attempt.module?.title || null,
+        trainee: {
+          _id: attempt.trainee?._id,
+          name: attempt.trainee?.name,
+          email: attempt.trainee?.email,
+          department: attempt.trainee?.department,
+        },
+        score: attempt.score,
+        totalMarks: attempt.totalMarks,
+        percentage: attempt.percentage,
+        passed: attempt.passed,
+        passingPercentage: attempt.assessment?.passingPercentage || 60,
+        submittedAt: attempt.submittedAt || attempt.createdAt,
+        totalQuestions: questionsReview.length,
+        correctCount: questionsReview.filter((q) => q.isCorrect).length,
+        incorrectCount: questionsReview.filter((q) => !q.isCorrect).length,
+        questions: questionsReview,
+      },
+    });
+  } catch (error) {
+    console.error(`[GET /api/assessments/attempts/${req.params.attemptId}/review] Error:`, error);
+    next(error);
+  }
+};
+
 module.exports = {
   getModuleQuiz,
   saveModuleQuiz,
@@ -1092,4 +1202,5 @@ module.exports = {
   getMyAssessmentsFeed,
   getTrainerAssessmentsOverview,
   getAssessmentById,
+  getAssessmentAttemptReview,
 };

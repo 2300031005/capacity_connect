@@ -70,6 +70,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 // Method to return safe user object without password
 userSchema.methods.toSafeObject = function () {
   return {
+    _id: this._id.toString(),
     id: this._id.toString(),
     name: this.name,
     email: this.email,

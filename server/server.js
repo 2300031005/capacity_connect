@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const { connectDB } = require('./config/db');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const trainerLearnerRoutes = require('./routes/trainerLearnerRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
@@ -53,6 +55,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Register API Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api', userRoutes);
+app.use('/api', trainerLearnerRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/competencies', competencyRoutes);

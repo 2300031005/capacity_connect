@@ -65,6 +65,7 @@ const QuizBuilderModal = ({
               optionD: q.optionD || '',
               correctOption: (q.correctOption || 'A').toUpperCase(),
               marks: q.marks || 1,
+              explanation: q.explanation || '',
             }))
           : [createNewQuestion(1)]
       );
@@ -87,6 +88,7 @@ const QuizBuilderModal = ({
       optionD: '',
       correctOption: 'A',
       marks: 1,
+      explanation: '',
     };
   }
 
@@ -519,6 +521,21 @@ const QuizBuilderModal = ({
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Answer Explanation (Optional) */}
+                  <div className="pt-2 border-t border-slate-200/60">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Answer Explanation <span className="text-slate-400 font-normal">(Optional &bull; displayed to trainee during post-attempt review)</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      maxLength={1000}
+                      value={q.explanation || ''}
+                      onChange={(e) => handleQuestionChange(idx, 'explanation', e.target.value)}
+                      placeholder="Explain why the designated answer is correct and provide learning context..."
+                      className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white text-slate-700"
+                    />
                   </div>
                 </div>
               ))}

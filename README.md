@@ -8,7 +8,26 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 📊 Analytics & Performance Insights (Phase 6)
+### 1. 👥 Platform Governance, Trainer Management & Assessment Review (Phase 6.5)
+- **Admin User Management (`/admin/users`)**:
+  - Centralized directory for all platform users (Trainees, Trainers, Admins) with keyword search and role/status filtering.
+  - Role-specific audit modals: Trainees (enrolled courses, completions, certificates, progress) & Trainers (authored courses, learners, ratings).
+  - Account status toggle (Activate / Deactivate) with self-deactivation protection for administrators.
+  - Seamless real-time deactivation notices and instant single-click session reactivation.
+- **Admin Trainer Management (`/admin/trainers`)**:
+  - Institutional faculty directory with course volumes, published vs. draft metrics, total enrolled learners, and average ratings.
+  - Comprehensive trainer portfolio inspection modal with course-by-course performance breakdown.
+- **Trainer Consolidated Learner View (`/trainer/learners`)**:
+  - Unified multi-course learner roster across all courses owned by the instructor.
+  - **Strict Server-Side Multi-Tenant Isolation**: Instructors strictly view learners enrolled in their own courses.
+  - Learner progress audit modal displaying module checklist completion, quiz scores, final exam results, and certificates.
+- **Post-Submission Assessment Review & Answer Explanations**:
+  - Reusable question-by-question review interface highlighting selected choices, correct answers, and instructor explanations.
+  - **Anti-Cheat Enforcement**: Correct options and explanations remain strictly hidden prior to legitimate attempt submission.
+  - **Phase 7 AI Tutor Integration Hook**: `[ ✨ Explain with AI ]` action button preparing the interface for contextual remediation.
+  - Strict RBAC: Trainees view only own attempts, trainers view attempts for owned courses, and admins have platform-wide access.
+
+### 2. 📊 Analytics & Performance Insights (Phase 6)
 - **Trainee Analytics (`/trainee/analytics`)**:
   - Course-wise progress tracking, assessment pass rates, and chronological score trajectory.
   - Skill proficiency distribution across verified capabilities.
@@ -173,6 +192,9 @@ Run the automated test suites from the `server` directory:
 ```bash
 cd server
 
+# Phase 6.5 User/Trainer Governance & Assessment Review Suite (16 Groups / 37 Tests)
+node test_phase6_5.js
+
 # Phase 6 Analytics & Insights Test Suite (12 Tests)
 node test_phase6.js
 
@@ -195,6 +217,18 @@ npm run build
 ---
 
 ## 🔌 API Reference Overview
+
+### User & Trainer Management (Phase 6.5)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/users` | Admin | Search & filter all platform users (trainees, trainers, admins) |
+| `GET` | `/api/users/:id` | Admin | Get user profile with role-specific learning/instruction audit |
+| `PATCH` | `/api/users/:id/status` | Admin | Activate or deactivate user account (self-deactivation protected) |
+| `GET` | `/api/trainers` | Admin | Get all platform instructors with capacity & review metrics |
+| `GET` | `/api/trainers/:id` | Admin | Get single trainer profile & authored course breakdown |
+| `GET` | `/api/trainer/learners` | Trainer | Get consolidated learner roster strictly for owned courses |
+| `GET` | `/api/trainer/learners/:id` | Trainer | Get learner progress, module quizzes & final exam for owned courses |
+| `GET` | `/api/assessments/attempts/:attemptId/review` | Trainee/Trainer/Admin | Question-by-question review with explanations & AI tutor hook |
 
 ### Analytics & Performance Insights (Phase 6)
 | Method | Endpoint | Access | Description |

@@ -46,10 +46,18 @@ const protect = async (req, res, next) => {
       // Fetch current active user from database
       const user = await User.findById(decoded.userId).select('-password');
 
-      if (!user || !user.isActive) {
+      if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required',
+          message: 'User account no longer exists.',
+        });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          isDeactivated: true,
+          message: 'Your account has been deactivated by an administrator. Please contact your platform administrator for assistance.',
         });
       }
 

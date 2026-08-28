@@ -13,8 +13,13 @@ const {
   getMyAssessmentsFeed,
   getTrainerAssessmentsOverview,
   getAssessmentById,
+  getAssessmentAttemptReview,
 } = require('../controllers/assessmentController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
+
+// Assessment Attempt Review Route (With Explanations)
+router.get('/assessments/attempts/:attemptId/review', protect, getAssessmentAttemptReview);
+router.get('/attempts/:attemptId/review', protect, getAssessmentAttemptReview);
 
 // Centralized Assessment Feed & Overview Routes (Defined before /assessments/:id)
 router.get('/assessments/my-feed', protect, authorizeRoles('trainee'), getMyAssessmentsFeed);

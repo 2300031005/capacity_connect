@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getCourseAssessmentResultsApi } from '../services/api';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
-import { Users, X, Search, GraduationCap, Calendar, CheckCircle2, Award, FileCheck } from 'lucide-react';
+import AssessmentReviewModal from './AssessmentReviewModal';
+import { Users, X, Search, GraduationCap, Calendar, CheckCircle2, Award, FileCheck, Eye } from 'lucide-react';
 
 const LearnersModal = ({ courseId, onClose }) => {
   if (!courseId) return null;
@@ -11,6 +12,7 @@ const LearnersModal = ({ courseId, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [reviewAttemptId, setReviewAttemptId] = useState(null);
 
   const fetchResults = useCallback(async () => {
     setLoading(true);
@@ -149,15 +151,28 @@ const LearnersModal = ({ courseId, onClose }) => {
                         </td>
                         <td className="py-3 px-4 text-center">
                           {learner.finalScore !== null ? (
-                            <span
-                              className={`font-bold px-2 py-0.5 rounded text-[11px] border ${
-                                learner.finalPassed
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                  : 'bg-red-50 text-red-800 border-red-200'
-                              }`}
-                            >
-                              {learner.finalScore}% — {learner.finalPassed ? 'PASSED' : 'FAILED'}
-                            </span>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span
+                                className={`font-bold px-2 py-0.5 rounded text-[11px] border ${
+                                  learner.finalPassed
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : 'bg-red-50 text-red-800 border-red-200'
+                                }`}
+                              >
+                                {learner.finalScore}% — {learner.finalPassed ? 'PASSED' : 'FAILED'}
+                              </span>
+
+                              {learner.finalAttemptId && (
+                                <button
+                                  type="button"
+                                  onClick={() => setReviewAttemptId(learner.finalAttemptId)}
+                                  className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                                  title="Review Submission Answers"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-slate-400 italic text-[11px]">Not attempted</span>
                           )}
@@ -192,6 +207,15 @@ const LearnersModal = ({ courseId, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Assessment Review Modal */}
+      {reviewAttemptId && (
+        <AssessmentReviewModal
+          isOpen={Boolean(reviewAttemptId)}
+          attemptId={reviewAttemptId}
+          onClose={() => setReviewAttemptId(null)}
+        />
+      )}
     </div>
   );
 };

@@ -9,6 +9,22 @@ const answerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  optionA: {
+    type: String,
+    default: '',
+  },
+  optionB: {
+    type: String,
+    default: '',
+  },
+  optionC: {
+    type: String,
+    default: '',
+  },
+  optionD: {
+    type: String,
+    default: '',
+  },
   selectedOption: {
     type: String,
     enum: ['A', 'B', 'C', 'D', ''],
@@ -26,6 +42,10 @@ const answerSchema = new mongoose.Schema({
   marksAwarded: {
     type: Number,
     default: 0,
+  },
+  explanation: {
+    type: String,
+    default: '',
   },
 });
 

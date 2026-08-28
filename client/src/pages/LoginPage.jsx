@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import ErrorMessage from '../components/ErrorMessage';
-import { CheckCircle2, Lock, Mail } from 'lucide-react';
+import { CheckCircle2, Lock, Mail, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [deactivationNotice, setDeactivationNotice] = useState(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -17,9 +18,18 @@ const LoginPage = () => {
 
   const successMessage = location.state?.message;
 
+  useEffect(() => {
+    const notice = sessionStorage.getItem('deactivationNotice');
+    if (notice) {
+      setDeactivationNotice(notice);
+      sessionStorage.removeItem('deactivationNotice');
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setDeactivationNotice(null);
 
     if (!email.trim() || !password) {
       setError('Please enter both email and password.');
@@ -41,11 +51,17 @@ const LoginPage = () => {
       navigate(destination, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        'Invalid email or password. Please try again.'
-      );
+      if (err.response?.data?.isDeactivated) {
+        setDeactivationNotice(
+          err.response.data.message || 'Your account has been deactivated by an administrator.'
+        );
+      } else {
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          'Invalid email or password. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +89,22 @@ const LoginPage = () => {
             Sign in to continue your learning journey.
           </p>
         </div>
+
+        {/* Deactivation Notice Banner */}
+        {deactivationNotice && (
+          <div className="border border-red-300 bg-red-50/90 text-red-950 p-4 rounded-lg space-y-2 text-xs animate-fadeIn">
+            <div className="flex items-center gap-2 font-bold text-red-900 text-sm">
+              <ShieldAlert className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <span>Account Deactivated</span>
+            </div>
+            <p className="text-slate-700 leading-relaxed">
+              {deactivationNotice}
+            </p>
+            <div className="pt-1 text-[11px] text-red-800 font-medium">
+              If you believe this was done in error, please contact your organization administrator to reactivate your account.
+            </div>
+          </div>
+        )}
 
         {/* Success Alert if redirected from Registration */}
         {successMessage && (

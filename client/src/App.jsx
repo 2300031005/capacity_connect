@@ -26,11 +26,14 @@ import TrainerDashboardPage from './pages/TrainerDashboardPage';
 import TrainerCoursesPage from './pages/trainer/TrainerCoursesPage';
 import CreateCoursePage from './pages/trainer/CreateCoursePage';
 import ManageCoursePage from './pages/trainer/ManageCoursePage';
+import TrainerLearnersPage from './pages/trainer/TrainerLearnersPage';
 import TrainerAssessmentsPage from './pages/trainer/TrainerAssessmentsPage';
 import TrainerAnalyticsPage from './pages/trainer/TrainerAnalyticsPage';
 
 // Admin Workspace Pages
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminTrainersPage from './pages/admin/AdminTrainersPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import AdminSkillsPage from './pages/admin/AdminSkillsPage';
 import AdminCompetenciesPage from './pages/admin/AdminCompetenciesPage';
@@ -80,6 +83,7 @@ function App() {
           <Route path="courses" element={<TrainerCoursesPage />} />
           <Route path="courses/create" element={<CreateCoursePage />} />
           <Route path="courses/:id/manage" element={<ManageCoursePage />} />
+          <Route path="learners" element={<TrainerLearnersPage />} />
           <Route path="assessments" element={<TrainerAssessmentsPage />} />
           <Route path="analytics" element={<TrainerAnalyticsPage />} />
         </Route>
@@ -94,6 +98,8 @@ function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="trainers" element={<AdminTrainersPage />} />
           <Route path="courses" element={<AdminCoursesPage />} />
           <Route path="skills" element={<AdminSkillsPage />} />
           <Route path="competencies" element={<AdminCompetenciesPage />} />
