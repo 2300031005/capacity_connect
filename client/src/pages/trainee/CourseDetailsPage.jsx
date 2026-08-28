@@ -519,20 +519,29 @@ const CourseDetailsPage = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Skills Covered
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              {course.skills.map((skill) => (
-                <span
-                  key={skill._id || skill}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border ${
-                    skill.category === 'Soft Skill'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  }`}
-                >
-                  <Tag className="w-3 h-3 text-emerald-600" />
-                  <span>{skill.name || skill}</span>
-                </span>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {course.skills.map((skill) => {
+                const sName = skill.name || skill.skill?.name || skill;
+                const sCat = skill.category || skill.skill?.category || 'Technical';
+                const sProf = skill.proficiency || 'beginner';
+
+                return (
+                  <span
+                    key={skill._id || skill.skill?._id || sName}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs ${
+                      sCat === 'Soft Skill'
+                        ? 'bg-purple-50 text-purple-900 border-purple-200'
+                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                    }`}
+                  >
+                    <Tag className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                    <span>{sName}</span>
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
+                      {sProf}
+                    </span>
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}

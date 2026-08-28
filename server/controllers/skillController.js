@@ -78,7 +78,7 @@ const getSkillById = async (req, res, next) => {
  */
 const createSkill = async (req, res, next) => {
   try {
-    const { name, description, category, isActive } = req.body;
+    const { name, description, category, customCategory, isActive } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Please provide a skill name' });
@@ -99,6 +99,7 @@ const createSkill = async (req, res, next) => {
       normalizedName,
       description: description ? description.trim() : '',
       category: category || 'Technical',
+      customCategory: category === 'Other' && customCategory ? customCategory.trim() : '',
       isActive: isActive !== undefined ? isActive : true,
     });
 
@@ -129,7 +130,7 @@ const updateSkill = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Skill not found' });
     }
 
-    const { name, description, category, isActive } = req.body;
+    const { name, description, category, customCategory, isActive } = req.body;
 
     if (name && name.trim()) {
       const normalizedName = name.toLowerCase().trim();
@@ -150,7 +151,12 @@ const updateSkill = async (req, res, next) => {
     }
 
     if (description !== undefined) skill.description = description.trim();
-    if (category) skill.category = category;
+    if (category) {
+      skill.category = category;
+      skill.customCategory = category === 'Other' && customCategory ? customCategory.trim() : '';
+    } else if (customCategory !== undefined && skill.category === 'Other') {
+      skill.customCategory = customCategory.trim();
+    }
     if (isActive !== undefined) skill.isActive = isActive;
 
     await skill.save();

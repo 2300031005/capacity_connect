@@ -419,19 +419,28 @@ const AdminCoursesPage = () => {
                         Skills Covered ({inspectCourseData.course.skills?.length || 0}):
                       </span>
                       {inspectCourseData.course.skills && inspectCourseData.course.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {inspectCourseData.course.skills.map((s) => (
-                            <span
-                              key={s._id || s}
-                              className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
-                                s.category === 'Soft Skill'
-                                  ? 'bg-purple-50 text-purple-800 border-purple-200'
-                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              }`}
-                            >
-                              {s.name || s}
-                            </span>
-                          ))}
+                        <div className="flex flex-wrap gap-1.5">
+                          {inspectCourseData.course.skills.map((s) => {
+                            const sName = s.name || s.skill?.name || s;
+                            const sCat = s.category || s.skill?.category || 'Technical';
+                            const sProf = s.proficiency || 'beginner';
+
+                            return (
+                              <span
+                                key={s._id || s.skill?._id || sName}
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+                                  sCat === 'Soft Skill'
+                                    ? 'bg-purple-50 text-purple-900 border-purple-200'
+                                    : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                }`}
+                              >
+                                <span>{sName}</span>
+                                <span className="text-[9px] uppercase font-bold px-1 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
+                                  {sProf}
+                                </span>
+                              </span>
+                            );
+                          })}
                         </div>
                       ) : (
                         <span className="text-slate-400 italic text-[11px]">No skills mapped</span>

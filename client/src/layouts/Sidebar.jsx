@@ -69,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:z-0 flex flex-col justify-between ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -127,8 +127,8 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Sidebar Footer Info */}
         <div className="p-4 border-t border-slate-100 text-xs text-slate-400">
-          <p className="font-semibold text-slate-600">Capacity Connect</p>
-          <p className="text-[11px]">Phase 2 &bull; Role Protected</p>
+          <p className="font-semibold text-slate-700">Capacity Connect</p>
+          <p className="text-[11px] text-slate-400">Digital Capacity Building Platform</p>
         </div>
       </aside>
     </>

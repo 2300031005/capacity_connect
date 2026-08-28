@@ -127,14 +127,14 @@ async function runTestPhase5() {
 
     // Test 10: Course skills returned populated
     console.log('TEST 10: Course Skills Population');
-    const populatedCourse = await Course.findById(courseWithSkills._id).populate(
-      'skills',
-      'name category description isActive'
-    );
-    if (!populatedCourse.skills || populatedCourse.skills.length !== 3) {
+    const populatedCourse = await Course.findById(courseWithSkills._id)
+      .populate('skills.skill', 'name category')
+      .populate('skills', 'name category description isActive');
+    if (!populatedCourse || !populatedCourse.skills || populatedCourse.skills.length !== 3) {
       throw new Error('TEST 10 FAILED: Course skills array is not populated or length != 3');
     }
-    console.log(`✓ PASS: Course "${populatedCourse.title}" mapped to 3 skills: ${populatedCourse.skills.map((s) => s.name).join(', ')}\n`);
+    const skillNameList = populatedCourse.skills.map((s) => s.name || s.skill?.name || '');
+    console.log(`✓ PASS: Course "${populatedCourse.title}" mapped to 3 skills: ${skillNameList.join(', ')}\n`);
 
     // ============================================================
     // TEST 11, 12, 13, 14: ADMIN COMPETENCY CREATION, EDITING & MULTI-SKILL REFS
@@ -169,11 +169,14 @@ async function runTestPhase5() {
     // TEST 15, 16, 17: TRAINEE COURSE SKILLS, MY SKILLS & COMPETENCY EVALUATION
     // ============================================================
     console.log('TEST 15: Trainee Course Skills Access');
-    const traineeCourseView = await Course.findById(courseWithSkills._id).populate('skills', 'name category');
+    const traineeCourseView = await Course.findById(courseWithSkills._id)
+      .populate('skills.skill', 'name category')
+      .populate('skills', 'name category');
     if (!traineeCourseView.skills || traineeCourseView.skills.length === 0) {
       throw new Error('TEST 15 FAILED: Trainee cannot view course skills');
     }
-    console.log(`✓ PASS: Trainee can inspect course skills: ${traineeCourseView.skills.map((s) => s.name).join(', ')}`);
+    const traineeViewSkillNames = traineeCourseView.skills.map((s) => s.name || s.skill?.name || '');
+    console.log(`✓ PASS: Trainee can inspect course skills: ${traineeViewSkillNames.join(', ')}`);
 
     console.log('TEST 16: Trainee "My Skills" Profile Extraction');
     // Enroll trainee into courseWithSkills
@@ -192,13 +195,16 @@ async function runTestPhase5() {
     }).populate({
       path: 'course',
       select: 'title skills',
-      populate: { path: 'skills', select: 'name category' },
+      populate: { path: 'skills.skill', select: 'name category' },
     });
 
     const acquiredSkillNames = [];
     userEnrollments.forEach((e) => {
       if (e.course?.skills) {
-        e.course.skills.forEach((s) => acquiredSkillNames.push(s.name));
+        e.course.skills.forEach((s) => {
+          const sName = s.name || s.skill?.name;
+          if (sName) acquiredSkillNames.push(sName);
+        });
       }
     });
 

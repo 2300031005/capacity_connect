@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getSkillsApi } from '../services/api';
-import { Search, X, Check, Plus, Tag, Layers } from 'lucide-react';
+import { Search, X, Check, Plus, Tag, ChevronDown } from 'lucide-react';
 
 const SkillsSelect = ({
-  selectedSkillIds = [],
+  selectedSkills = [], // Can be [id, id] or [{ skill: id, proficiency: 'advanced' }]
   onChange,
   label = 'Skills Covered',
-  helperText = 'Select the technical and professional skills taught in this course.',
+  helperText = 'Select the technical and professional skills taught in this course and specify target proficiency.',
+  withProficiency = false,
   disabled = false,
 }) => {
   const [availableSkills, setAvailableSkills] = useState([]);
@@ -31,19 +32,63 @@ const SkillsSelect = ({
     fetchSkills();
   }, []);
 
+  // Normalize selectedSkills into an internal format: [{ skillId: string, proficiency: string }]
+  const normalizedSelected = React.useMemo(() => {
+    if (!Array.isArray(selectedSkills)) return [];
+    return selectedSkills.map((item) => {
+      if (item && typeof item === 'object') {
+        const id = item.skill?._id || item.skill || item.skillId || item._id;
+        return {
+          skillId: id ? id.toString() : '',
+          proficiency: item.proficiency || 'beginner',
+        };
+      }
+      return {
+        skillId: item ? item.toString() : '',
+        proficiency: 'beginner',
+      };
+    }).filter((s) => s.skillId);
+  }, [selectedSkills]);
+
+  const selectedSkillIds = normalizedSelected.map((s) => s.skillId);
+
+  const emitChange = (newNormalized) => {
+    if (withProficiency) {
+      onChange(
+        newNormalized.map((s) => ({
+          skill: s.skillId,
+          proficiency: s.proficiency || 'beginner',
+        }))
+      );
+    } else {
+      onChange(newNormalized.map((s) => s.skillId));
+    }
+  };
+
   const handleToggleSkill = (skillId) => {
     if (disabled) return;
-    if (selectedSkillIds.includes(skillId)) {
-      onChange(selectedSkillIds.filter((id) => id !== skillId));
+    const exists = normalizedSelected.some((s) => s.skillId === skillId);
+    if (exists) {
+      emitChange(normalizedSelected.filter((s) => s.skillId !== skillId));
     } else {
-      onChange([...selectedSkillIds, skillId]);
+      emitChange([...normalizedSelected, { skillId, proficiency: 'beginner' }]);
     }
   };
 
   const handleRemoveSkill = (skillId, e) => {
     e.stopPropagation();
     if (disabled) return;
-    onChange(selectedSkillIds.filter((id) => id !== skillId));
+    emitChange(normalizedSelected.filter((s) => s.skillId !== skillId));
+  };
+
+  const handleProficiencyChange = (skillId, newProficiency, e) => {
+    e.stopPropagation();
+    if (disabled) return;
+    emitChange(
+      normalizedSelected.map((s) =>
+        s.skillId === skillId ? { ...s, proficiency: newProficiency } : s
+      )
+    );
   };
 
   // Filter skills based on search term and category
@@ -56,10 +101,6 @@ const SkillsSelect = ({
     return matchesSearch && matchesCategory;
   });
 
-  const selectedSkillsObjects = availableSkills.filter((s) =>
-    selectedSkillIds.includes(s._id)
-  );
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -67,42 +108,68 @@ const SkillsSelect = ({
           {label}
         </label>
         <span className="text-[11px] text-slate-400">
-          {selectedSkillIds.length} Selected
+          {normalizedSelected.length} Selected
         </span>
       </div>
 
       {helperText && <p className="text-[11px] text-slate-500">{helperText}</p>}
 
       {/* Selected Skill Badges */}
-      <div className="min-h-[42px] p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-wrap items-center gap-1.5">
-        {selectedSkillsObjects.length === 0 ? (
+      <div className="min-h-[44px] p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-wrap items-center gap-2">
+        {normalizedSelected.length === 0 ? (
           <span className="text-xs text-slate-400 italic px-1">
             No skills selected yet. Click below to add from the Skill Library.
           </span>
         ) : (
-          selectedSkillsObjects.map((skill) => (
-            <span
-              key={skill._id}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs transition-colors ${
-                skill.category === 'Soft Skill'
-                  ? 'bg-purple-50 text-purple-800 border-purple-200'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              }`}
-            >
-              <Tag className="w-3 h-3 flex-shrink-0" />
-              <span>{skill.name}</span>
-              {!disabled && (
-                <button
-                  type="button"
-                  onClick={(e) => handleRemoveSkill(skill._id, e)}
-                  className="p-0.5 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-200/60 transition-colors"
-                  title="Remove skill"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </span>
-          ))
+          normalizedSelected.map((sel) => {
+            const skillObj = availableSkills.find((s) => s._id === sel.skillId) || {
+              name: 'Skill',
+              category: 'Technical',
+            };
+
+            return (
+              <div
+                key={sel.skillId}
+                className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs transition-colors ${
+                  skillObj.category === 'Soft Skill'
+                    ? 'bg-purple-50 text-purple-900 border-purple-200'
+                    : skillObj.category === 'Other'
+                    ? 'bg-amber-50 text-amber-900 border-amber-200'
+                    : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                }`}
+              >
+                <Tag className="w-3 h-3 flex-shrink-0 text-slate-500" />
+                <span className="font-semibold">{skillObj.name}</span>
+
+                {/* Optional Proficiency Level Selector for Course Mapping */}
+                {withProficiency && (
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={sel.proficiency}
+                      disabled={disabled}
+                      onChange={(e) => handleProficiencyChange(sel.skillId, e.target.value, e)}
+                      className="text-[10px] uppercase font-bold py-0.5 px-1.5 rounded bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs"
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="proficient">Proficient</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
+                )}
+
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveSkill(sel.skillId, e)}
+                    className="p-0.5 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-200/60 transition-colors"
+                    title="Remove skill"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -134,12 +201,12 @@ const SkillsSelect = ({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {['All', 'Technical', 'Soft Skill'].map((cat) => (
+                  {['All', 'Technical', 'Soft Skill', 'Other'].map((cat) => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setCategoryFilter(cat)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                      className={`px-2 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                         categoryFilter === cat
                           ? 'bg-slate-900 text-white'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'

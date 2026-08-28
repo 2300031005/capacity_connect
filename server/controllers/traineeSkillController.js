@@ -6,6 +6,19 @@ const Assessment = require('../models/Assessment');
 const Certificate = require('../models/Certificate');
 const QuizAttempt = require('../models/QuizAttempt');
 
+// Proficiency ranking hierarchy
+const PROFICIENCY_RANK = {
+  beginner: 1,
+  proficient: 2,
+  advanced: 3,
+};
+
+const PROFICIENCY_LABEL = {
+  beginner: 'Beginner',
+  proficient: 'Proficient',
+  advanced: 'Advanced',
+};
+
 /**
  * Helper to determine which courses the trainee has fully completed and passed
  * If a course has a published final assessment, trainee MUST have passed it (or earned a certificate).
@@ -22,34 +35,86 @@ const getCourseCompletionMap = async (traineeId, courseIds) => {
     publishedFinalAssessments.map((a) => a.course.toString())
   );
 
-  // 2. Find all passed final assessment attempts or valid certificates for this trainee
+  // 2. Find all passed final assessment attempts and valid certificates for this trainee
   const [passedAttempts, certificates] = await Promise.all([
     QuizAttempt.find({
       trainee: traineeId,
       course: { $in: courseIds },
       type: 'final',
       passed: true,
-    }).select('course'),
+    }).sort({ percentage: -1, submittedAt: -1 }),
     Certificate.find({
       trainee: traineeId,
       course: { $in: courseIds },
       status: 'valid',
-    }).select('course'),
+    }).sort({ issueDate: -1 }),
   ]);
 
+  const attemptsByCourse = new Map();
+  passedAttempts.forEach((att) => {
+    const cId = att.course.toString();
+    if (!attemptsByCourse.has(cId)) {
+      attemptsByCourse.set(cId, att);
+    }
+  });
+
+  const certsByCourse = new Map();
+  certificates.forEach((cert) => {
+    const cId = cert.course.toString();
+    if (!certsByCourse.has(cId)) {
+      certsByCourse.set(cId, cert);
+    }
+  });
+
   const coursesWithPassedFinal = new Set([
-    ...passedAttempts.map((a) => a.course.toString()),
-    ...certificates.map((c) => c.course.toString()),
+    ...Array.from(attemptsByCourse.keys()),
+    ...Array.from(certsByCourse.keys()),
   ]);
 
   return {
     coursesWithFinalAssessment,
     coursesWithPassedFinal,
+    attemptsByCourse,
+    certsByCourse,
   };
 };
 
 /**
- * @desc    Get trainee's learning skill profile (My Skills)
+ * Helper to extract skill item from course.skills element (supports both new & legacy structures)
+ */
+const extractCourseSkillData = (item) => {
+  if (!item) return null;
+  let skillDoc = null;
+  let proficiency = 'beginner';
+
+  if (item.skill && typeof item.skill === 'object') {
+    skillDoc = item.skill;
+    proficiency = item.proficiency || 'beginner';
+  } else if (item._id && item.name) {
+    skillDoc = item;
+    proficiency = item.proficiency || 'beginner';
+  } else if (item.skill) {
+    skillDoc = { _id: item.skill };
+    proficiency = item.proficiency || 'beginner';
+  } else {
+    skillDoc = { _id: item };
+    proficiency = 'beginner';
+  }
+
+  const normalizedProficiency = ['beginner', 'proficient', 'advanced'].includes(
+    proficiency.toLowerCase().trim()
+  )
+    ? proficiency.toLowerCase().trim()
+    : 'beginner';
+
+  return {
+    skill: skillDoc,
+    proficiency: normalizedProficiency,
+  };
+};
+
+/**
+ * @desc    Get trainee's consolidated learning skill profile (My Skills)
  * @route   GET /api/trainees/me/skills
  * @access  Private / Trainee
  */
@@ -65,7 +130,7 @@ const getMySkills = async (req, res, next) => {
       path: 'course',
       select: 'title description category level status skills',
       populate: {
-        path: 'skills',
+        path: 'skills.skill',
         select: 'name category description isActive',
       },
     });
@@ -74,68 +139,159 @@ const getMySkills = async (req, res, next) => {
       .map((e) => e.course?._id)
       .filter(Boolean);
 
-    const { coursesWithFinalAssessment, coursesWithPassedFinal } =
-      await getCourseCompletionMap(traineeId, enrolledCourseIds);
+    const {
+      coursesWithFinalAssessment,
+      coursesWithPassedFinal,
+      attemptsByCourse,
+      certsByCourse,
+    } = await getCourseCompletionMap(traineeId, enrolledCourseIds);
 
-    const skillMap = {};
+    const verifiedSkillMap = new Map(); // [skillIdStr] -> Consolidated Skill Object
+    const learningSkillMap = new Map(); // [skillIdStr] -> Learning Skill Object
 
     enrollments.forEach((enrollment) => {
       const course = enrollment.course;
-      if (!course || !course.skills || course.skills.length === 0) return;
+      if (!course || !Array.isArray(course.skills) || course.skills.length === 0) return;
 
       const cIdStr = course._id.toString();
       const hasFinalAssessment = coursesWithFinalAssessment.has(cIdStr);
       const hasPassedFinal = coursesWithPassedFinal.has(cIdStr);
 
-      // A course is only completed and skills attained if:
-      // - If course has final assessment: Trainee MUST have passed final assessment
-      // - If course has no final assessment: Enrollment progress must be 100% and status completed
-      const isCourseSkillAttained = hasFinalAssessment
+      // A course's skills are verified ONLY when:
+      // 1. If course has final assessment: trainee passed final assessment
+      // 2. If course has no final assessment: enrollment status is completed (100% modules)
+      const isCourseVerified = hasFinalAssessment
         ? hasPassedFinal
         : enrollment.status === 'completed' && enrollment.progress === 100;
 
-      course.skills.forEach((skill) => {
-        if (!skill || !skill._id) return;
-        const sId = skill._id.toString();
+      const cert = certsByCourse.get(cIdStr);
+      const passedAttempt = attemptsByCourse.get(cIdStr);
 
-        if (!skillMap[sId]) {
-          skillMap[sId] = {
-            _id: skill._id,
-            name: skill.name,
-            category: skill.category,
-            description: skill.description,
-            courses: [],
-            status: 'Learning',
-          };
-        }
+      course.skills.forEach((rawSkillItem) => {
+        const extracted = extractCourseSkillData(rawSkillItem);
+        if (!extracted || !extracted.skill || !extracted.skill._id) return;
 
-        skillMap[sId].courses.push({
-          courseId: course._id,
-          courseTitle: course.title,
-          enrollmentStatus: isCourseSkillAttained ? 'completed' : enrollment.status,
-          progress: enrollment.progress || 0,
-          completedAt: isCourseSkillAttained ? enrollment.completedAt || new Date() : null,
-          hasPassedFinal: hasFinalAssessment ? hasPassedFinal : null,
-        });
+        const skillIdStr = extracted.skill._id.toString();
+        const skillName = extracted.skill.name || 'Standardized Skill';
+        const skillCategory = extracted.skill.category || 'Technical';
+        const skillDesc = extracted.skill.description || '';
+        const courseProficiency = extracted.proficiency; // 'beginner' | 'proficient' | 'advanced'
 
-        // Upgrade status to 'Course Completed' if any contributing course has been fully passed
-        if (isCourseSkillAttained) {
-          skillMap[sId].status = 'Course Completed';
+        if (isCourseVerified) {
+          // Trainee successfully earned this skill from this course
+          if (!verifiedSkillMap.has(skillIdStr)) {
+            verifiedSkillMap.set(skillIdStr, {
+              _id: extracted.skill._id,
+              name: skillName,
+              category: skillCategory,
+              description: skillDesc,
+              highestProficiency: courseProficiency,
+              highestProficiencyLabel: PROFICIENCY_LABEL[courseProficiency],
+              rank: PROFICIENCY_RANK[courseProficiency],
+              isVerified: true,
+              evidence: [],
+            });
+          }
+
+          const existingRecord = verifiedSkillMap.get(skillIdStr);
+
+          // Retain highest proficiency (Beginner < Proficient < Advanced)
+          if (PROFICIENCY_RANK[courseProficiency] > existingRecord.rank) {
+            existingRecord.highestProficiency = courseProficiency;
+            existingRecord.highestProficiencyLabel = PROFICIENCY_LABEL[courseProficiency];
+            existingRecord.rank = PROFICIENCY_RANK[courseProficiency];
+          }
+
+          // Attach evidence / proof of work for this course
+          const finalScore =
+            passedAttempt?.percentage !== undefined
+              ? passedAttempt.percentage
+              : cert?.percentage !== undefined
+              ? cert.percentage
+              : 100;
+
+          const earnedDate = cert?.issueDate || passedAttempt?.submittedAt || enrollment.completedAt || new Date();
+
+          // Avoid duplicate evidence from the exact same course
+          const hasCourseEvidence = existingRecord.evidence.some(
+            (ev) => ev.courseId.toString() === cIdStr
+          );
+
+          if (!hasCourseEvidence) {
+            existingRecord.evidence.push({
+              courseId: course._id,
+              courseTitle: course.title,
+              proficiencyAwarded: PROFICIENCY_LABEL[courseProficiency],
+              finalScore,
+              certificateId: cert?.certificateId || null,
+              certificateFile: cert?.filePath || null,
+              earnedAt: earnedDate,
+            });
+          }
+        } else {
+          // In progress / Learning state (not yet verified)
+          if (!learningSkillMap.has(skillIdStr)) {
+            learningSkillMap.set(skillIdStr, {
+              _id: extracted.skill._id,
+              name: skillName,
+              category: skillCategory,
+              description: skillDesc,
+              targetProficiency: courseProficiency,
+              targetProficiencyLabel: PROFICIENCY_LABEL[courseProficiency],
+              courses: [],
+            });
+          }
+
+          const learningRecord = learningSkillMap.get(skillIdStr);
+          learningRecord.courses.push({
+            courseId: course._id,
+            courseTitle: course.title,
+            progress: enrollment.progress || 0,
+            hasFinalAssessment,
+            finalAssessmentPending: hasFinalAssessment && !hasPassedFinal,
+          });
         }
       });
     });
 
-    const skillsList = Object.values(skillMap).sort((a, b) => {
-      // Sort Course Completed first, then alphabetically by name
-      if (a.status === 'Course Completed' && b.status !== 'Course Completed') return -1;
-      if (a.status !== 'Course Completed' && b.status === 'Course Completed') return 1;
+    // Remove any skills from learning list that have already been verified
+    const verifiedSkillsList = Array.from(verifiedSkillMap.values()).sort((a, b) => {
+      // Sort by rank descending (Advanced first), then name alphabetically
+      if (b.rank !== a.rank) return b.rank - a.rank;
       return a.name.localeCompare(b.name);
     });
 
+    const learningSkillsList = Array.from(learningSkillMap.values())
+      .filter((s) => !verifiedSkillMap.has(s._id.toString()))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Calculate Summary Metrics
+    const advancedCount = verifiedSkillsList.filter((s) => s.highestProficiency === 'advanced').length;
+    const proficientCount = verifiedSkillsList.filter((s) => s.highestProficiency === 'proficient').length;
+    const beginnerCount = verifiedSkillsList.filter((s) => s.highestProficiency === 'beginner').length;
+
     return res.status(200).json({
       success: true,
-      count: skillsList.length,
-      data: skillsList,
+      summary: {
+        totalVerified: verifiedSkillsList.length,
+        advancedCount,
+        proficientCount,
+        beginnerCount,
+        learningCount: learningSkillsList.length,
+      },
+      verifiedSkills: verifiedSkillsList,
+      learningSkills: learningSkillsList,
+      // Backward compatibility alias for single list consumers
+      data: verifiedSkillsList.map((s) => ({
+        ...s,
+        status: 'Course Completed',
+        courses: s.evidence.map((ev) => ({
+          courseId: ev.courseId,
+          courseTitle: ev.courseTitle,
+          progress: 100,
+          status: 'completed',
+        })),
+      })),
     });
   } catch (error) {
     next(error);
@@ -159,8 +315,8 @@ const getMyCompetencies = async (req, res, next) => {
       path: 'course',
       select: 'title skills status',
       populate: {
-        path: 'skills',
-        select: 'name',
+        path: 'skills.skill',
+        select: 'name category description isActive',
       },
     });
 
@@ -171,28 +327,46 @@ const getMyCompetencies = async (req, res, next) => {
     const { coursesWithFinalAssessment, coursesWithPassedFinal } =
       await getCourseCompletionMap(traineeId, enrolledCourseIds);
 
-    const traineeSkillStatus = {}; // { [skillId]: 'completed' | 'in_progress' }
+    const verifiedSkillsMap = new Map(); // [skillIdStr] -> { proficiency, label, rank }
+    const learningSkillsSet = new Set();
 
     enrollments.forEach((enrollment) => {
       const course = enrollment.course;
-      if (!course || !course.skills) return;
+      if (!course || !Array.isArray(course.skills)) return;
 
       const cIdStr = course._id.toString();
       const hasFinalAssessment = coursesWithFinalAssessment.has(cIdStr);
       const hasPassedFinal = coursesWithPassedFinal.has(cIdStr);
 
-      const isCourseSkillAttained = hasFinalAssessment
+      const isCourseVerified = hasFinalAssessment
         ? hasPassedFinal
         : enrollment.status === 'completed' && enrollment.progress === 100;
 
-      course.skills.forEach((skill) => {
-        if (!skill || !skill._id) return;
-        const sId = skill._id.toString();
+      course.skills.forEach((rawSkillItem) => {
+        const extracted = extractCourseSkillData(rawSkillItem);
+        if (!extracted || !extracted.skill || !extracted.skill._id) return;
 
-        if (isCourseSkillAttained) {
-          traineeSkillStatus[sId] = 'completed';
-        } else if (!traineeSkillStatus[sId]) {
-          traineeSkillStatus[sId] = 'in_progress';
+        const skillIdStr = extracted.skill._id.toString();
+        const proficiency = extracted.proficiency;
+
+        if (isCourseVerified) {
+          const currentRank = PROFICIENCY_RANK[proficiency];
+          if (!verifiedSkillsMap.has(skillIdStr)) {
+            verifiedSkillsMap.set(skillIdStr, {
+              proficiency,
+              label: PROFICIENCY_LABEL[proficiency],
+              rank: currentRank,
+            });
+          } else {
+            const existing = verifiedSkillsMap.get(skillIdStr);
+            if (currentRank > existing.rank) {
+              existing.proficiency = proficiency;
+              existing.label = PROFICIENCY_LABEL[proficiency];
+              existing.rank = currentRank;
+            }
+          }
+        } else {
+          learningSkillsSet.add(skillIdStr);
         }
       });
     });
@@ -204,28 +378,43 @@ const getMyCompetencies = async (req, res, next) => {
 
     const competencyOverview = competencies.map((comp) => {
       const requiredSkills = comp.skills || [];
-      let completedCount = 0;
-      let inProgressCount = 0;
+      let verifiedCount = 0;
+      let learningCount = 0;
 
       const evaluatedSkills = requiredSkills.map((skill) => {
         const sId = skill._id.toString();
-        const state = traineeSkillStatus[sId] || 'missing';
+        const verifiedInfo = verifiedSkillsMap.get(sId);
 
-        if (state === 'completed') completedCount += 1;
-        if (state === 'in_progress') inProgressCount += 1;
+        let state = 'missing'; // 'verified' | 'learning' | 'missing'
+        let proficiencyLabel = null;
+
+        if (verifiedInfo) {
+          state = 'verified';
+          proficiencyLabel = verifiedInfo.label;
+          verifiedCount += 1;
+        } else if (learningSkillsSet.has(sId)) {
+          state = 'learning';
+          learningCount += 1;
+        }
 
         return {
           _id: skill._id,
           name: skill.name,
           category: skill.category,
-          state, // 'completed' | 'in_progress' | 'missing'
+          state,
+          proficiency: proficiencyLabel,
         };
       });
 
+      const totalRequired = requiredSkills.length;
+      const isDemonstrated = totalRequired > 0 && verifiedCount === totalRequired;
+      const progressPercentage =
+        totalRequired > 0 ? Math.round((verifiedCount / totalRequired) * 100) : 0;
+
       let status = 'Not Started';
-      if (completedCount === requiredSkills.length && requiredSkills.length > 0) {
-        status = 'Completed';
-      } else if (completedCount > 0 || inProgressCount > 0) {
+      if (isDemonstrated) {
+        status = 'Demonstrated';
+      } else if (verifiedCount > 0 || learningCount > 0) {
         status = 'In Progress';
       }
 
@@ -233,10 +422,12 @@ const getMyCompetencies = async (req, res, next) => {
         _id: comp._id,
         name: comp.name,
         description: comp.description,
-        totalRequiredSkills: requiredSkills.length,
-        completedSkillsCount: completedCount,
-        inProgressSkillsCount: inProgressCount,
-        status, // 'Completed' | 'In Progress' | 'Not Started'
+        totalRequiredSkills: totalRequired,
+        completedSkillsCount: verifiedCount,
+        verifiedSkillsCount: verifiedCount,
+        inProgressSkillsCount: learningCount,
+        progressPercentage,
+        status, // 'Demonstrated' | 'In Progress' | 'Not Started'
         skills: evaluatedSkills,
       };
     });

@@ -187,10 +187,11 @@ const CreateCoursePage = () => {
 
           {/* Skills Covered */}
           <SkillsSelect
-            selectedSkillIds={selectedSkills}
+            selectedSkills={selectedSkills}
             onChange={setSelectedSkills}
             label="Skills Covered"
-            helperText="Associate active skills from the Skill Library that trainees will learn in this course."
+            helperText="Associate active skills from the Skill Library that trainees will learn, and set the target proficiency level."
+            withProficiency={true}
             disabled={loading}
           />
 

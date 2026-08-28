@@ -427,10 +427,11 @@ const AdminCompetenciesPage = () => {
 
               {/* Skills Covered Selector */}
               <SkillsSelect
-                selectedSkillIds={formData.skills}
+                selectedSkills={formData.skills}
                 onChange={(skills) => setFormData({ ...formData, skills })}
                 label="Required Skills *"
                 helperText="Select all standardized skills that a trainee must develop to satisfy this competency."
+                withProficiency={false}
               />
 
               <div className="flex items-center gap-2 pt-1">

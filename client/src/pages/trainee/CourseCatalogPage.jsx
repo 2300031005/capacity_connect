@@ -204,15 +204,24 @@ const CourseCatalogPage = () => {
 
                   {/* Skills Covered Badges */}
                   {course.skills && course.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {course.skills.slice(0, 4).map((s) => (
-                        <span
-                          key={s._id || s}
-                          className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                        >
-                          {s.name || s}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {course.skills.slice(0, 4).map((s) => {
+                        const sName = s.name || s.skill?.name || s;
+                        const sProf = s.proficiency;
+                        return (
+                          <span
+                            key={s._id || s.skill?._id || sName}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                          >
+                            <span>{sName}</span>
+                            {sProf && (
+                              <span className="text-[9px] uppercase font-bold text-slate-500">
+                                &bull; {sProf}
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })}
                       {course.skills.length > 4 && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-400">
                           +{course.skills.length - 4} more

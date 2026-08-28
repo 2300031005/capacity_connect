@@ -30,6 +30,12 @@ const skillSchema = new mongoose.Schema(
       },
       default: 'Technical',
     },
+    customCategory: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [100, 'Custom category cannot exceed 100 characters'],
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -116,7 +116,10 @@ const ManageCoursePage = () => {
           category: response.data.course.category,
           level: response.data.course.level,
           prerequisites: response.data.course.prerequisites || '',
-          skills: (response.data.course.skills || []).map((s) => (s._id ? s._id : s)),
+          skills: (response.data.course.skills || []).map((s) => ({
+            skill: s._id || s.skill?._id || s,
+            proficiency: s.proficiency || response.data.course.level || 'beginner',
+          })),
         });
 
         // Fetch Final Assessment
@@ -550,19 +553,28 @@ const ManageCoursePage = () => {
             <span>Skills Covered ({course.skills?.length || 0})</span>
           </h3>
           {course.skills && course.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {course.skills.map((skill) => (
-                <span
-                  key={skill._id || skill}
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-medium border ${
-                    skill.category === 'Soft Skill'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  }`}
-                >
-                  {skill.name || 'Skill'}
-                </span>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {course.skills.map((skill) => {
+                const sName = skill.name || skill.skill?.name || 'Skill';
+                const sCat = skill.category || skill.skill?.category || 'Technical';
+                const sProf = skill.proficiency || 'beginner';
+
+                return (
+                  <span
+                    key={skill._id || skill.skill?._id || sName}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs ${
+                      sCat === 'Soft Skill'
+                        ? 'bg-purple-50 text-purple-900 border-purple-200'
+                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                    }`}
+                  >
+                    <span>{sName}</span>
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
+                      {sProf}
+                    </span>
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <p className="text-xs text-slate-400 italic">
@@ -994,10 +1006,11 @@ const ManageCoursePage = () => {
 
               {/* Skills Covered Multi-Select */}
               <SkillsSelect
-                selectedSkillIds={courseFormData.skills || []}
+                selectedSkills={courseFormData.skills || []}
                 onChange={(newSkills) => setCourseFormData({ ...courseFormData, skills: newSkills })}
                 label="Skills Covered"
-                helperText="Select active skills from the Skill Library mapped to this course."
+                helperText="Select active skills from the Skill Library and specify the proficiency level taught."
+                withProficiency={true}
                 disabled={actionLoading}
               />
 
