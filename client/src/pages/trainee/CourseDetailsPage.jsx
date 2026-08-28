@@ -11,7 +11,8 @@ import {
   createCourseDiscussionMessageApi,
   toggleModuleCompleteApi,
   getModuleQuizApi,
-  getFinalAssessmentApi
+  getFinalAssessmentApi,
+  getCourseAiRationaleApi,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
@@ -107,6 +108,30 @@ const CourseDetailsPage = () => {
     certificate: null,
   });
   const [reviewAttemptId, setReviewAttemptId] = useState(null);
+
+  // AI Recommendation Rationale State (Phase 7.3)
+  const [courseRationale, setCourseRationale] = useState(null);
+  const [loadingRationale, setLoadingRationale] = useState(false);
+  const [showRationale, setShowRationale] = useState(false);
+
+  const fetchCourseRationale = async () => {
+    if (courseRationale) {
+      setShowRationale(!showRationale);
+      return;
+    }
+    setShowRationale(true);
+    setLoadingRationale(true);
+    try {
+      const res = await getCourseAiRationaleApi(courseId);
+      if (res?.success && res.data) {
+        setCourseRationale(res.data);
+      }
+    } catch (err) {
+      console.warn('Could not load course rationale:', err.message);
+    } finally {
+      setLoadingRationale(false);
+    }
+  };
 
   const isOwnerTrainer =
     user?.role === 'trainer' &&
@@ -572,6 +597,61 @@ const CourseDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* AI Learning Advisor - Contextual Recommendation Rationale (Phase 7.3) */}
+        {user?.role === 'trainee' && (
+          <div className="pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={fetchCourseRationale}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded text-xs font-semibold transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{showRationale ? 'Hide AI Recommendation Rationale' : '✨ Why is this course recommended for you?'}</span>
+            </button>
+
+            {showRationale && (
+              <div className="mt-3 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-blue-50/60 border border-emerald-200 rounded-lg p-4 space-y-2 animate-in fade-in duration-200 text-xs">
+                {loadingRationale && (
+                  <div className="flex items-center gap-2 text-emerald-800 py-2">
+                    <Sparkles className="w-4 h-4 animate-spin text-emerald-600" />
+                    <span>Analyzing your learning history against this course...</span>
+                  </div>
+                )}
+
+                {!loadingRationale && courseRationale && (
+                  <div className="space-y-2 text-slate-800">
+                    <div className="flex items-center gap-2 text-emerald-900 font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>{courseRationale.fitHeadline}</span>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {courseRationale.whyRecommended}
+                    </p>
+                    {Array.isArray(courseRationale.keyLearningOutcomes) && courseRationale.keyLearningOutcomes.length > 0 && (
+                      <div className="pt-1">
+                        <span className="font-bold text-[10px] uppercase text-slate-400 block mb-1">Key Outcomes for Your Profile:</span>
+                        <ul className="space-y-1">
+                          {courseRationale.keyLearningOutcomes.map((out, oIdx) => (
+                            <li key={oIdx} className="flex items-start gap-1.5 text-[11px] text-slate-600">
+                              <span className="text-emerald-600 font-bold">&bull;</span>
+                              <span>{out}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {courseRationale.competencyRelevance && (
+                      <p className="text-[11px] text-slate-500 italic pt-1">
+                        Institutional Milestone: {courseRationale.competencyRelevance}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tabs Navigation */}

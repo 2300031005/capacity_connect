@@ -428,6 +428,26 @@ export const explainAssessmentQuestionApi = async (attemptId, questionId) => {
   return response.data;
 };
 
+export const getAiCourseRecommendationsApi = async (params = {}) => {
+  const response = await api.get('/ai/recommendations', { params });
+  return response.data;
+};
+
+export const refreshAiCourseRecommendationsApi = async () => {
+  const response = await api.post('/ai/recommendations/refresh');
+  return response.data;
+};
+
+export const getSkillAiGuidanceApi = async (skillName) => {
+  const response = await api.get(`/ai/skills/${encodeURIComponent(skillName)}/guidance`);
+  return response.data;
+};
+
+export const getCourseAiRationaleApi = async (courseId) => {
+  const response = await api.get(`/ai/courses/${courseId}/rationale`);
+  return response.data;
+};
+
 // ==========================================
 // Health Check API
 // ==========================================

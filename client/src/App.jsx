@@ -20,6 +20,7 @@ import TraineeAssessmentsPage from './pages/trainee/TraineeAssessmentsPage';
 import TraineeSkillsPage from './pages/trainee/TraineeSkillsPage';
 import TraineeCompetenciesPage from './pages/trainee/TraineeCompetenciesPage';
 import TraineeAnalyticsPage from './pages/trainee/TraineeAnalyticsPage';
+import TraineeRecommendationsPage from './pages/trainee/TraineeRecommendationsPage';
 
 // Trainer Workspace Pages
 import TrainerDashboardPage from './pages/TrainerDashboardPage';
@@ -61,6 +62,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TraineeDashboardPage />} />
+          <Route path="recommendations" element={<TraineeRecommendationsPage />} />
           <Route path="courses" element={<CourseCatalogPage />} />
           <Route path="courses/:id" element={<CourseDetailsPage />} />
           <Route path="my-courses" element={<MyCoursesPage />} />

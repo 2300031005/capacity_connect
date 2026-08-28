@@ -8,17 +8,30 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 🤖 AI-Powered Assessment Explanation (Phase 7.1)
+### 1. 🌟 Centralized AI Recommendation Hub & Contextual Advisors (Phase 7.3)
+- **Single Centralized Recommendations Hub (`/trainee/recommendations`)**:
+  - **Recommended Courses**: Personalized database-backed courses based on completed history, enrolled progress, assessment performance, and competency gaps.
+  - **Skills to Develop**: Target skill acquisition and progression roadmaps from current $\to$ target level (`Beginner`, `Proficient`, `Advanced`).
+  - **Assessment Insights**: Actionable diagnostics on mastery trajectories, focus areas, and reinforcement advice.
+  - **Suggested Next Steps**: Sequential learning roadmap guiding coursework, course enrollment, and certification exams.
+- **Contextual AI Actions across Platform**:
+  - **My Skills (`/trainee/skills`)**: `[ ✨ Improve This Skill ]` action opening an AI skill progression roadmap with action items and mapped courses.
+  - **Course Details (`/trainee/courses/:id`)**: `[ ✨ Why is this course recommended for you? ]` contextual analysis detailing why the course fits the learner's verified capabilities.
+  - **Assessment Review**: `[ ✨ Explain with AI ]` / `[ Why was my answer wrong? ]` instant remedial guidance with core concepts and study tips.
+- **Standardized UI & Design System**:
+  - Single `Recommendations` sidebar item with `Sparkles` icon.
+  - Zero UI duplication, rich loading skeletons, error states, and responsive styling.
+
+### 2. 📚 AI-Powered Course Recommendations (Phase 7.2)
+- **Database-Authoritative Recommendation Layer**: Evaluates only published platform courses and excludes completed courses. Strictly prevents AI from hallucinating courses, skills, or URLs.
+- **Competency Gap Bridging**: Suggests courses that unlock missing skills required for institutional competency milestones.
+- **Skill Progression Alignment**: Matches target skills and maps proficiency upgrades (`currentProficiency` $\to$ `targetProficiency`).
+- **Explainable Recommendation Schema**: Returns numeric match score (`70-99%`), educational reason, skill alignment, outcome benefits, and priority tag (`high`, `medium`, `low`).
+
+### 3. 🤖 AI-Powered Assessment Explanation (Phase 7.1)
 - **Contextual AI Tutor**: Post-submission question-by-question remediation using OpenAI GPT-4o-mini (`POST /api/assessments/attempts/:attemptId/questions/:questionId/explain`).
-- **Structured Educational Feedback**:
-  - `explanation`: High-level summary connecting the question to the target skill.
-  - `whyYourAnswerWasWrong` / `whyYourAnswerWasCorrect`: Constructive analysis explaining why the selected choice was correct or incorrect.
-  - `correctConcept`: Core theoretical principle the learner should master.
-  - `keyTakeaway`: Memorable rule of thumb.
-  - `studyTip`: Practical actionable advice or mnemonic.
-- **Authoritative Instructor Context**: Uses instructor-provided question explanations as authoritative ground truth without hallucination.
+- **Structured Educational Feedback**: High-level explanation, why answer was right/wrong, core concept, key takeaway, and study tip.
 - **Anti-Cheat & Strict RBAC**: Explanations are strictly gated to submitted attempts owned by the authenticated trainee. Correct answers and explanations remain fully stripped from pre-submission quiz payloads.
-- **Resilient AI Architecture**: Isolated backend service (`server/services/openaiService.js`) with in-memory abuse rate protection, fallback generation when offline/unconfigured, and zero exposure of API keys to client.
 
 ### 2. 👥 Platform Governance, Trainer Management & Assessment Review (Phase 6.5)
 - **Admin User Management (`/admin/users`)**:
@@ -199,28 +212,22 @@ npm run dev
 
 ## 🧪 Automated Test Verification
 
-Run the automated test suites from the `server` directory:
+Run all platform test suites with a single command from the `server` directory:
 
 ```bash
 cd server
 
-# Phase 7.1 AI Assessment Explanation Test Suite (10 Groups / 35 Tests)
-node test_phase7_1.js
+# Run entire platform regression test suite (155+ assertions across Phases 4.5 through 7.2)
+npm run test:all
 
-# Phase 6.5 User/Trainer Governance & Assessment Review Suite (16 Groups / 37 Tests)
-node test_phase6_5.js
-
-# Phase 6 Analytics & Insights Test Suite (12 Tests)
-node test_phase6.js
-
-# Phase 5.5 Skills & Competency Refinement Suite (14 Tests)
-node test_phase5_5.js
-
-# Phase 5 Master Taxonomy & Mapping Suite (20 Tests)
-node test_phase5.js
-
-# Phase 4.5 Assessment & Anti-Cheat Regression Suite (20 Tests)
-node test_phase4_5.js
+# Run individual phase test suites
+npm run test:p7_2   # Phase 7.2 AI Course & Learning Recommendations (28 Tests)
+npm run test:p7_1   # Phase 7.1 AI Assessment Tutor (35 Tests)
+npm run test:p6_5   # Phase 6.5 User/Trainer Governance & Review (37 Tests)
+npm run test:p6     # Phase 6 Analytics & Insights (22 Tests)
+npm run test:p5_5   # Phase 5.5 Skill Attainment & Gating (14 Tests)
+npm run test:p5     # Phase 5 Master Taxonomy & Mapping (20 Tests)
+npm run test:p4_5   # Phase 4.5 Anti-Cheat & Assessment Regression (20 Tests)
 ```
 
 Verify client production compilation:
@@ -233,9 +240,13 @@ npm run build
 
 ## 🔌 API Reference Overview
 
-### AI-Powered Assessment Tutor (Phase 7.1)
+### AI-Powered Learning Recommendations & Tutor (Phase 7.1, 7.2 & 7.3)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
+| `GET` | `/api/ai/recommendations` | Trainee | Get centralized AI Recommendation Hub payload (Courses, Skills, Insights, Next Steps) |
+| `POST` | `/api/ai/recommendations/refresh` | Trainee | Force-refresh personalized recommendation hub bypassing in-memory cache |
+| `GET` | `/api/ai/skills/:skillName/guidance` | Trainee | Get contextual AI skill improvement roadmap & recommended courses |
+| `GET` | `/api/ai/courses/:courseId/rationale` | Trainee | Get contextual AI course fit rationale for active learner |
 | `POST` | `/api/assessments/attempts/:attemptId/questions/:questionId/explain` | Trainee | Generate structured educational explanation for submitted question using GPT-4o-mini |
 
 ### User & Trainer Management (Phase 6.5)

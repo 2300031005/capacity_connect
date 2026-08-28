@@ -12,7 +12,8 @@ import {
   Layers,
   GraduationCap,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -22,6 +23,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const roleNavItems = {
     trainee: [
       { name: 'Dashboard', path: '/trainee/dashboard', icon: LayoutDashboard, exact: true },
+      { name: 'Recommendations', path: '/trainee/recommendations', icon: Sparkles },
       { name: 'Courses', path: '/trainee/courses', icon: BookOpen },
       { name: 'Assessments', path: '/trainee/assessments', icon: FileCheck },
       { name: 'My Skills', path: '/trainee/skills', icon: Target },

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMyCoursesApi, getMyCertificatesApi } from '../services/api';
+import {
+  getMyCoursesApi,
+  getMyCertificatesApi,
+  getAiCourseRecommendationsApi,
+} from '../services/api';
 import CertificateModal from '../components/CertificateModal';
 import {
   BookOpen,
@@ -12,22 +16,26 @@ import {
   ArrowRight,
   Download,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  Lightbulb,
+  Star
 } from 'lucide-react';
 
 const TraineeDashboardPage = () => {
   const { user } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [certificates, setCertificates] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCertificate, setActiveCertificate] = useState(null);
 
   useEffect(() => {
     const loadTraineeData = async () => {
       try {
-        const [coursesRes, certsRes] = await Promise.allSettled([
+        const [coursesRes, certsRes, recsRes] = await Promise.allSettled([
           getMyCoursesApi(),
           getMyCertificatesApi(),
+          getAiCourseRecommendationsApi(),
         ]);
 
         if (coursesRes.status === 'fulfilled' && coursesRes.value?.success) {
@@ -35,6 +43,9 @@ const TraineeDashboardPage = () => {
         }
         if (certsRes.status === 'fulfilled' && certsRes.value?.success) {
           setCertificates(certsRes.value.data || []);
+        }
+        if (recsRes.status === 'fulfilled' && recsRes.value?.success) {
+          setRecommendations(recsRes.value.data?.recommendations || []);
         }
       } catch (err) {
         console.warn('Could not load trainee data on dashboard:', err.message);
@@ -63,13 +74,22 @@ const TraineeDashboardPage = () => {
             </p>
           </div>
 
-          <Link
-            to="/trainee/courses"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors self-start sm:self-auto"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Browse Courses</span>
-          </Link>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Link
+              to="/trainee/recommendations"
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded text-xs font-semibold transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Recommendations</span>
+            </Link>
+            <Link
+              to="/trainee/courses"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Browse Courses</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -99,26 +119,117 @@ const TraineeDashboardPage = () => {
           </p>
         </div>
 
-        {/* Skill Gaps */}
+        {/* Skills Track */}
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Skill Gaps</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Skills & Gaps</span>
             <Target className="w-4 h-4 text-amber-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">No gaps identified</p>
-          <p className="text-[11px] text-slate-400 mt-2">Diagnosed via assessments</p>
+          <Link to="/trainee/skills" className="text-sm font-semibold text-slate-700 hover:text-emerald-700">
+            View Skill Passport →
+          </Link>
+          <p className="text-[11px] text-slate-400 mt-2">Verified via passed final exams</p>
         </div>
 
-        {/* Recommended Learning */}
+        {/* AI Recommendations */}
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Recommended</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">AI Advisor</span>
             <Sparkles className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">Active catalog</p>
-          <p className="text-[11px] text-slate-400 mt-2">Explore available courses</p>
+          <p className="text-sm font-semibold text-slate-700">
+            {recommendations.length > 0 ? `${recommendations.length} Tailored Matches` : 'Active Advisor'}
+          </p>
+          <Link to="/trainee/recommendations" className="text-[11px] text-emerald-700 font-semibold hover:underline mt-2 inline-block">
+            Explore recommendations →
+          </Link>
         </div>
       </div>
+
+      {/* Recommended for You Section */}
+      {recommendations.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  ✨ Recommended for You
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Personalized based on your skills, learning progress and assessment performance.
+              </p>
+            </div>
+            <Link
+              to="/trainee/recommendations"
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              View All ({recommendations.length}) →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recommendations.slice(0, 3).map((item, idx) => {
+              const course = item.course;
+              const matchScore = item.matchScore || 85;
+
+              return (
+                <div
+                  key={course?._id || idx}
+                  className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 flex flex-col justify-between space-y-3 hover:border-emerald-300 transition-colors"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase text-slate-400">
+                        {course?.category}
+                      </span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>{matchScore}% Match</span>
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">
+                      {course?.title}
+                    </h3>
+
+                    <div className="bg-emerald-50/50 border border-emerald-100 rounded p-2 text-[11px] text-emerald-900 leading-snug">
+                      <p className="line-clamp-2">{item.reason}</p>
+                    </div>
+
+                    {Array.isArray(item.skillAlignment) && item.skillAlignment.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {item.skillAlignment.slice(0, 2).map((sa, sIdx) => (
+                          <span
+                            key={sIdx}
+                            className="inline-flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] text-slate-700"
+                          >
+                            <Target className="w-2.5 h-2.5 text-blue-600" />
+                            <span>{sa.skill}</span>
+                            <span className="text-emerald-700 font-semibold">({sa.targetProficiency})</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500 capitalize">Level: {course?.level || 'General'}</span>
+                    <Link
+                      to={`/trainee/courses/${course?._id}`}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+                    >
+                      <span>View Course</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Enrolled Courses Section */}
       <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
