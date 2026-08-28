@@ -8,7 +8,24 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 🌟 Centralized AI Recommendation Hub & Contextual Advisors (Phase 7.3)
+### 1. 🎯 AI Career Goal → Personalized Learning Roadmap (Phase 7.4.1)
+- **Natural-Language Career Destination (`/trainee/recommendations`)**:
+  - Trainees specify any target career (e.g. *"I want to become a Full Stack Developer"* or *"Cloud & DevOps Engineer"*).
+  - AI parses the goal, extracts required capabilities, maps against platform Skill & Competency taxonomies, and diagnoses skill gaps ($\checkmark$ Demonstrated, 🟡 In Progress, $\bigcirc$ Required/Missing).
+  - **Sequenced Roadmap & Course Sequences**: Organizes learning milestones into ordered stages and maps each stage to actual published courses on Capacity Connect (or marks as unavailable if none exist).
+  - **Database-Authoritative Progress**: Dynamic calculation of overall career progress based strictly on completed verified coursework and active enrollments.
+  - **Career Goal Persistence**: Persists target goal to trainee user document with inline editing (`[ Edit Goal ]`, `[ Refresh Roadmap ]`) and zero duplicate UI.
+
+### 2. 🧭 Personalized AI Learning Path (Phase 7.4)
+- **Intelligent Trajectory Architecture (`/trainee/recommendations`)**:
+  - Dynamically determines *"What should this trainee learn next, and in what order?"*
+  - Synthesizes active enrollments, course progress, completed history, verified skills, target competencies, and assessment diagnostics into a single cohesive journey.
+  - **Sequenced Timeline**: Connected stage timeline (`↓`) with stage statuses (`Current Stage`, `Completed ✓`, `Recommended`, `Next Milestone`, `Locked`), course progress indicators, and skill advancement paths.
+  - **Active Course Prioritization**: Prioritizes continuing incomplete active enrollments before recommending new courses.
+  - **Competency Gap & Diagnostic Remediation**: Sequences courses that close missing skills for institutional competencies and reinforce weak assessment areas.
+  - **Database-Authoritative Progress**: Calculates real-time path progress (`●●●○○ 60% Path Progress: Completed: 3, In Progress: 1, Remaining: 2`).
+
+### 3. 🌟 Centralized AI Recommendation Hub & Contextual Advisors (Phase 7.3)
 - **Single Centralized Recommendations Hub (`/trainee/recommendations`)**:
   - **Recommended Courses**: Personalized database-backed courses based on completed history, enrolled progress, assessment performance, and competency gaps.
   - **Skills to Develop**: Target skill acquisition and progression roadmaps from current $\to$ target level (`Beginner`, `Proficient`, `Advanced`).
@@ -22,13 +39,13 @@ Capacity Connect is a full-stack learning management and skill verification port
   - Single `Recommendations` sidebar item with `Sparkles` icon.
   - Zero UI duplication, rich loading skeletons, error states, and responsive styling.
 
-### 2. 📚 AI-Powered Course Recommendations (Phase 7.2)
+### 4. 📚 AI-Powered Course Recommendations (Phase 7.2)
 - **Database-Authoritative Recommendation Layer**: Evaluates only published platform courses and excludes completed courses. Strictly prevents AI from hallucinating courses, skills, or URLs.
 - **Competency Gap Bridging**: Suggests courses that unlock missing skills required for institutional competency milestones.
 - **Skill Progression Alignment**: Matches target skills and maps proficiency upgrades (`currentProficiency` $\to$ `targetProficiency`).
 - **Explainable Recommendation Schema**: Returns numeric match score (`70-99%`), educational reason, skill alignment, outcome benefits, and priority tag (`high`, `medium`, `low`).
 
-### 3. 🤖 AI-Powered Assessment Explanation (Phase 7.1)
+### 5. 🤖 AI-Powered Assessment Explanation (Phase 7.1)
 - **Contextual AI Tutor**: Post-submission question-by-question remediation using OpenAI GPT-4o-mini (`POST /api/assessments/attempts/:attemptId/questions/:questionId/explain`).
 - **Structured Educational Feedback**: High-level explanation, why answer was right/wrong, core concept, key takeaway, and study tip.
 - **Anti-Cheat & Strict RBAC**: Explanations are strictly gated to submitted attempts owned by the authenticated trainee. Correct answers and explanations remain fully stripped from pre-submission quiz payloads.
@@ -221,12 +238,15 @@ cd server
 npm run test:all
 
 # Run individual phase test suites
-npm run test:p7_2   # Phase 7.2 AI Course & Learning Recommendations (28 Tests)
+npm run test:p7_4_1 # Phase 7.4.1 AI Career Goal Roadmap (35 Tests)
+npm run test:p7_4   # Phase 7.4 Personalized AI Learning Path (32 Tests)
+npm run test:p7_3   # Phase 7.3 AI Recommendation Hub & UI Standardization (31 Tests)
+npm run test:p7_2   # Phase 7.2 AI Course Recommendations (28 Tests)
 npm run test:p7_1   # Phase 7.1 AI Assessment Tutor (35 Tests)
 npm run test:p6_5   # Phase 6.5 User/Trainer Governance & Review (37 Tests)
 npm run test:p6     # Phase 6 Analytics & Insights (22 Tests)
-npm run test:p5_5   # Phase 5.5 Skill Attainment & Gating (14 Tests)
-npm run test:p5     # Phase 5 Master Taxonomy & Mapping (20 Tests)
+npm run test:p5_5   # Phase 5.5 Skill Attainment & Verification (14 Tests)
+npm run test:p5     # Phase 5 Skills Taxonomy & Competency Management (20 Tests)
 npm run test:p4_5   # Phase 4.5 Anti-Cheat & Assessment Regression (20 Tests)
 ```
 
@@ -240,9 +260,15 @@ npm run build
 
 ## 🔌 API Reference Overview
 
-### AI-Powered Learning Recommendations & Tutor (Phase 7.1, 7.2 & 7.3)
+### AI Career Goals, Learning Paths & Tutor (Phase 7.1, 7.2, 7.3, 7.4 & 7.4.1)
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
+| `GET` | `/api/ai/career-goal` | Trainee | Get saved natural-language career goal from trainee profile |
+| `POST` | `/api/ai/career-goal` | Trainee | Save or update natural-language career goal |
+| `GET` | `/api/ai/career-roadmap` | Trainee | Generate sequenced career roadmap mapped to published courses |
+| `POST` | `/api/ai/career-roadmap/refresh` | Trainee | Force-regenerate career learning roadmap bypassing cache |
+| `GET` | `/api/ai/learning-path` | Trainee | Get personalized AI learning path trajectory with progress metrics |
+| `POST` | `/api/ai/learning-path/refresh` | Trainee | Force-recalculate personalized learning path bypassing cache |
 | `GET` | `/api/ai/recommendations` | Trainee | Get centralized AI Recommendation Hub payload (Courses, Skills, Insights, Next Steps) |
 | `POST` | `/api/ai/recommendations/refresh` | Trainee | Force-refresh personalized recommendation hub bypassing in-memory cache |
 | `GET` | `/api/ai/skills/:skillName/guidance` | Trainee | Get contextual AI skill improvement roadmap & recommended courses |

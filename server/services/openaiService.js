@@ -832,6 +832,547 @@ Please generate the personalized course rationale.`;
   }
 };
 
+/**
+ * Deterministic fallback personalized learning path generator (Phase 7.4)
+ */
+const generateFallbackLearningPath = ({ traineeContext, candidateCourses, activeCourses = [], completedCourses = [] }) => {
+  const steps = [];
+  let seq = 1;
+
+  const verifiedSkillsMap = new Map();
+  (traineeContext.verifiedSkills || []).forEach((s) => {
+    verifiedSkillsMap.set((s.name || s).toLowerCase(), (s.highestProficiency || 'proficient').toLowerCase());
+  });
+
+  const missingCompSkills = new Set();
+  (traineeContext.competencies || []).forEach((comp) => {
+    (comp.missingSkills || []).forEach((ms) => {
+      const msName = typeof ms === 'string' ? ms : ms.name || '';
+      if (msName) missingCompSkills.add(msName.toLowerCase());
+    });
+  });
+
+  const weakAreasSet = new Set(
+    (traineeContext.assessmentSummary?.weakAreas || []).map((w) => (typeof w === 'string' ? w.toLowerCase() : ''))
+  );
+
+  // 1. Prioritize In-Progress Active Course (Current Stage)
+  if (activeCourses && activeCourses.length > 0) {
+    const active = activeCourses[0];
+    steps.push({
+      sequence: seq++,
+      courseId: active._id?.toString() || active.courseId?.toString() || active.course?.toString(),
+      title: active.title || active.course?.title || 'In-Progress Coursework',
+      status: 'current',
+      progress: active.progress || 0,
+      skills: (active.skills || []).map((s) => ({
+        name: s.name || s.skill?.name || 'Technical Skill',
+        currentProficiency: verifiedSkillsMap.get((s.name || s.skill?.name || '').toLowerCase()) || 'Learning',
+        targetProficiency: s.proficiency || 'Proficient',
+      })),
+      priority: 'high',
+      reason: `You are currently enrolled (${active.progress || 0}% complete). Prioritize finishing remaining modules and passing the final examination.`,
+      actionUrl: `/trainee/courses/${active._id?.toString() || active.courseId?.toString() || active.course?.toString()}`,
+    });
+  }
+
+  // 2. Prioritize Competency Gap Courses
+  const usedCourseIds = new Set(steps.map((s) => s.courseId));
+  const compCourses = (candidateCourses || []).filter((c) => {
+    const cId = c._id.toString();
+    if (usedCourseIds.has(cId)) return false;
+    return (c.skills || []).some((s) => {
+      const sName = (s.name || s.skill?.name || '').toLowerCase();
+      return missingCompSkills.has(sName);
+    });
+  });
+
+  compCourses.slice(0, 2).forEach((c) => {
+    usedCourseIds.add(c._id.toString());
+    steps.push({
+      sequence: seq++,
+      courseId: c._id.toString(),
+      title: c.title,
+      status: 'recommended',
+      skills: (c.skills || []).map((s) => ({
+        name: s.name || s.skill?.name || 'Skill',
+        currentProficiency: verifiedSkillsMap.get((s.name || s.skill?.name || '').toLowerCase()) || 'Not Acquired',
+        targetProficiency: s.proficiency || 'Proficient',
+      })),
+      priority: 'high',
+      reason: `Directly fulfills missing skill requirements for your in-progress institutional competency milestone.`,
+      actionUrl: `/trainee/courses/${c._id.toString()}`,
+    });
+  });
+
+  // 3. Prioritize Assessment Weak Area Courses
+  const weakCourses = (candidateCourses || []).filter((c) => {
+    const cId = c._id.toString();
+    if (usedCourseIds.has(cId)) return false;
+    return (
+      weakAreasSet.has((c.category || '').toLowerCase()) ||
+      (c.skills || []).some((s) => weakAreasSet.has((s.name || s.skill?.name || '').toLowerCase()))
+    );
+  });
+
+  weakCourses.slice(0, 1).forEach((c) => {
+    usedCourseIds.add(c._id.toString());
+    steps.push({
+      sequence: seq++,
+      courseId: c._id.toString(),
+      title: c.title,
+      status: 'recommended',
+      skills: (c.skills || []).map((s) => ({
+        name: s.name || s.skill?.name || 'Skill',
+        currentProficiency: verifiedSkillsMap.get((s.name || s.skill?.name || '').toLowerCase()) || 'Beginner',
+        targetProficiency: s.proficiency || 'Proficient',
+      })),
+      priority: 'high',
+      reason: `Strengthens diagnosed assessment focus areas and reinforces core concepts.`,
+      actionUrl: `/trainee/courses/${c._id.toString()}`,
+    });
+  });
+
+  // 4. Fill with Advanced / Complementary Candidates
+  const otherCourses = (candidateCourses || []).filter((c) => !usedCourseIds.has(c._id.toString()));
+  otherCourses.slice(0, Math.max(0, 4 - steps.length)).forEach((c) => {
+    usedCourseIds.add(c._id.toString());
+    steps.push({
+      sequence: seq++,
+      courseId: c._id.toString(),
+      title: c.title,
+      status: 'next',
+      skills: (c.skills || []).map((s) => ({
+        name: s.name || s.skill?.name || 'Skill',
+        currentProficiency: verifiedSkillsMap.get((s.name || s.skill?.name || '').toLowerCase()) || 'Beginner',
+        targetProficiency: s.proficiency || 'Advanced',
+      })),
+      priority: 'medium',
+      reason: `Expands your portfolio with advanced capabilities in ${c.category || 'this domain'}.`,
+      actionUrl: `/trainee/courses/${c._id.toString()}`,
+    });
+  });
+
+  const goal = traineeContext.competencies?.[0]?.name
+    ? `Master Institutional Milestone: ${traineeContext.competencies[0].name}`
+    : `Achieve Advanced Proficiency in Core Technical & Domain Skills`;
+
+  const summary = steps.length > 0
+    ? `Your customized sequence bridges diagnosed skill gaps and advances your competency profile step-by-step.`
+    : `Explore the published course catalog to begin building your personalized learning journey.`;
+
+  return { goal, summary, steps };
+};
+
+/**
+ * Generate complete personalized learning path using OpenAI GPT-4o-mini (Phase 7.4)
+ */
+const generateLearningPath = async ({
+  traineeContext,
+  candidateCourses,
+  activeCourses = [],
+  completedCourses = [],
+}) => {
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+
+  if (!apiKey || ((!candidateCourses || candidateCourses.length === 0) && activeCourses.length === 0)) {
+    return generateFallbackLearningPath({ traineeContext, candidateCourses, activeCourses, completedCourses });
+  }
+
+  const validCourseMap = new Map();
+  (candidateCourses || []).forEach((c) => validCourseMap.set(c._id.toString(), c));
+  activeCourses.forEach((c) => {
+    const cId = c._id?.toString() || c.courseId?.toString() || c.course?.toString();
+    if (cId) validCourseMap.set(cId, c);
+  });
+
+  const sanitizedCandidates = (candidateCourses || []).map((c) => ({
+    courseId: c._id.toString(),
+    title: c.title,
+    category: c.category,
+    level: c.level,
+    description: c.description ? c.description.slice(0, 160) : '',
+    skills: (c.skills || []).map((s) => ({
+      name: s.name || s.skill?.name || '',
+      proficiency: s.proficiency || 'proficient',
+    })),
+    prerequisites: c.prerequisites || '',
+  }));
+
+  const sanitizedActive = activeCourses.map((c) => ({
+    courseId: c._id?.toString() || c.courseId?.toString() || c.course?.toString(),
+    title: c.title || c.course?.title || 'Active Course',
+    progress: c.progress || 0,
+  }));
+
+  const systemPrompt = `You are the AI Learning Path Architect for Capacity Connect, an institutional capacity-building platform.
+Determine the single best, logically ordered learning journey ("What should this trainee learn next, and in what order?").
+
+CRITICAL SEQUENCING RULES:
+1. If the trainee has an active enrolled course with incomplete progress, prioritize continuing that course as Step 1.
+2. Address diagnosed assessment weak areas and competency missing skills before recommending unrelated advanced courses.
+3. Respect proficiency levels: Beginner < Proficient < Advanced. Do not recommend beginner courses for skills already verified as Advanced.
+4. Recommend ONLY courses from the provided Candidate or Active Courses list. NEVER invent course IDs or titles.
+5. Return ONLY a valid JSON object matching this schema:
+{
+  "goal": "<concise overarching learning goal, e.g. Full Stack Cloud Engineer Certification>",
+  "summary": "<2 sentence explanation of why this sequence makes sense for this learner>",
+  "steps": [
+    {
+      "sequence": 1,
+      "courseId": "<exact candidate or active courseId>",
+      "title": "<exact course title>",
+      "status": "current" | "recommended" | "next" | "locked",
+      "skills": [
+        {
+          "name": "<skill name>",
+          "currentProficiency": "<current level>",
+          "targetProficiency": "<target level: Beginner, Proficient, or Advanced>"
+        }
+      ],
+      "priority": "high" | "medium" | "low",
+      "reason": "<clear educational rationale explaining why this step is sequenced at this position>",
+      "actionUrl": "/trainee/courses/<courseId>"
+    }
+  ]
+}`;
+
+  const userPrompt = `Trainee Profile:
+- Verified Skills: ${JSON.stringify(traineeContext.verifiedSkills || [])}
+- Active Enrollments: ${JSON.stringify(sanitizedActive)}
+- Target Competencies: ${JSON.stringify(traineeContext.competencies || [])}
+- Assessment History: ${JSON.stringify(traineeContext.assessmentSummary || {})}
+- Completed Courses: ${traineeContext.completedCoursesCount || 0}
+
+Candidate Courses Pool:
+${JSON.stringify(sanitizedCandidates, null, 2)}
+
+Please synthesize the logically ordered personalized learning path JSON.`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Learning Path AI responded with status ${response.status}. Using fallback.`);
+      return generateFallbackLearningPath({ traineeContext, candidateCourses, activeCourses, completedCourses });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    const parsed = JSON.parse(content);
+    const rawSteps = Array.isArray(parsed.steps) ? parsed.steps : [];
+
+    // Filter to ensure every course ID exists in candidate pool or active courses (anti-hallucination)
+    const validSteps = rawSteps.filter((s) => s.courseId && validCourseMap.has(s.courseId.toString()));
+
+    if (validSteps.length === 0) {
+      return generateFallbackLearningPath({ traineeContext, candidateCourses, activeCourses, completedCourses });
+    }
+
+    return {
+      goal: parsed.goal || 'Accelerate Your Institutional Competencies',
+      summary: parsed.summary || 'A sequenced learning path tailored to your verified progress and skill gaps.',
+      steps: validSteps.map((s, idx) => ({
+        sequence: s.sequence || idx + 1,
+        courseId: s.courseId.toString(),
+        title: s.title || validCourseMap.get(s.courseId.toString())?.title || 'Course Step',
+        status: ['completed', 'current', 'recommended', 'next', 'locked'].includes(s.status) ? s.status : 'recommended',
+        skills: Array.isArray(s.skills) ? s.skills : [],
+        priority: ['high', 'medium', 'low'].includes(s.priority) ? s.priority : 'medium',
+        reason: s.reason || 'Sequenced to build core foundations before advanced modules.',
+        actionUrl: `/trainee/courses/${s.courseId.toString()}`,
+      })),
+    };
+  } catch (err) {
+    console.warn(`Learning Path AI warning (${err.message}). Using fallback.`);
+    return generateFallbackLearningPath({ traineeContext, candidateCourses, activeCourses, completedCourses });
+  }
+};
+
+/**
+ * Deterministic fallback career roadmap skill generator (Phase 7.4.1 Refinement)
+ * Generates an ordered skill journey based on platform taxonomy and trainee profile.
+ */
+const generateFallbackCareerRoadmap = ({
+  careerGoal = 'Full Stack Developer',
+  traineeContext,
+  availableSkills = [],
+  availableCompetencies = [],
+  activeCourses = [],
+  completedCourses = [],
+}) => {
+  const normalize = (str) => (str || '').replace(/\[.*?\]/g, '').toLowerCase().trim();
+  const goalNorm = normalize(careerGoal);
+
+  // 1. Find matching competency from platform taxonomy via token overlap
+  let targetCompetency = null;
+  let bestScore = -1;
+  const goalTokens = goalNorm.split(/\s+/).filter((t) => t.length > 1);
+
+  (availableCompetencies || []).forEach((c) => {
+    const cNorm = normalize(c.name);
+    let score = 0;
+    if (goalNorm === cNorm) {
+      score += 50;
+    } else if (goalNorm.includes(cNorm) || cNorm.includes(goalNorm)) {
+      score += 25;
+    }
+    const cTokens = cNorm.split(/\s+/).filter((t) => t.length > 1);
+    let matchingTokens = 0;
+    goalTokens.forEach((gt) => {
+      if (cTokens.some((ct) => ct === gt || (gt.length >= 4 && ct.length >= 4 && gt.slice(0, 4) === ct.slice(0, 4)) || ct.startsWith(gt) || gt.startsWith(ct))) {
+        matchingTokens++;
+      }
+    });
+
+    const totalUniqueTokens = new Set([...goalTokens, ...cTokens]).size;
+    const jaccard = totalUniqueTokens > 0 ? matchingTokens / totalUniqueTokens : 0;
+    score += jaccard * 20;
+
+    if (score > bestScore) {
+      bestScore = score;
+      targetCompetency = c;
+    }
+  });
+
+  if (!targetCompetency && availableCompetencies && availableCompetencies.length > 0) {
+    targetCompetency = availableCompetencies[0];
+  }
+
+  // 2. Map verified skills
+  const verifiedMap = new Map();
+  (traineeContext?.verifiedSkills || []).forEach((s) => {
+    const sName = s.name || s;
+    verifiedMap.set(normalize(sName), {
+      proficiency: (s.highestProficiency || 'proficient').toLowerCase(),
+      name: sName,
+    });
+  });
+
+  // 3. Extract ordered skills from target competency or skill taxonomy
+  const orderedSkills = [];
+  const addedSkillNorms = new Set();
+
+  if (targetCompetency && Array.isArray(targetCompetency.skills)) {
+    targetCompetency.skills.forEach((s) => {
+      const sName = typeof s === 'string' ? s : s.name || '';
+      const sNorm = normalize(sName);
+      if (sName && !addedSkillNorms.has(sNorm)) {
+        addedSkillNorms.add(sNorm);
+        orderedSkills.push(sName);
+      }
+    });
+  }
+
+  // Add relevant platform skills if needed
+  if (orderedSkills.length < 3 && availableSkills && availableSkills.length > 0) {
+    availableSkills.forEach((s) => {
+      const sNorm = normalize(s.name);
+      if (s.name && !addedSkillNorms.has(sNorm) && orderedSkills.length < 5) {
+        addedSkillNorms.add(sNorm);
+        orderedSkills.push(s.name);
+      }
+    });
+  }
+
+  // If still empty, supply clean domain defaults based on goal
+  if (orderedSkills.length === 0) {
+    if (goalNorm.includes('data')) {
+      orderedSkills.push('Python', 'SQL & Relational Databases', 'Data Analysis & Pandas', 'Data Visualization', 'Machine Learning');
+    } else if (goalNorm.includes('cloud') || goalNorm.includes('devops')) {
+      orderedSkills.push('Linux System Administration', 'Docker & Containerization', 'Kubernetes Orchestration', 'CI/CD Pipelines', 'Cloud Architecture (AWS/GCP)');
+    } else {
+      orderedSkills.push('JavaScript', 'React', 'Node.js', 'MongoDB', 'Full Stack Integration');
+    }
+  }
+
+  // 4. Construct ordered skill steps
+  const steps = orderedSkills.map((sName, idx) => {
+    const sNorm = normalize(sName);
+    const isVerified = verifiedMap.has(sNorm);
+
+    return {
+      order: idx + 1,
+      skill: sName,
+      reason: isVerified
+        ? `You already have verified foundation in ${sName}. Advance towards mastery.`
+        : `Essential prerequisite capability for achieving your target career as a ${careerGoal}.`,
+      targetProficiency: 'Proficient',
+    };
+  });
+
+  return {
+    careerGoal,
+    targetCompetency: targetCompetency?.name || 'Institutional Milestone Track',
+    summary: `Structured skill progression guiding you step-by-step toward achieving your goal as a ${careerGoal}.`,
+    steps,
+  };
+};
+
+/**
+ * Generate AI-Powered Career Goal Skill Roadmap using OpenAI GPT-4o-mini (Phase 7.4.1 Refinement)
+ * AI Responsibility: Determines the logical ordered SKILL SEQUENCE and rationale.
+ * Database Responsibility: Backend matches each skill against published courses.
+ */
+const generateCareerRoadmap = async ({
+  careerGoal = 'Full Stack Developer',
+  traineeContext,
+  availableSkills = [],
+  availableCompetencies = [],
+  activeCourses = [],
+  completedCourses = [],
+}) => {
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+
+  if (!apiKey) {
+    return generateFallbackCareerRoadmap({
+      careerGoal,
+      traineeContext,
+      availableSkills,
+      availableCompetencies,
+      activeCourses,
+      completedCourses,
+    });
+  }
+
+  const sanitizedSkills = (availableSkills || []).map((s) => s.name);
+  const sanitizedCompetencies = (availableCompetencies || []).map((c) => ({
+    name: c.name,
+    skills: (c.skills || []).map((s) => s.name || s),
+  }));
+
+  const systemPrompt = `You are the Senior AI Career & Curriculum Architect for Capacity Connect, an institutional capacity-building portal.
+The trainee wants to achieve the following career goal: "${careerGoal}".
+
+CRITICAL ARCHITECTURAL RULES:
+1. Your sole responsibility is to formulate a structured, logical sequence of SKILLS (e.g. JavaScript -> React -> Node.js -> MongoDB -> Full Stack Development).
+2. DO NOT invent, suggest, or mention course names or course titles. The Capacity Connect database will handle matching courses.
+3. Order the skills logically (Prerequisites / Fundamentals -> Core Domain Skills -> Advanced / Integration).
+4. For each skill, specify:
+   - "order": Integer (1, 2, 3...)
+   - "skill": Exact skill name (prefer platform skills from taxonomy when applicable)
+   - "reason": Clear, concise explanation of why this skill is needed for the career goal
+   - "targetProficiency": "Proficient" or "Advanced"
+5. Return ONLY a valid JSON object matching this schema:
+{
+  "careerGoal": "${careerGoal}",
+  "targetCompetency": "<most relevant institutional competency from list or domain title>",
+  "summary": "<2-3 sentence overview of this skill learning journey>",
+  "steps": [
+    {
+      "order": 1,
+      "skill": "<Skill Name, e.g. JavaScript>",
+      "reason": "<Why this skill is required at this stage>",
+      "targetProficiency": "Proficient" | "Advanced"
+    }
+  ]
+}`;
+
+  const userPrompt = `Target Career Goal: "${careerGoal}"
+
+Trainee Current State:
+- Verified Skills: ${JSON.stringify(traineeContext?.verifiedSkills || [])}
+- Active Enrolled Courses: ${JSON.stringify(activeCourses.map((c) => ({ title: c.title, progress: c.progress })))}
+- Completed Courses Count: ${traineeContext?.completedCoursesCount || 0}
+
+Platform Taxonomies:
+- Available Standard Skills: ${JSON.stringify(sanitizedSkills)}
+- Available Competencies: ${JSON.stringify(sanitizedCompetencies)}
+
+Please determine the logical ordered skill roadmap.`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Career Roadmap AI responded with status ${response.status}. Using fallback.`);
+      return generateFallbackCareerRoadmap({
+        careerGoal,
+        traineeContext,
+        availableSkills,
+        availableCompetencies,
+        activeCourses,
+        completedCourses,
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    const parsed = JSON.parse(content);
+    const rawSteps = Array.isArray(parsed.steps) ? parsed.steps : (Array.isArray(parsed.stages) ? parsed.stages : []);
+
+    const validatedSteps = rawSteps.map((st, idx) => ({
+      order: st.order || st.sequence || idx + 1,
+      skill: st.skill || st.skillName || `Skill ${idx + 1}`,
+      reason: st.reason || `Key competency required for ${careerGoal}.`,
+      targetProficiency: st.targetProficiency || st.requiredProficiency || 'Proficient',
+    }));
+
+    return {
+      careerGoal: parsed.careerGoal || careerGoal,
+      targetCompetency: parsed.targetCompetency || 'Institutional Career Milestone',
+      summary: parsed.summary || `A targeted skill roadmap to help you achieve your career goal as a ${careerGoal}.`,
+      steps: validatedSteps.length > 0 ? validatedSteps : generateFallbackCareerRoadmap({ careerGoal, traineeContext, availableSkills, availableCompetencies, activeCourses, completedCourses }).steps,
+    };
+  } catch (err) {
+    console.warn(`Career Roadmap AI error (${err.message}). Using fallback.`);
+    return generateFallbackCareerRoadmap({
+      careerGoal,
+      traineeContext,
+      availableSkills,
+      availableCompetencies,
+      activeCourses,
+      completedCourses,
+    });
+  }
+};
+
 module.exports = {
   getOpenAiConfig,
   generateQuestionExplanation,
@@ -842,5 +1383,9 @@ module.exports = {
   generateFallbackSkillGuidance,
   generateCourseRationale,
   generateFallbackCourseRationale,
+  generateLearningPath,
+  generateFallbackLearningPath,
+  generateCareerRoadmap,
+  generateFallbackCareerRoadmap,
   checkRateLimit,
 };

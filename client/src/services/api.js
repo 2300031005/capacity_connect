@@ -448,6 +448,39 @@ export const getCourseAiRationaleApi = async (courseId) => {
   return response.data;
 };
 
+export const getAiLearningPathApi = async (params = {}) => {
+  const response = await api.get('/ai/learning-path', { params });
+  return response.data;
+};
+
+export const refreshAiLearningPathApi = async () => {
+  const response = await api.post('/ai/learning-path/refresh');
+  return response.data;
+};
+
+// ==========================================
+// AI Career Goal & Learning Roadmap APIs (Phase 7.4.1)
+// ==========================================
+export const getAiCareerGoalApi = async () => {
+  const response = await api.get('/ai/career-goal');
+  return response.data;
+};
+
+export const setAiCareerGoalApi = async (careerGoal) => {
+  const response = await api.post('/ai/career-goal', { careerGoal });
+  return response.data;
+};
+
+export const getAiCareerRoadmapApi = async (params = {}) => {
+  const response = await api.get('/ai/career-roadmap', { params });
+  return response.data;
+};
+
+export const refreshAiCareerRoadmapApi = async (careerGoal) => {
+  const response = await api.post('/ai/career-roadmap/refresh', { careerGoal });
+  return response.data;
+};
+
 // ==========================================
 // Health Check API
 // ==========================================

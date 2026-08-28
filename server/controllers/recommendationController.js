@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Assessment = require('../models/Assessment');
@@ -9,11 +10,15 @@ const {
   generateCourseRecommendations,
   generateSkillGuidance,
   generateCourseRationale,
+  generateLearningPath,
+  generateCareerRoadmap,
   checkRateLimit,
 } = require('../services/openaiService');
 
 // In-memory recommendations cache: [traineeId] -> { data, timestamp }
 const recommendationsCache = new Map();
+const learningPathCache = new Map();
+const careerRoadmapCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 
 /**
@@ -453,9 +458,531 @@ const getCourseRationale = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get AI-Powered Personalized Learning Path
+ * @route   GET /api/ai/learning-path
+ * @access  Private / Trainee
+ */
+const getPersonalizedLearningPath = async (req, res, next) => {
+  try {
+    const traineeId = req.user._id;
+    const forceRefresh = req.query.refresh === 'true' || req.method === 'POST';
+
+    // 1. Check in-memory cache
+    if (!forceRefresh) {
+      const cached = learningPathCache.get(traineeId.toString());
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            ...cached.data,
+            cached: true,
+          },
+        });
+      }
+    }
+
+    // 2. Abuse rate protection
+    const rateCheck = checkRateLimit(traineeId.toString());
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: 'AI advisor rate limit reached. Please wait a moment before requesting learning path updates.',
+      });
+    }
+
+    // 3. Extract Trainee Context
+    const traineeContext = await computeTraineeSkillsAndGaps(traineeId);
+
+    // 4. Gather Active Enrollments with Progress
+    const activeEnrollments = await Enrollment.find({
+      trainee: traineeId,
+      status: 'active',
+    }).populate({
+      path: 'course',
+      select: 'title category level status skills averageRating trainer',
+      populate: [
+        { path: 'trainer', select: 'name' },
+        { path: 'skills.skill', select: 'name category' },
+      ],
+    }).lean();
+
+    const activeCourses = activeEnrollments
+      .filter((e) => e.course && e.course.status === 'published')
+      .map((e) => ({
+        _id: e.course._id,
+        courseId: e.course._id,
+        title: e.course.title,
+        category: e.course.category,
+        level: e.course.level,
+        progress: e.progress || 0,
+        skills: (e.course.skills || []).map((s) => ({
+          name: s.name || s.skill?.name || '',
+          proficiency: s.proficiency || 'proficient',
+        })),
+        trainer: e.course.trainer,
+      }));
+
+    // 5. Gather Candidate Published Courses (Excluding Completed Courses)
+    const candidateCourses = await Course.find({
+      status: 'published',
+      _id: { $nin: traineeContext.completedCourseIds },
+    })
+      .populate('trainer', 'name department')
+      .populate('skills.skill', 'name category')
+      .lean();
+
+    // 6. Generate Learning Path
+    const rawPath = await generateLearningPath({
+      traineeContext,
+      candidateCourses,
+      activeCourses,
+      completedCourses: traineeContext.completedCourseIds,
+    });
+
+    // 7. Validate and Populate Course Data
+    const courseMap = new Map();
+    candidateCourses.forEach((c) => courseMap.set(c._id.toString(), c));
+    activeCourses.forEach((c) => courseMap.set(c._id.toString(), c));
+
+    const activeCourseIdSet = new Set(activeCourses.map((c) => c._id.toString()));
+
+    const validatedSteps = (rawPath.steps || []).map((step, idx) => {
+      const course = courseMap.get(step.courseId.toString());
+      const isActive = activeCourseIdSet.has(step.courseId.toString());
+      let finalStatus = step.status || 'recommended';
+      if (isActive) {
+        finalStatus = 'current';
+      } else if (finalStatus === 'current') {
+        finalStatus = 'recommended';
+      }
+
+      return {
+        sequence: idx + 1,
+        courseId: step.courseId,
+        title: step.title || course?.title || 'Course Step',
+        category: course?.category || 'General',
+        level: course?.level || 'Intermediate',
+        trainer: course?.trainer?.name || 'Faculty',
+        status: finalStatus,
+        progress: isActive && course?.progress !== undefined ? course.progress : (finalStatus === 'completed' ? 100 : 0),
+        skills: Array.isArray(step.skills) && step.skills.length > 0
+          ? step.skills
+          : (course?.skills || []).map((s) => ({
+              name: s.name || s.skill?.name || 'Skill',
+              currentProficiency: 'Beginner',
+              targetProficiency: s.proficiency || 'Proficient',
+            })),
+        priority: step.priority || 'medium',
+        reason: step.reason || 'Logically ordered for optimal prerequisite and competency advancement.',
+        actionUrl: `/trainee/courses/${step.courseId}`,
+      };
+    });
+
+    // 8. Calculate Database-Authoritative Learning Path Metrics
+    const totalSteps = validatedSteps.length;
+    const completedCount = validatedSteps.filter((s) => s.status === 'completed').length;
+    const currentCount = validatedSteps.filter((s) => s.status === 'current').length;
+    const remainingCount = validatedSteps.filter((s) => s.status === 'recommended' || s.status === 'next' || s.status === 'locked').length;
+
+    let overallProgressPercentage = 0;
+    if (totalSteps > 0) {
+      const completedWeight = completedCount * 100;
+      const currentWeight = validatedSteps
+        .filter((s) => s.status === 'current')
+        .reduce((sum, s) => sum + (s.progress || 0), 0);
+      overallProgressPercentage = Math.round((completedWeight + currentWeight) / totalSteps);
+    }
+
+    const payload = {
+      goal: rawPath.goal || 'Master Core Technical & Institutional Competencies',
+      summary: rawPath.summary || 'A sequenced learning journey aligned with your verified progress, assessment diagnostics, and institutional milestones.',
+      steps: validatedSteps,
+      metrics: {
+        totalSteps,
+        completedCount,
+        currentCount,
+        remainingCount,
+        progressPercentage: overallProgressPercentage,
+      },
+      cached: false,
+    };
+
+    // Cache the result
+    learningPathCache.set(traineeId.toString(), {
+      data: payload,
+      timestamp: Date.now(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get Trainee Career Goal
+ * @route   GET /api/ai/career-goal
+ * @access  Private / Trainee
+ */
+const getCareerGoal = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('careerGoal name');
+    return res.status(200).json({
+      success: true,
+      data: {
+        careerGoal: user?.careerGoal || '',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Save/Update Trainee Career Goal
+ * @route   POST /api/ai/career-goal
+ * @access  Private / Trainee
+ */
+const setCareerGoal = async (req, res, next) => {
+  try {
+    const { careerGoal } = req.body;
+    if (typeof careerGoal !== 'string') {
+      return res.status(400).json({ success: false, message: 'Please provide a valid career goal string' });
+    }
+
+    const trimmedGoal = careerGoal.trim();
+    await User.findByIdAndUpdate(req.user._id, { careerGoal: trimmedGoal });
+
+    // Invalidate career roadmap cache for this trainee
+    careerRoadmapCache.delete(req.user._id.toString());
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        careerGoal: trimmedGoal,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get AI-Powered Career Goal Learning Roadmap
+ * @route   GET /api/ai/career-roadmap, POST /api/ai/career-roadmap/refresh
+ * @access  Private / Trainee
+ */
+const getCareerRoadmap = async (req, res, next) => {
+  try {
+    const traineeId = req.user._id;
+    const forceRefresh = req.query.refresh === 'true' || req.method === 'POST';
+
+    // 1. Determine career goal
+    let goal = req.body?.careerGoal || req.query?.goal;
+    if (!goal) {
+      const user = await User.findById(traineeId).select('careerGoal');
+      goal = user?.careerGoal || '';
+    }
+
+    // If goal is empty, return empty roadmap prompt state
+    if (!goal || !goal.trim()) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          careerGoal: '',
+          targetCompetency: '',
+          summary: 'Tell us what you want to become and we will build a personalized learning roadmap.',
+          skillGaps: [],
+          stages: [],
+          metrics: {
+            totalStages: 0,
+            completedStages: 0,
+            currentStages: 0,
+            remainingStages: 0,
+            progressPercentage: 0,
+          },
+          cached: false,
+        },
+      });
+    }
+
+    const cleanGoal = goal.trim();
+
+    // 2. Check in-memory cache
+    if (!forceRefresh) {
+      const cached = careerRoadmapCache.get(traineeId.toString());
+      if (
+        cached &&
+        cached.data?.careerGoal?.toLowerCase() === cleanGoal.toLowerCase() &&
+        Date.now() - cached.timestamp < CACHE_TTL_MS
+      ) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            ...cached.data,
+            cached: true,
+          },
+        });
+      }
+    }
+
+    // 3. Abuse rate limiter
+    const rateCheck = checkRateLimit(traineeId.toString());
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: 'AI advisor rate limit reached. Please wait a moment before requesting career roadmap updates.',
+      });
+    }
+
+    // 4. Extract Trainee Context
+    const traineeContext = await computeTraineeSkillsAndGaps(traineeId);
+
+    // 5. Gather Active Enrollments & Completed IDs
+    const activeEnrollments = await Enrollment.find({
+      trainee: traineeId,
+      status: 'active',
+    }).populate({
+      path: 'course',
+      select: 'title category level status skills averageRating trainer',
+      populate: [
+        { path: 'trainer', select: 'name' },
+        { path: 'skills.skill', select: 'name category' },
+      ],
+    }).lean();
+
+    const activeCourses = activeEnrollments
+      .filter((e) => e.course && e.course.status === 'published')
+      .map((e) => ({
+        _id: e.course._id,
+        courseId: e.course._id,
+        title: e.course.title,
+        category: e.course.category,
+        level: e.course.level,
+        progress: e.progress || 0,
+        skills: (e.course.skills || []).map((s) => ({
+          name: s.name || s.skill?.name || '',
+          skillId: s.skill?._id?.toString() || (typeof s.skill === 'string' ? s.skill : ''),
+          proficiency: s.proficiency || 'proficient',
+        })),
+        trainer: e.course.trainer,
+      }));
+
+    // 6. Gather Platform Taxonomies (Skills, Competencies, All Published Courses)
+    const [allPublishedCourses, availableSkills, availableCompetencies] = await Promise.all([
+      Course.find({ status: 'published' })
+        .populate('trainer', 'name department')
+        .populate('skills.skill', 'name category')
+        .lean(),
+      Skill.find({ isActive: true }).select('name category').lean(),
+      Competency.find({ isActive: true }).populate('skills', 'name category').lean(),
+    ]);
+
+    // 7. Generate Structured Skills Sequence via AI / Fallback
+    const rawRoadmap = await generateCareerRoadmap({
+      careerGoal: cleanGoal,
+      traineeContext,
+      availableSkills,
+      availableCompetencies,
+      activeCourses,
+      completedCourses: traineeContext.completedCourseIds,
+    });
+
+    // 8. Map Verified Skills & Active Course Sets
+    const normalizeSkill = (str) => (str || '').replace(/\[.*?\]/g, '').toLowerCase().trim();
+
+    const completedCourseIdSet = new Set((traineeContext.completedCourseIds || []).map((id) => id.toString()));
+    const verifiedSkillsMap = new Map();
+    (traineeContext.verifiedSkills || []).forEach((s) => {
+      const sName = s.name || s;
+      verifiedSkillsMap.set(normalizeSkill(sName), (s.highestProficiency || 'proficient').toLowerCase());
+    });
+
+    const rawSteps = Array.isArray(rawRoadmap.steps)
+      ? rawRoadmap.steps
+      : (Array.isArray(rawRoadmap.stages) ? rawRoadmap.stages : []);
+
+    // 9. Match each ordered skill against MongoDB Course.skills
+    const matchedSteps = rawSteps.map((st, idx) => {
+      const rawSkillName = st.skill || st.skillName || `Skill ${idx + 1}`;
+      const rawNorm = normalizeSkill(rawSkillName);
+
+      // Find matching standard skill document from platform library
+      const matchedSkillDoc = availableSkills.find((s) => {
+        const sNorm = normalizeSkill(s.name);
+        return sNorm === rawNorm || (rawNorm.length > 2 && (sNorm.includes(rawNorm) || rawNorm.includes(sNorm)));
+      });
+
+      const canonicalSkillName = matchedSkillDoc ? matchedSkillDoc.name : rawSkillName;
+      const canonicalNorm = normalizeSkill(canonicalSkillName);
+
+      // Determine Trainee Status & Proficiency for this skill
+      const verifiedProf = verifiedSkillsMap.get(canonicalNorm) || verifiedSkillsMap.get(rawNorm);
+      const isDemonstrated = Boolean(verifiedProf);
+
+      // Check active enrollment in course mapped to this skill via Course.skills
+      const activeMatch = activeCourses.find((c) => {
+        return (c.skills || []).some((s) => {
+          const sNorm = normalizeSkill(s.name);
+          if (matchedSkillDoc && s.skillId && s.skillId === matchedSkillDoc._id.toString()) return true;
+          return sNorm === canonicalNorm || sNorm === rawNorm;
+        });
+      });
+
+      const isCurrent = !isDemonstrated && Boolean(activeMatch);
+      const isNotStarted = !isDemonstrated && !isCurrent;
+
+      let currentProficiency = 'Not Earned';
+      let statusLabel = 'Not Started';
+      if (isDemonstrated) {
+        currentProficiency = verifiedProf.charAt(0).toUpperCase() + verifiedProf.slice(1);
+        statusLabel = 'Already Demonstrated';
+      } else if (isCurrent) {
+        currentProficiency = 'Beginner';
+        statusLabel = 'In Progress';
+      }
+
+      // Search real MongoDB courses mapped to this skill strictly via Course.skills
+      const matchingPublishedCourses = allPublishedCourses.filter((c) => {
+        return (c.skills || []).some((s) => {
+          const skName = s.name || s.skill?.name || '';
+          const skNorm = normalizeSkill(skName);
+          const skId = (s.skill?._id || s.skill || '').toString();
+          if (matchedSkillDoc && skId && skId === matchedSkillDoc._id.toString()) return true;
+          return skNorm === canonicalNorm || skNorm === rawNorm;
+        });
+      });
+
+      // Select matching course according to status priority
+      let chosenCourse = null;
+      if (isCurrent && activeMatch) {
+        const fullActive = allPublishedCourses.find((c) => c._id.toString() === activeMatch._id.toString()) || activeMatch;
+        chosenCourse = { ...fullActive, progress: activeMatch.progress, status: 'current' };
+      } else if (isDemonstrated) {
+        const completedMatch = matchingPublishedCourses.find((c) => completedCourseIdSet.has(c._id.toString())) || matchingPublishedCourses[0];
+        if (completedMatch) {
+          chosenCourse = { ...completedMatch, progress: 100, status: 'completed' };
+        }
+      } else {
+        const nonCompletedCandidate = matchingPublishedCourses.find((c) => !completedCourseIdSet.has(c._id.toString())) || matchingPublishedCourses[0];
+        if (nonCompletedCandidate) {
+          chosenCourse = { ...nonCompletedCandidate, progress: 0, status: 'recommended' };
+        }
+      }
+
+      const coursePayload = chosenCourse
+        ? {
+            id: chosenCourse._id.toString(),
+            _id: chosenCourse._id.toString(),
+            courseId: chosenCourse._id.toString(),
+            title: chosenCourse.title,
+            category: chosenCourse.category,
+            level: chosenCourse.level,
+            trainer: chosenCourse.trainer?.name || 'Faculty',
+            progress: chosenCourse.progress !== undefined ? chosenCourse.progress : 0,
+            status: chosenCourse.status || (isDemonstrated ? 'completed' : isCurrent ? 'current' : 'recommended'),
+            averageRating: chosenCourse.averageRating || 4.8,
+          }
+        : null;
+
+      const statusCode = isDemonstrated ? 'completed' : isCurrent ? 'current' : (coursePayload ? 'next' : 'unavailable');
+
+      return {
+        order: idx + 1,
+        sequence: idx + 1,
+        skill: canonicalSkillName,
+        skillName: canonicalSkillName,
+        reason: st.reason || `Essential capability for achieving your target as a ${cleanGoal}.`,
+        currentProficiency,
+        targetProficiency: st.targetProficiency || 'Proficient',
+        status: statusLabel, // "Already Demonstrated" | "In Progress" | "Not Started"
+        statusCode,
+        course: coursePayload,
+        courseAvailable: Boolean(coursePayload),
+        unavailableMessage: coursePayload ? null : 'Capacity Connect currently has no published course mapped to this skill.',
+        isDemonstrated,
+        isCurrent,
+        isNotStarted,
+        // Compatibility properties for stages consumers:
+        title: canonicalSkillName,
+        priority: isCurrent ? 'high' : 'medium',
+        courses: coursePayload ? [coursePayload] : [],
+        isUnavailable: !coursePayload,
+      };
+    });
+
+    // 10. Compute Skill Gap Breakdown
+    const skillGaps = matchedSteps.map((st) => ({
+      skillName: st.skill,
+      requiredProficiency: st.targetProficiency,
+      currentProficiency: st.currentProficiency,
+      status: st.isDemonstrated ? 'demonstrated' : (st.isCurrent ? 'in_progress' : 'missing'),
+      reason: st.reason,
+    }));
+
+    // 11. Calculate Database-Authoritative Metrics
+    const totalStages = matchedSteps.length;
+    const completedStages = matchedSteps.filter((s) => s.isDemonstrated).length;
+    const currentStages = matchedSteps.filter((s) => s.isCurrent).length;
+    const remainingStages = matchedSteps.filter((s) => s.isNotStarted).length;
+
+    let overallProgressPercentage = 0;
+    if (totalStages > 0) {
+      const completedWeight = completedStages * 100;
+      const currentWeight = matchedSteps
+        .filter((s) => s.isCurrent)
+        .reduce((sum, s) => sum + (s.course?.progress || 0), 0);
+      overallProgressPercentage = Math.round((completedWeight + currentWeight) / totalStages);
+    }
+
+    const payload = {
+      careerGoal: cleanGoal,
+      targetCompetency: rawRoadmap.targetCompetency || 'Institutional Career Milestone Track',
+      summary: rawRoadmap.summary || `A structured skill progression guiding you step-by-step toward becoming a ${cleanGoal}.`,
+      steps: matchedSteps,
+      stages: matchedSteps,
+      skillGaps,
+      metrics: {
+        totalStages,
+        totalSteps: totalStages,
+        completedStages,
+        demonstratedCount: completedStages,
+        currentStages,
+        inProgressCount: currentStages,
+        remainingStages,
+        notStartedCount: remainingStages,
+        progressPercentage: overallProgressPercentage,
+      },
+      cached: false,
+    };
+
+    // Cache the result
+    careerRoadmapCache.set(traineeId.toString(), {
+      data: payload,
+      timestamp: Date.now(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCourseRecommendations,
   getSkillGuidance,
   getCourseRationale,
+  getPersonalizedLearningPath,
+  getCareerGoal,
+  setCareerGoal,
+  getCareerRoadmap,
   computeTraineeSkillsAndGaps,
 };
+
