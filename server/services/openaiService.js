@@ -1862,6 +1862,624 @@ const answerCourseDoubt = async ({ course, question, history = [], traineeName =
   }
 };
 
+/**
+ * Deterministic fallback for Trainer Teaching Assistant Insights (Portfolio-wide)
+ */
+const generateFallbackTrainerAiTeachingInsights = ({
+  trainerContext,
+  courses = [],
+  assessments = [],
+  questionStats = [],
+  dropOffStats = [],
+  skillStats = [],
+  supportStats = [],
+}) => {
+  const trainerName = trainerContext?.name || 'Trainer';
+  const totalCourses = courses.length;
+  const totalLearners = trainerContext?.totalLearners || 0;
+
+  // 1. Overall Summary
+  let summary = '';
+  const struggleSkills = skillStats.filter((s) => s.difficulty === 'high' || s.difficulty === 'moderate');
+  if (struggleSkills.length > 0) {
+    const topNames = struggleSkills.slice(0, 3).map((s) => s.name).join(', ');
+    summary = `Your learners are engaging across ${totalCourses} ${totalCourses === 1 ? 'course' : 'courses'}, demonstrating strength in foundational topics while experiencing difficulty in ${topNames}.`;
+  } else {
+    summary = `Your learners are making consistent progress across ${totalCourses} ${totalCourses === 1 ? 'course' : 'courses'} with steady curriculum completion and assessment performance.`;
+  }
+
+  // 2. Difficulty Areas
+  const difficultyAreas = questionStats.slice(0, 4).map((q) => {
+    const severity = q.accuracyPercentage < 45 ? 'high' : q.accuracyPercentage < 65 ? 'medium' : 'low';
+    return {
+      topic: q.topic || q.questionText || 'Concept Check',
+      assessmentTitle: q.assessmentTitle,
+      courseTitle: q.courseTitle,
+      accuracyPercentage: q.accuracyPercentage,
+      attempts: q.totalAttempts,
+      incorrectCount: q.incorrectCount,
+      severity,
+      insight: `${q.accuracyPercentage}% accuracy across ${q.totalAttempts} ${q.totalAttempts === 1 ? 'attempt' : 'attempts'}. This question appears to be a difficulty point for learners; reviewing practical examples prior to testing may reinforce comprehension.`,
+    };
+  });
+
+  // 3. Drop-off Insights
+  const dropOffInsights = dropOffStats.slice(0, 3).map((d) => ({
+    courseTitle: d.courseTitle,
+    moduleTitle: d.moduleTitle,
+    enrolledCount: d.enrolledCount,
+    completedCount: d.completedCount,
+    completionPercentage: d.completionPercentage,
+    reason: `Module completion drops to ${d.completionPercentage}% (${d.completedCount}/${d.enrolledCount} learners). This may indicate that learners encounter conceptual complexity or pacing friction at this stage.`,
+  }));
+
+  // 4. Skill Difficulty Breakdown
+  const skillInsights = skillStats.slice(0, 6).map((s) => ({
+    skill: s.name,
+    category: s.category || 'Technical',
+    difficulty: s.difficulty, // 'high', 'moderate', 'demonstrated'
+    passRate: s.passRate,
+    coursesMapped: s.courseCount,
+    reason: s.difficulty === 'high'
+      ? `High difficulty observed (${s.passRate}% assessment success). Consider providing additional scaffolding or interactive drills.`
+      : s.difficulty === 'moderate'
+      ? `Moderate difficulty (${s.passRate}% assessment success). Most learners progress with supplementary code walkthroughs.`
+      : `Mostly demonstrated (${s.passRate}% assessment success). Learners are consistently validating competency in this skill area.`,
+  }));
+
+  // 5. Teaching Suggestions
+  const teachingSuggestions = [];
+  if (difficultyAreas.length > 0) {
+    const topArea = difficultyAreas[0];
+    teachingSuggestions.push({
+      type: 'assessment_review',
+      title: `Reinforce ${topArea.topic.slice(0, 45)} before testing`,
+      action: `Consider adding supplementary examples or a quick knowledge-check quiz for "${topArea.topic}" in ${topArea.courseTitle}.`,
+      priority: 'high',
+      courseTitle: topArea.courseTitle,
+      assessmentTitle: topArea.assessmentTitle,
+    });
+  }
+
+  if (dropOffInsights.length > 0) {
+    const topDrop = dropOffInsights[0];
+    teachingSuggestions.push({
+      type: 'curriculum_scaffolding',
+      title: `Add practice material for "${topDrop.moduleTitle}"`,
+      action: `Break down the material in "${topDrop.moduleTitle}" into smaller milestone steps to help reduce drop-off in ${topDrop.courseTitle}.`,
+      priority: 'medium',
+      courseTitle: topDrop.courseTitle,
+    });
+  }
+
+  if (struggleSkills.length > 0) {
+    const topSkill = struggleSkills[0];
+    teachingSuggestions.push({
+      type: 'skill_exercise',
+      title: `Provide targeted exercises for ${topSkill.name}`,
+      action: `Learners are experiencing high friction demonstrating "${topSkill.name}". An optional hands-on lab or reference guide would improve outcomes.`,
+      priority: 'medium',
+    });
+  }
+
+  if (teachingSuggestions.length === 0) {
+    teachingSuggestions.push({
+      type: 'general_maintenance',
+      title: 'Maintain current instructional pace',
+      action: 'Curriculum metrics indicate healthy learner progression across published modules and quizzes.',
+      priority: 'low',
+    });
+  }
+
+  // 6. Learners Needing Support
+  const learnerSupport = supportStats.slice(0, 5).map((l) => ({
+    traineeId: l.traineeId,
+    traineeName: l.traineeName,
+    courseTitle: l.courseTitle,
+    failedAttemptsCount: l.failedAttemptsCount,
+    latestScore: l.latestScore,
+    progress: l.progress,
+    reason: `${l.traineeName} has attempted the assessment ${l.failedAttemptsCount} times (latest score: ${l.latestScore}%) and may benefit from targeted review.`,
+  }));
+
+  return {
+    summary,
+    difficultyAreas,
+    dropOffInsights,
+    skillInsights,
+    teachingSuggestions,
+    learnerSupport,
+    metricsSummary: {
+      totalCourses,
+      totalLearners,
+      evaluatedQuestionsCount: questionStats.length,
+      dropOffDetectedCount: dropOffStats.length,
+      strugglingLearnersCount: supportStats.length,
+    },
+    source: 'fallback',
+  };
+};
+
+/**
+ * Generate AI Trainer Teaching Insights (Portfolio-wide) via OpenAI
+ */
+const generateTrainerAiTeachingInsights = async ({
+  trainerContext,
+  courses = [],
+  assessments = [],
+  questionStats = [],
+  dropOffStats = [],
+  skillStats = [],
+  supportStats = [],
+  userId,
+}) => {
+  if (userId && !checkRateLimit(userId).allowed) {
+    return generateFallbackTrainerAiTeachingInsights({
+      trainerContext,
+      courses,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+  if (!apiKey) {
+    return generateFallbackTrainerAiTeachingInsights({
+      trainerContext,
+      courses,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+
+  try {
+    const systemPrompt =
+      `You are an expert AI Teaching Assistant for Capacity Connect. You are assisting instructor: "${trainerContext.name || 'Trainer'}".\n` +
+      `Your task is to analyze real learner performance data across the trainer's authorized courses and generate clear, pedagogical insights and teaching suggestions.\n\n` +
+      `CRITICAL RULES:\n` +
+      `1. DO NOT invent or fabricate statistics, learner counts, course names, or percentages. Use the exact data provided in the prompt.\n` +
+      `2. Keep insights constructive, respectful, and focused purely on instructional effectiveness and learner mastery.\n` +
+      `3. Use language indicating correlation rather than certainty ("may indicate", "suggests", "appears to", "worth reviewing").\n` +
+      `4. Provide actionable, practical teaching suggestions that the trainer can choose to implement.\n` +
+      `5. Return ONLY a valid JSON object matching the requested schema.`;
+
+    const userPayload = {
+      trainer: {
+        name: trainerContext.name,
+        totalCourses: courses.length,
+        totalLearners: trainerContext.totalLearners || 0,
+      },
+      courses: courses.map((c) => ({
+        id: c._id,
+        title: c.title,
+        category: c.category,
+        level: c.level,
+        enrollmentCount: c.enrollmentCount,
+        completionPercentage: c.completionPercentage,
+        averageAssessmentScore: c.averageAssessmentScore,
+      })),
+      topDifficultyQuestions: questionStats.slice(0, 5),
+      moduleDropOffs: dropOffStats.slice(0, 4),
+      skillPerformance: skillStats.slice(0, 8),
+      learnersNeedingSupport: supportStats.slice(0, 5).map((l) => ({
+        traineeName: l.traineeName,
+        courseTitle: l.courseTitle,
+        failedAttempts: l.failedAttemptsCount,
+        latestScore: l.latestScore,
+        progress: l.progress,
+      })),
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 12000);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `Analyze the following trainer performance data and return a JSON object with keys:\n` +
+              `{\n` +
+              `  "summary": "2-3 sentence overview of learner strengths and friction points",\n` +
+              `  "difficultyAreas": [{"topic": "...", "severity": "high|medium|low", "insight": "..."}],\n` +
+              `  "dropOffInsights": [{"moduleTitle": "...", "courseTitle": "...", "reason": "..."}],\n` +
+              `  "skillInsights": [{"skill": "...", "difficulty": "high|moderate|demonstrated", "reason": "..."}],\n` +
+              `  "teachingSuggestions": [{"type": "...", "title": "...", "action": "...", "priority": "high|medium|low"}],\n` +
+              `  "learnerSupport": [{"traineeName": "...", "reason": "..."}]\n` +
+              `}\n\nDATA:\n${JSON.stringify(userPayload)}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 1200,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Trainer AI Teaching Assistant responded with status ${response.status}. Using fallback.`);
+      return generateFallbackTrainerAiTeachingInsights({
+        trainerContext,
+        courses,
+        assessments,
+        questionStats,
+        dropOffStats,
+        skillStats,
+        supportStats,
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    const parsed = JSON.parse(content);
+
+    // Merge validated deterministic metrics with AI interpretation
+    return {
+      summary: parsed.summary || 'Learner performance analyzed across your published curriculum.',
+      difficultyAreas: Array.isArray(parsed.difficultyAreas) && parsed.difficultyAreas.length > 0
+        ? parsed.difficultyAreas.map((d, idx) => {
+            const match = questionStats[idx] || {};
+            return {
+              topic: d.topic || match.topic || match.questionText || 'Concept Area',
+              assessmentTitle: match.assessmentTitle || '',
+              courseTitle: match.courseTitle || '',
+              accuracyPercentage: match.accuracyPercentage || 0,
+              attempts: match.totalAttempts || 0,
+              incorrectCount: match.incorrectCount || 0,
+              severity: d.severity || (match.accuracyPercentage < 50 ? 'high' : 'medium'),
+              insight: d.insight || `${match.accuracyPercentage}% accuracy. Consider reviewing this concept with learners.`,
+            };
+          })
+        : generateFallbackTrainerAiTeachingInsights({ trainerContext, courses, assessments, questionStats, dropOffStats, skillStats, supportStats }).difficultyAreas,
+      dropOffInsights: Array.isArray(parsed.dropOffInsights) && parsed.dropOffInsights.length > 0
+        ? parsed.dropOffInsights.map((d, idx) => {
+            const match = dropOffStats[idx] || {};
+            return {
+              courseTitle: d.courseTitle || match.courseTitle || '',
+              moduleTitle: d.moduleTitle || match.moduleTitle || '',
+              enrolledCount: match.enrolledCount || 0,
+              completedCount: match.completedCount || 0,
+              completionPercentage: match.completionPercentage || 0,
+              reason: d.reason || `Module completion drops to ${match.completionPercentage}%.`,
+            };
+          })
+        : generateFallbackTrainerAiTeachingInsights({ trainerContext, courses, assessments, questionStats, dropOffStats, skillStats, supportStats }).dropOffInsights,
+      skillInsights: Array.isArray(parsed.skillInsights) && parsed.skillInsights.length > 0
+        ? parsed.skillInsights.map((s, idx) => {
+            const match = skillStats[idx] || {};
+            return {
+              skill: s.skill || match.name || 'Skill',
+              category: match.category || 'Technical',
+              difficulty: s.difficulty || match.difficulty || 'moderate',
+              passRate: match.passRate || 0,
+              coursesMapped: match.courseCount || 1,
+              reason: s.reason || `Learners have demonstrated ${match.passRate}% pass rate in this skill.`,
+            };
+          })
+        : generateFallbackTrainerAiTeachingInsights({ trainerContext, courses, assessments, questionStats, dropOffStats, skillStats, supportStats }).skillInsights,
+      teachingSuggestions: Array.isArray(parsed.teachingSuggestions) && parsed.teachingSuggestions.length > 0
+        ? parsed.teachingSuggestions.map((t) => ({
+            type: t.type || 'pedagogical_action',
+            title: t.title || 'Instructional Recommendation',
+            action: t.action || t.suggestion || 'Review course material.',
+            priority: t.priority || 'medium',
+            courseTitle: t.courseTitle,
+            assessmentTitle: t.assessmentTitle,
+          }))
+        : generateFallbackTrainerAiTeachingInsights({ trainerContext, courses, assessments, questionStats, dropOffStats, skillStats, supportStats }).teachingSuggestions,
+      learnerSupport: Array.isArray(parsed.learnerSupport) && parsed.learnerSupport.length > 0
+        ? parsed.learnerSupport.map((l, idx) => {
+            const match = supportStats[idx] || {};
+            return {
+              traineeId: match.traineeId,
+              traineeName: l.traineeName || match.traineeName || 'Learner',
+              courseTitle: match.courseTitle || '',
+              failedAttemptsCount: match.failedAttemptsCount || 1,
+              latestScore: match.latestScore || 0,
+              progress: match.progress || 0,
+              reason: l.reason || `${match.traineeName} may benefit from additional assistance.`,
+            };
+          })
+        : generateFallbackTrainerAiTeachingInsights({ trainerContext, courses, assessments, questionStats, dropOffStats, skillStats, supportStats }).learnerSupport,
+      metricsSummary: {
+        totalCourses: courses.length,
+        totalLearners: trainerContext.totalLearners || 0,
+        evaluatedQuestionsCount: questionStats.length,
+        dropOffDetectedCount: dropOffStats.length,
+        strugglingLearnersCount: supportStats.length,
+      },
+      source: 'ai',
+    };
+  } catch (err) {
+    console.warn(`Trainer AI Teaching Assistant error (${err.message}). Using fallback.`);
+    return generateFallbackTrainerAiTeachingInsights({
+      trainerContext,
+      courses,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+};
+
+/**
+ * Deterministic fallback for Course-Specific AI Insights
+ */
+const generateFallbackCourseSpecificAiInsights = ({
+  course,
+  modules = [],
+  assessments = [],
+  questionStats = [],
+  dropOffStats = [],
+  skillStats = [],
+  supportStats = [],
+}) => {
+  const title = course?.title || 'Course';
+  const avgProgress = course?.averageProgress || 0;
+  const completionRate = course?.completionPercentage || 0;
+  const avgScore = course?.averageAssessmentScore || 0;
+
+  const difficultyAreas = questionStats.slice(0, 3).map((q) => ({
+    topic: q.topic || q.questionText || 'Assessment Question',
+    assessmentTitle: q.assessmentTitle,
+    accuracyPercentage: q.accuracyPercentage,
+    attempts: q.totalAttempts,
+    incorrectCount: q.incorrectCount,
+    severity: q.accuracyPercentage < 50 ? 'high' : 'medium',
+    insight: `${q.accuracyPercentage}% accuracy (${q.incorrectCount}/${q.totalAttempts} incorrect). Concept appears to cause confusion.`,
+  }));
+
+  const dropOffInsights = dropOffStats.map((d) => ({
+    moduleTitle: d.moduleTitle,
+    enrolledCount: d.enrolledCount,
+    completedCount: d.completedCount,
+    completionPercentage: d.completionPercentage,
+    reason: `Completion slows to ${d.completionPercentage}% at "${d.moduleTitle}". Additional examples may help maintain momentum.`,
+  }));
+
+  const skillInsights = skillStats.map((s) => ({
+    skill: s.name,
+    difficulty: s.difficulty,
+    passRate: s.passRate,
+    reason: s.difficulty === 'high'
+      ? `Learners struggle with ${s.name} (${s.passRate}% pass rate). Hands-on practice recommended.`
+      : `${s.name} is well-demonstrated by learners (${s.passRate}% pass rate).`,
+  }));
+
+  const teachingSuggestions = [];
+  if (difficultyAreas.length > 0) {
+    teachingSuggestions.push({
+      type: 'assessment_scaffold',
+      title: `Provide guidance on "${difficultyAreas[0].topic.slice(0, 40)}"`,
+      action: `Learners show low accuracy on this topic. Add a code example or walkthrough before the quiz.`,
+      priority: 'high',
+    });
+  }
+  if (dropOffInsights.length > 0) {
+    teachingSuggestions.push({
+      type: 'module_pacing',
+      title: `Review pacing in "${dropOffInsights[0].moduleTitle}"`,
+      action: `Consider breaking down this module into smaller subsections to improve completion.`,
+      priority: 'medium',
+    });
+  }
+  if (teachingSuggestions.length === 0) {
+    teachingSuggestions.push({
+      type: 'positive_reinforcement',
+      title: 'Maintain current course structure',
+      action: 'Curriculum delivery is showing strong learner retention and passing rates.',
+      priority: 'low',
+    });
+  }
+
+  return {
+    courseId: course._id,
+    courseTitle: title,
+    performance: {
+      averageProgress: avgProgress,
+      completionRate,
+      averageScore,
+      enrollmentCount: course?.enrollmentCount || 0,
+    },
+    difficultyAreas,
+    dropOffInsights,
+    skillInsights,
+    teachingSuggestions,
+    supportLearners: supportStats.slice(0, 4),
+    source: 'fallback',
+  };
+};
+
+/**
+ * Generate Course-Specific AI Insights via OpenAI
+ */
+const generateCourseSpecificAiInsights = async ({
+  course,
+  modules = [],
+  assessments = [],
+  questionStats = [],
+  dropOffStats = [],
+  skillStats = [],
+  supportStats = [],
+  userId,
+}) => {
+  if (userId && !checkRateLimit(userId).allowed) {
+    return generateFallbackCourseSpecificAiInsights({
+      course,
+      modules,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+  if (!apiKey) {
+    return generateFallbackCourseSpecificAiInsights({
+      course,
+      modules,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+
+  try {
+    const systemPrompt =
+      `You are an expert AI Teaching Assistant for Capacity Connect analyzing a single course: "${course.title}".\n` +
+      `Analyze the provided real metrics and generate targeted course diagnosis and teaching suggestions.\n` +
+      `Do not fabricate statistics or modify any data. Return ONLY valid JSON.`;
+
+    const payload = {
+      courseTitle: course.title,
+      category: course.category,
+      level: course.level,
+      enrollmentCount: course.enrollmentCount,
+      averageProgress: course.averageProgress,
+      completionPercentage: course.completionPercentage,
+      averageScore: course.averageAssessmentScore,
+      modules: modules.map((m) => m.title),
+      questionDifficulties: questionStats.slice(0, 4),
+      dropOffs: dropOffStats,
+      skills: skillStats,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 10000);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `Analyze this course performance data and return JSON with keys:\n` +
+              `{\n` +
+              `  "summary": "...",\n` +
+              `  "difficultyAreas": [{"topic": "...", "severity": "high|medium|low", "insight": "..."}],\n` +
+              `  "dropOffInsights": [{"moduleTitle": "...", "reason": "..."}],\n` +
+              `  "skillInsights": [{"skill": "...", "difficulty": "high|moderate|demonstrated", "reason": "..."}],\n` +
+              `  "teachingSuggestions": [{"title": "...", "action": "...", "priority": "high|medium|low"}]\n` +
+              `}\n\nDATA:\n${JSON.stringify(payload)}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 1000,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return generateFallbackCourseSpecificAiInsights({
+        course,
+        modules,
+        assessments,
+        questionStats,
+        dropOffStats,
+        skillStats,
+        supportStats,
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    const parsed = JSON.parse(content);
+    const fallback = generateFallbackCourseSpecificAiInsights({
+      course,
+      modules,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+
+    return {
+      courseId: course._id,
+      courseTitle: course.title,
+      summary: parsed.summary || `${course.title} performance diagnostics evaluated.`,
+      performance: fallback.performance,
+      difficultyAreas: Array.isArray(parsed.difficultyAreas) && parsed.difficultyAreas.length > 0
+        ? parsed.difficultyAreas.map((d, i) => ({
+            topic: d.topic || fallback.difficultyAreas[i]?.topic || 'Concept Area',
+            accuracyPercentage: fallback.difficultyAreas[i]?.accuracyPercentage || 50,
+            severity: d.severity || 'medium',
+            insight: d.insight || 'Reviewing this topic with learners is recommended.',
+          }))
+        : fallback.difficultyAreas,
+      dropOffInsights: Array.isArray(parsed.dropOffInsights) && parsed.dropOffInsights.length > 0
+        ? parsed.dropOffInsights.map((d, i) => ({
+            moduleTitle: d.moduleTitle || fallback.dropOffInsights[i]?.moduleTitle || 'Module',
+            completionPercentage: fallback.dropOffInsights[i]?.completionPercentage || 50,
+            reason: d.reason || 'Learner completion slows at this stage.',
+          }))
+        : fallback.dropOffInsights,
+      skillInsights: Array.isArray(parsed.skillInsights) && parsed.skillInsights.length > 0
+        ? parsed.skillInsights.map((s, i) => ({
+            skill: s.skill || fallback.skillInsights[i]?.skill || 'Skill',
+            difficulty: s.difficulty || fallback.skillInsights[i]?.difficulty || 'moderate',
+            passRate: fallback.skillInsights[i]?.passRate || 75,
+            reason: s.reason || 'Skill evaluated against assessment outcomes.',
+          }))
+        : fallback.skillInsights,
+      teachingSuggestions: Array.isArray(parsed.teachingSuggestions) && parsed.teachingSuggestions.length > 0
+        ? parsed.teachingSuggestions.map((t) => ({
+            title: t.title || 'Instructional Recommendation',
+            action: t.action || 'Consider supplementary practice exercises.',
+            priority: t.priority || 'medium',
+          }))
+        : fallback.teachingSuggestions,
+      supportLearners: fallback.supportLearners,
+      source: 'ai',
+    };
+  } catch (err) {
+    console.warn(`Course Specific AI error (${err.message}). Using fallback.`);
+    return generateFallbackCourseSpecificAiInsights({
+      course,
+      modules,
+      assessments,
+      questionStats,
+      dropOffStats,
+      skillStats,
+      supportStats,
+    });
+  }
+};
+
 module.exports = {
   getOpenAiConfig,
   generateQuestionExplanation,
@@ -1880,5 +2498,9 @@ module.exports = {
   generateFallbackAdaptiveAdvisor,
   generateFallbackCourseDoubt,
   answerCourseDoubt,
+  generateTrainerAiTeachingInsights,
+  generateFallbackTrainerAiTeachingInsights,
+  generateCourseSpecificAiInsights,
+  generateFallbackCourseSpecificAiInsights,
   checkRateLimit,
 };

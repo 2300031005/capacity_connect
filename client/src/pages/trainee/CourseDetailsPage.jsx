@@ -1477,8 +1477,8 @@ const CourseDetailsPage = () => {
         />
       )}
 
-      {/* In-Course Contextual AI Doubts Chatbot */}
-      {course && (
+      {/* In-Course Contextual AI Doubts Chatbot (Visible after enrollment) */}
+      {course && (isEnrolled || user?.role === 'trainer' || user?.role === 'admin') && (
         <CourseAiDoubtChatbot course={course} modules={modules} />
       )}
     </div>

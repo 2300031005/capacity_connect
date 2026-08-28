@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { getTrainerAnalyticsApi } from '../../services/api';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
+import TrainerAiTeachingInsights from '../../components/TrainerAiTeachingInsights';
+import TrainerCourseAiInsightsModal from '../../components/TrainerCourseAiInsightsModal';
 import {
   BarChart,
   Bar,
@@ -33,6 +35,7 @@ import {
   CheckCircle2,
   Calendar,
   Percent,
+  Bot,
 } from 'lucide-react';
 
 const PROGRESS_COLORS = ['#EF4444', '#F59E0B', '#3B82F6', '#6366F1', '#10B981'];
@@ -41,6 +44,7 @@ const TrainerAnalyticsPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [courseAiModal, setCourseAiModal] = useState({ isOpen: false, courseId: null, courseTitle: '' });
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -400,6 +404,15 @@ const TrainerAnalyticsPage = () => {
       </div>
 
       {/* ====================================================
+          SECTION 3.5: 🤖 AI TRAINER TEACHING ASSISTANT (Phase 7.6)
+          ==================================================== */}
+      <TrainerAiTeachingInsights
+        onOpenCourseAiModal={(cId, cTitle) =>
+          setCourseAiModal({ isOpen: true, courseId: cId, courseTitle: cTitle })
+        }
+      />
+
+      {/* ====================================================
           SECTION 4: COURSE PERFORMANCE DATA TABLE
           ==================================================== */}
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -475,13 +488,30 @@ const TrainerAnalyticsPage = () => {
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <Link
-                        to={`/trainer/courses/${c.courseId}/manage`}
-                        className="text-xs font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1"
-                      >
-                        <span>Manage</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCourseAiModal({
+                              isOpen: true,
+                              courseId: c.courseId,
+                              courseTitle: c.title,
+                            })
+                          }
+                          className="px-2.5 py-1 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-md inline-flex items-center gap-1 transition-colors"
+                          title="View Course AI Diagnostics"
+                        >
+                          <Bot className="w-3 h-3" />
+                          <span>AI Insights</span>
+                        </button>
+                        <Link
+                          to={`/trainer/courses/${c.courseId}/manage`}
+                          className="text-xs font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-1"
+                        >
+                          <span>Manage</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -490,6 +520,18 @@ const TrainerAnalyticsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Course-Specific AI Insights Modal */}
+      {courseAiModal.isOpen && (
+        <TrainerCourseAiInsightsModal
+          isOpen={courseAiModal.isOpen}
+          onClose={() =>
+            setCourseAiModal({ isOpen: false, courseId: null, courseTitle: '' })
+          }
+          courseId={courseAiModal.courseId}
+          courseTitle={courseAiModal.courseTitle}
+        />
+      )}
     </div>
   );
 };

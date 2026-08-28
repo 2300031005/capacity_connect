@@ -506,6 +506,29 @@ export const askCourseDoubtApi = async (courseId, message, history = []) => {
 };
 
 // ==========================================
+// Trainer AI Teaching Assistant APIs (Phase 7.6)
+// ==========================================
+export const getTrainerAiTeachingInsightsApi = async (params = {}) => {
+  const response = await api.get('/analytics/trainer/ai-teaching-insights', { params });
+  return response.data;
+};
+
+export const refreshTrainerAiTeachingInsightsApi = async () => {
+  const response = await api.post('/analytics/trainer/ai-teaching-insights/refresh');
+  return response.data;
+};
+
+export const getCourseAiTeachingInsightsApi = async (courseId, params = {}) => {
+  const response = await api.get(`/analytics/trainer/courses/${courseId}/ai-insights`, { params });
+  return response.data;
+};
+
+export const refreshCourseAiTeachingInsightsApi = async (courseId) => {
+  const response = await api.post(`/analytics/trainer/courses/${courseId}/ai-insights/refresh`);
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {
