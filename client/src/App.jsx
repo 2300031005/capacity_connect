@@ -19,6 +19,7 @@ import MyCoursesPage from './pages/trainee/MyCoursesPage';
 import TraineeAssessmentsPage from './pages/trainee/TraineeAssessmentsPage';
 import TraineeSkillsPage from './pages/trainee/TraineeSkillsPage';
 import TraineeCompetenciesPage from './pages/trainee/TraineeCompetenciesPage';
+import TraineeAnalyticsPage from './pages/trainee/TraineeAnalyticsPage';
 
 // Trainer Workspace Pages
 import TrainerDashboardPage from './pages/TrainerDashboardPage';
@@ -26,12 +27,14 @@ import TrainerCoursesPage from './pages/trainer/TrainerCoursesPage';
 import CreateCoursePage from './pages/trainer/CreateCoursePage';
 import ManageCoursePage from './pages/trainer/ManageCoursePage';
 import TrainerAssessmentsPage from './pages/trainer/TrainerAssessmentsPage';
+import TrainerAnalyticsPage from './pages/trainer/TrainerAnalyticsPage';
 
 // Admin Workspace Pages
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import AdminSkillsPage from './pages/admin/AdminSkillsPage';
 import AdminCompetenciesPage from './pages/admin/AdminCompetenciesPage';
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 
 function App() {
   return (
@@ -61,6 +64,7 @@ function App() {
           <Route path="assessments" element={<TraineeAssessmentsPage />} />
           <Route path="skills" element={<TraineeSkillsPage />} />
           <Route path="competencies" element={<TraineeCompetenciesPage />} />
+          <Route path="analytics" element={<TraineeAnalyticsPage />} />
         </Route>
 
         {/* Role-Protected Trainer Workspace */}
@@ -77,6 +81,7 @@ function App() {
           <Route path="courses/create" element={<CreateCoursePage />} />
           <Route path="courses/:id/manage" element={<ManageCoursePage />} />
           <Route path="assessments" element={<TrainerAssessmentsPage />} />
+          <Route path="analytics" element={<TrainerAnalyticsPage />} />
         </Route>
 
         {/* Role-Protected Admin Workspace */}
@@ -92,6 +97,7 @@ function App() {
           <Route path="courses" element={<AdminCoursesPage />} />
           <Route path="skills" element={<AdminSkillsPage />} />
           <Route path="competencies" element={<AdminCompetenciesPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
         </Route>
       </Routes>
     </AuthProvider>

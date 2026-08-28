@@ -353,6 +353,24 @@ export const getMyCompetenciesOverviewApi = async () => {
 };
 
 // ==========================================
+// Analytics & Performance Insights APIs (Phase 6)
+// ==========================================
+export const getTraineeAnalyticsApi = async () => {
+  const response = await api.get('/analytics/trainee');
+  return response.data;
+};
+
+export const getTrainerAnalyticsApi = async () => {
+  const response = await api.get('/analytics/trainer');
+  return response.data;
+};
+
+export const getAdminAnalyticsApi = async () => {
+  const response = await api.get('/analytics/admin');
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {

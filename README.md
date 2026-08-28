@@ -8,7 +8,27 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 🎓 Skill & Competency Framework (Phase 5 & 5.5)
+### 1. 📊 Analytics & Performance Insights (Phase 6)
+- **Trainee Analytics (`/trainee/analytics`)**:
+  - Course-wise progress tracking, assessment pass rates, and chronological score trajectory.
+  - Skill proficiency distribution across verified capabilities.
+  - Institutional competency progress and satisfied skill metrics.
+  - Earned certificates gallery and unified recent activity timeline.
+- **Trainer Analytics (`/trainer/analytics`)**:
+  - Multi-tenant data isolation (trainers strictly see metrics for their own courses).
+  - Course enrollments vs. completions bar charts and completion percentage rates.
+  - Learner progress spread histogram (`0-25%`, `26-50%`, `51-75%`, `76-99%`, `100%`).
+  - Assessment pass rates and average score telemetry.
+  - Skills covered across curriculum and target proficiencies.
+  - Course performance data table with quick access to course management.
+- **Platform Admin Analytics (`/admin/analytics`)**:
+  - Platform-wide executive telemetry across users, course catalog status, enrollments, and certs.
+  - User role distribution (Trainees, Trainers, Admins) and course catalog status (Published vs. Draft).
+  - Platform learning trajectory line charts (enrollments & course completions over time).
+  - Top performing courses and most frequently mapped skills.
+  - Institutional competency framework overview and trainer capacity table.
+
+### 2. 🎓 Skill & Competency Framework (Phase 5 & 5.5)
 - **Standardized Skill Library**: Admin-governed master catalog containing pre-seeded default skills (Technical & Soft Skills) with normalized naming to prevent duplicate pollution.
 - **Custom Category & Domain Specification**: Support for specialized domain skills under customizable categories.
 - **Course-Level Skill & Proficiency Mapping**: Trainers map approved skills and set target proficiency levels (`Beginner`, `Proficient`, `Advanced`) per course.
@@ -21,24 +41,24 @@ Capacity Connect is a full-stack learning management and skill verification port
   - Institutional competency domains composed of multiple required standardized skills.
   - Dynamic progress calculation (`% Demonstrated`) with real-time checklist states (`✓ Satisfied`, `○ Learning`, `○ Not Earned`).
 
-### 2. 📝 Assessment Engine & Anti-Cheat System (Phase 4.5)
+### 3. 📝 Assessment Engine & Anti-Cheat System (Phase 4.5)
 - **Module Quizzes & Final Exams**: Trainers configure custom question sets, marks, time limits, and passing percentages.
 - **Server-Side Anti-Cheat Sanitization**: Correct answer options are strictly stripped from client-bound payloads.
 - **Course Gating**: Final Course Assessments are locked until $100\%$ of modules are completed.
 - **Centralized Assessment Hub**: Dedicated trainee view showing Available, In-Progress, and Completed assessments.
 
-### 3. 📜 Automated Certificate Generation & Verification
+### 4. 📜 Automated Certificate Generation & Verification
 - **Official PDF Certificate Generation**: Automatically generated and signed upon passing the final assessment.
 - **Tamper-Proof Verification Codes**: Unique certificate identifiers (`CC-2026-XXXXXX`) with built-in duplicate prevention.
 - **Certificate Modal & Downloads**: Trainees can preview and download certificates directly from their dashboard and skill portfolio.
 
-### 4. 📚 Course Studio & Learning Experience (Phases 3 & 4)
+### 5. 📚 Course Studio & Learning Experience (Phases 3 & 4)
 - **Trainer Studio**: Drag-and-drop course creation, difficulty levels, prerequisites, and draft/publishing controls.
 - **Module & Multimedia Resource Management**: Upload or link videos, PDFs, code files, external links, and text guides.
 - **Learner Engagement**: Course reviews, star ratings, and community discussion threads.
 - **Progress Tracking**: Real-time module progress calculations and learner dashboards.
 
-### 5. 🛡️ Role-Based Access Control (RBAC) & Governance (Phases 1 & 2)
+### 6. 🛡️ Role-Based Access Control (RBAC) & Governance (Phases 1 & 2)
 - **Trainee**: Course catalog discovery, interactive learning, quizzes, skill evidence portfolio, and competency tracking.
 - **Trainer**: Course authoring, multimedia resource mapping, skill proficiency alignment, and assessment creation.
 - **Administrator**: Master skill library management, competency framework governance, course inspection/audit, and user oversight.
@@ -49,7 +69,7 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Tailwind CSS, React Router v6, Axios, Lucide React |
+| **Frontend** | React 18, Vite, Tailwind CSS, React Router v6, Axios, Recharts, Lucide React |
 | **Backend** | Node.js, Express.js |
 | **Database** | MongoDB (Local / Atlas Cloud) with Mongoose ODM |
 | **PDF Engine** | PDFKit (Dynamic Certificate Generation) |
@@ -153,6 +173,9 @@ Run the automated test suites from the `server` directory:
 ```bash
 cd server
 
+# Phase 6 Analytics & Insights Test Suite (12 Tests)
+node test_phase6.js
+
 # Phase 5.5 Skills & Competency Refinement Suite (14 Tests)
 node test_phase5_5.js
 
@@ -172,6 +195,13 @@ npm run build
 ---
 
 ## 🔌 API Reference Overview
+
+### Analytics & Performance Insights (Phase 6)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/analytics/trainee` | Trainee | Get personal learning progress, score trend, skill distribution & certs |
+| `GET` | `/api/analytics/trainer` | Trainer | Get owned course performance, enrollments, completions & progress spread |
+| `GET` | `/api/analytics/admin` | Admin | Get platform-wide telemetry, user distribution, top courses & trainer activity |
 
 ### Authentication
 | Method | Endpoint | Access | Description |
