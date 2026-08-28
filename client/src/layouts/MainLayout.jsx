@@ -1,0 +1,228 @@
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { Menu, X, ArrowRight } from 'lucide-react';
+
+const MainLayout = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const isHome = location.pathname === '/';
+
+  const handleNavClick = (sectionId) => {
+    setMobileMenuOpen(false);
+    if (!isHome) {
+      navigate(`/#${sectionId}`);
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-teal-100 selection:text-teal-900">
+      {/* Top Navigation */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo / Brand */}
+            <Link to="/" className="flex items-center gap-3">
+              <img
+                src="/logo.svg"
+                alt="Capacity Connect Logo"
+                className="w-8 h-8 object-contain"
+              />
+              <div>
+                <span className="font-bold text-base tracking-tight text-slate-900 block leading-tight">
+                  CAPACITY CONNECT
+                </span>
+                <span className="text-[10px] text-slate-500 font-medium tracking-normal block">
+                  Digital Capacity Building & Learning Platform
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+              <button
+                type="button"
+                onClick={() => handleNavClick('home')}
+                className="hover:text-slate-900 transition-colors text-left"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('features')}
+                className="hover:text-slate-900 transition-colors text-left"
+              >
+                Features
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('how-it-works')}
+                className="hover:text-slate-900 transition-colors text-left"
+              >
+                How It Works
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('about')}
+                className="hover:text-slate-900 transition-colors text-left"
+              >
+                About
+              </button>
+            </nav>
+
+            {/* Desktop Right Side CTA */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/login"
+                className="px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex md:hidden items-center">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+                aria-label="Toggle Navigation Menu"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 shadow-lg">
+            <button
+              type="button"
+              onClick={() => handleNavClick('home')}
+              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavClick('features')}
+              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+            >
+              Features
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavClick('how-it-works')}
+              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+            >
+              How It Works
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavClick('about')}
+              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+            >
+              About
+            </button>
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded hover:bg-slate-50 transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2 text-sm font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Main Page Content */}
+      <main className="flex-1">
+        <Outlet />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 bg-white py-12 text-slate-600">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-slate-100">
+            {/* Brand in Footer */}
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.svg"
+                alt="Capacity Connect Logo"
+                className="w-8 h-8 object-contain"
+              />
+              <div>
+                <span className="font-bold text-base text-slate-900 tracking-tight block">
+                  CAPACITY CONNECT
+                </span>
+                <span className="text-xs text-slate-500">
+                  Digital Capacity Building & Learning Platform
+                </span>
+              </div>
+            </div>
+
+            {/* Footer Navigation Links */}
+            <nav className="flex flex-wrap items-center gap-6 text-sm font-medium text-slate-600">
+              <button
+                type="button"
+                onClick={() => handleNavClick('features')}
+                className="hover:text-slate-900 transition-colors"
+              >
+                Features
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('how-it-works')}
+                className="hover:text-slate-900 transition-colors"
+              >
+                How It Works
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavClick('about')}
+                className="hover:text-slate-900 transition-colors"
+              >
+                About
+              </button>
+              <Link to="/login" className="hover:text-slate-900 transition-colors">
+                Login
+              </Link>
+            </nav>
+          </div>
+
+          {/* Copyright */}
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <p>&copy; 2026 Capacity Connect</p>
+            <p>Learn &bull; Assess &bull; Measure &bull; Improve</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default MainLayout;

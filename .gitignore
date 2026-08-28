@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment variables (root, client, server)
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+client/.env
+client/.env.*
+client/.env.local
+server/.env
+server/.env.*
+server/.env.local
+!.env.example
+!client/.env.example
+!server/.env.example
+
+# Build outputs
+dist/
+build/
+
+# Local uploads & storage (prevent uploading non-textual / binary files)
+server/uploads/
+uploads/
+*.pdf
+*.ppt
+*.pptx
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.zip
+*.tar
+*.gz
+*.mp4
+*.mp3
+*.mov
+*.avi
+# Preserve client public static assets
+!client/public/**
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
