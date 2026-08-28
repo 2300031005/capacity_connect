@@ -50,7 +50,8 @@ import {
   Square,
   HelpCircle,
   FileCheck,
-  RotateCcw
+  RotateCcw,
+  Tag
 } from 'lucide-react';
 
 const CourseDetailsPage = () => {
@@ -509,6 +510,30 @@ const CourseDetailsPage = () => {
             <p className="text-slate-600 leading-relaxed">
               {course.prerequisites}
             </p>
+          </div>
+        )}
+
+        {/* Skills Covered */}
+        {course.skills && course.skills.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Skills Covered
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {course.skills.map((skill) => (
+                <span
+                  key={skill._id || skill}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border ${
+                    skill.category === 'Soft Skill'
+                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}
+                >
+                  <Tag className="w-3 h-3 text-emerald-600" />
+                  <span>{skill.name || skill}</span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

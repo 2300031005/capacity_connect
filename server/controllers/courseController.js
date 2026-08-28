@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Module = require('../models/Module');
 const Resource = require('../models/Resource');
 const Enrollment = require('../models/Enrollment');
+const Skill = require('../models/Skill');
 const { verifyCourseAccess } = require('../utils/courseOwnership');
 
 /**
@@ -56,6 +58,7 @@ const getCourses = async (req, res, next) => {
 
     const courses = await Course.find(query)
       .populate('trainer', 'name email department')
+      .populate('skills', 'name category description isActive')
       .sort({ createdAt: -1 });
 
     // Attach module count to each course
@@ -111,7 +114,9 @@ const getCourseById = async (req, res, next) => {
   try {
     const courseId = req.params.id;
 
-    const course = await Course.findById(courseId).populate('trainer', 'name email department');
+    const course = await Course.findById(courseId)
+      .populate('trainer', 'name email department')
+      .populate('skills', 'name category description isActive');
 
     if (!course) {
       return res.status(404).json({
@@ -222,7 +227,7 @@ const getCourseById = async (req, res, next) => {
  */
 const createCourse = async (req, res, next) => {
   try {
-    const { title, description, category, level, thumbnail, prerequisites } = req.body;
+    const { title, description, category, level, thumbnail, prerequisites, skills } = req.body;
 
     // Validation
     if (!title || !title.trim()) {
@@ -256,6 +261,40 @@ const createCourse = async (req, res, next) => {
       });
     }
 
+    // Validate skills if provided
+    let verifiedSkills = [];
+    if (skills !== undefined && skills !== null) {
+      if (!Array.isArray(skills)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Skills must be provided as an array of Skill IDs.',
+        });
+      }
+
+      for (const skillId of skills) {
+        if (!mongoose.Types.ObjectId.isValid(skillId)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid Skill ID: "${skillId}".`,
+          });
+        }
+      }
+
+      const activeSkillsCount = await Skill.countDocuments({
+        _id: { $in: skills },
+        isActive: true,
+      });
+
+      if (activeSkillsCount !== skills.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more selected skills do not exist or are inactive.',
+        });
+      }
+
+      verifiedSkills = skills;
+    }
+
     // Automatically bind the current authenticated trainer/admin as owner
     const course = await Course.create({
       title: title.trim(),
@@ -265,10 +304,13 @@ const createCourse = async (req, res, next) => {
       trainer: req.user._id,
       thumbnail: thumbnail || '',
       prerequisites: prerequisites ? prerequisites.trim() : '',
+      skills: verifiedSkills,
       status: 'draft',
     });
 
-    const populatedCourse = await Course.findById(course._id).populate('trainer', 'name email department');
+    const populatedCourse = await Course.findById(course._id)
+      .populate('trainer', 'name email department')
+      .populate('skills', 'name category description isActive');
 
     return res.status(201).json({
       success: true,
@@ -295,7 +337,7 @@ const updateCourse = async (req, res, next) => {
       });
     }
 
-    const { title, description, category, level, thumbnail, prerequisites } = req.body;
+    const { title, description, category, level, thumbnail, prerequisites, skills } = req.body;
     const course = check.course;
 
     if (title && title.trim()) course.title = title.trim();
@@ -307,9 +349,43 @@ const updateCourse = async (req, res, next) => {
     if (thumbnail !== undefined) course.thumbnail = thumbnail;
     if (prerequisites !== undefined) course.prerequisites = prerequisites.trim();
 
+    if (skills !== undefined && skills !== null) {
+      if (!Array.isArray(skills)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Skills must be provided as an array of Skill IDs.',
+        });
+      }
+
+      for (const skillId of skills) {
+        if (!mongoose.Types.ObjectId.isValid(skillId)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid Skill ID: "${skillId}".`,
+          });
+        }
+      }
+
+      const activeSkillsCount = await Skill.countDocuments({
+        _id: { $in: skills },
+        isActive: true,
+      });
+
+      if (activeSkillsCount !== skills.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more selected skills do not exist or are inactive.',
+        });
+      }
+
+      course.skills = skills;
+    }
+
     await course.save();
 
-    const updatedCourse = await Course.findById(course._id).populate('trainer', 'name email department');
+    const updatedCourse = await Course.findById(course._id)
+      .populate('trainer', 'name email department')
+      .populate('skills', 'name category description isActive');
 
     return res.status(200).json({
       success: true,

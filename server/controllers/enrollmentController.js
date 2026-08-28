@@ -1,6 +1,7 @@
 const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Module = require('../models/Module');
+const Assessment = require('../models/Assessment');
 
 /**
  * @desc    Enroll authenticated trainee in a published course
@@ -235,7 +236,19 @@ const toggleModuleCompletion = async (req, res, next) => {
     const progress =
       totalModules > 0 ? Math.round((updatedCompleted.length / totalModules) * 100) : 0;
     enrollment.progress = Math.min(100, Math.max(0, progress));
-    enrollment.status = enrollment.progress === 100 ? 'completed' : 'active';
+
+    const hasPublishedFinal = await Assessment.exists({
+      course: courseId,
+      type: 'final',
+      status: 'published',
+    });
+
+    if (enrollment.progress === 100 && !hasPublishedFinal) {
+      enrollment.status = 'completed';
+      enrollment.completedAt = new Date();
+    } else {
+      enrollment.status = 'active';
+    }
 
     await enrollment.save();
 

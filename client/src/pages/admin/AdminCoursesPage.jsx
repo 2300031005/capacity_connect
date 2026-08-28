@@ -413,6 +413,31 @@ const AdminCoursesPage = () => {
                       </div>
                     )}
 
+                    {/* Skills Covered */}
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <span className="font-semibold text-slate-700 block text-[10px] uppercase mb-1">
+                        Skills Covered ({inspectCourseData.course.skills?.length || 0}):
+                      </span>
+                      {inspectCourseData.course.skills && inspectCourseData.course.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {inspectCourseData.course.skills.map((s) => (
+                            <span
+                              key={s._id || s}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
+                                s.category === 'Soft Skill'
+                                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              }`}
+                            >
+                              {s.name || s}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">No skills mapped</span>
+                      )}
+                    </div>
+
                     <div className="text-xs text-slate-500 pt-1 flex items-center gap-2">
                       <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
                       <span>

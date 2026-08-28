@@ -13,6 +13,10 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
 const assessmentRoutes = require('./routes/assessmentRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const skillRoutes = require('./routes/skillRoutes');
+const competencyRoutes = require('./routes/competencyRoutes');
+const traineeSkillRoutes = require('./routes/traineeSkillRoutes');
+const { seedSkills } = require('./utils/skillSeeder');
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
 
@@ -49,6 +53,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/skills', skillRoutes);
+app.use('/api/competencies', competencyRoutes);
+app.use('/api', traineeSkillRoutes);
 app.use('/api', moduleRoutes);
 app.use('/api', resourceRoutes);
 app.use('/api', enrollmentRoutes);
@@ -70,6 +77,9 @@ const PORT = process.env.PORT;
 const startServer = async () => {
   // Attempt DB Connection
   await connectDB();
+
+  // Run idempotent skill seeder
+  await seedSkills();
 
   app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);

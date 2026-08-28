@@ -582,15 +582,29 @@ const submitAssessmentAttempt = async (req, res, next) => {
         const progress =
           totalModules > 0 ? Math.round((currentCompleted.length / totalModules) * 100) : 0;
         enrollment.progress = Math.min(100, Math.max(0, progress));
-        if (enrollment.progress === 100) {
+
+        // If course has no final assessment, 100% progress completes the course
+        const hasPublishedFinal = await Assessment.exists({
+          course: course._id,
+          type: 'final',
+          status: 'published',
+        });
+
+        if (enrollment.progress === 100 && !hasPublishedFinal) {
           enrollment.status = 'completed';
+          enrollment.completedAt = new Date();
         }
         await enrollment.save();
       }
     }
 
-    // 2. AUTOMATIC CERTIFICATE GENERATION (For Passed Final Assessment)
+    // 2. AUTOMATIC CERTIFICATE GENERATION & COURSE COMPLETION (For Passed Final Assessment)
     if (assessment.type === 'final' && passed) {
+      // Mark enrollment as completed upon passing final assessment
+      enrollment.status = 'completed';
+      enrollment.completedAt = new Date();
+      await enrollment.save();
+
       let existingCert = await Certificate.findOne({
         trainee: traineeId,
         course: course._id,

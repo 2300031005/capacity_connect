@@ -19,6 +19,7 @@ import ErrorMessage from '../../components/ErrorMessage';
 import ResourceViewer from '../../components/ResourceViewer';
 import LearnersModal from '../../components/LearnersModal';
 import QuizBuilderModal from '../../components/QuizBuilderModal';
+import SkillsSelect from '../../components/SkillsSelect';
 import {
   ArrowLeft,
   BookOpen,
@@ -43,7 +44,8 @@ import {
   HelpCircle,
   FileCheck,
   Percent,
-  Check
+  Check,
+  Tag
 } from 'lucide-react';
 
 const ManageCoursePage = () => {
@@ -68,6 +70,7 @@ const ManageCoursePage = () => {
     category: '',
     level: 'beginner',
     prerequisites: '',
+    skills: [],
   });
 
   const [showModuleModal, setShowModuleModal] = useState(false);
@@ -113,6 +116,7 @@ const ManageCoursePage = () => {
           category: response.data.course.category,
           level: response.data.course.level,
           prerequisites: response.data.course.prerequisites || '',
+          skills: (response.data.course.skills || []).map((s) => (s._id ? s._id : s)),
         });
 
         // Fetch Final Assessment
@@ -538,6 +542,34 @@ const ManageCoursePage = () => {
             </p>
           </div>
         )}
+
+        {/* Skills Covered Overview */}
+        <div className="pt-3 border-t border-slate-100">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Skills Covered ({course.skills?.length || 0})</span>
+          </h3>
+          {course.skills && course.skills.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {course.skills.map((skill) => (
+                <span
+                  key={skill._id || skill}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-medium border ${
+                    skill.category === 'Soft Skill'
+                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}
+                >
+                  {skill.name || 'Skill'}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 italic">
+              No skills mapped yet. Click "Edit Details" above to map skills taught in this course.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Modules & Resources Management Section */}
@@ -959,6 +991,16 @@ const ManageCoursePage = () => {
                   </select>
                 </div>
               </div>
+
+              {/* Skills Covered Multi-Select */}
+              <SkillsSelect
+                selectedSkillIds={courseFormData.skills || []}
+                onChange={(newSkills) => setCourseFormData({ ...courseFormData, skills: newSkills })}
+                label="Skills Covered"
+                helperText="Select active skills from the Skill Library mapped to this course."
+                disabled={actionLoading}
+              />
+
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"

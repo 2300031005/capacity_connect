@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createCourseApi } from '../../services/api';
 import Button from '../../components/Button';
 import ErrorMessage from '../../components/ErrorMessage';
+import SkillsSelect from '../../components/SkillsSelect';
 import { BookPlus, ArrowLeft } from 'lucide-react';
 
 const CreateCoursePage = () => {
@@ -13,6 +14,7 @@ const CreateCoursePage = () => {
     level: 'beginner',
     prerequisites: '',
   });
+  const [selectedSkills, setSelectedSkills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,6 +44,7 @@ const CreateCoursePage = () => {
         category: category.trim(),
         level,
         prerequisites: prerequisites.trim(),
+        skills: selectedSkills,
       });
 
       if (response && response.success && response.data) {
@@ -181,6 +184,15 @@ const CreateCoursePage = () => {
               </select>
             </div>
           </div>
+
+          {/* Skills Covered */}
+          <SkillsSelect
+            selectedSkillIds={selectedSkills}
+            onChange={setSelectedSkills}
+            label="Skills Covered"
+            helperText="Associate active skills from the Skill Library that trainees will learn in this course."
+            disabled={loading}
+          />
 
           {/* Actions */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

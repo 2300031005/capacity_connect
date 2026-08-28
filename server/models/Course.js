@@ -49,6 +49,12 @@ const courseSchema = new mongoose.Schema(
       },
       default: 'draft',
     },
+    skills: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Skill',
+      },
+    ],
     enrolledCount: {
       type: Number,
       default: 0,

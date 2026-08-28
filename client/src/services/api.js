@@ -274,6 +274,85 @@ export const downloadCertificateApi = async (certificateId) => {
 };
 
 // ==========================================
+// Skill Management APIs
+// ==========================================
+export const getSkillsApi = async (params = {}) => {
+  const response = await api.get('/skills', { params });
+  return response.data;
+};
+
+export const getSkillByIdApi = async (skillId) => {
+  const response = await api.get(`/skills/${skillId}`);
+  return response.data;
+};
+
+export const createSkillApi = async (skillData) => {
+  const response = await api.post('/skills', skillData);
+  return response.data;
+};
+
+export const updateSkillApi = async (skillId, skillData) => {
+  const response = await api.put(`/skills/${skillId}`, skillData);
+  return response.data;
+};
+
+export const toggleSkillStatusApi = async (skillId) => {
+  const response = await api.patch(`/skills/${skillId}/status`);
+  return response.data;
+};
+
+export const deleteSkillApi = async (skillId) => {
+  const response = await api.delete(`/skills/${skillId}`);
+  return response.data;
+};
+
+// ==========================================
+// Competency Management APIs
+// ==========================================
+export const getCompetenciesApi = async (params = {}) => {
+  const response = await api.get('/competencies', { params });
+  return response.data;
+};
+
+export const getCompetencyByIdApi = async (competencyId) => {
+  const response = await api.get(`/competencies/${competencyId}`);
+  return response.data;
+};
+
+export const createCompetencyApi = async (competencyData) => {
+  const response = await api.post('/competencies', competencyData);
+  return response.data;
+};
+
+export const updateCompetencyApi = async (competencyId, competencyData) => {
+  const response = await api.put(`/competencies/${competencyId}`, competencyData);
+  return response.data;
+};
+
+export const toggleCompetencyStatusApi = async (competencyId) => {
+  const response = await api.patch(`/competencies/${competencyId}/status`);
+  return response.data;
+};
+
+export const deleteCompetencyApi = async (competencyId) => {
+  const response = await api.delete(`/competencies/${competencyId}`);
+  return response.data;
+};
+
+// ==========================================
+// Trainee Skill Profile & Competencies APIs
+// ==========================================
+export const getMySkillsProfileApi = async () => {
+  const response = await api.get('/trainees/me/skills');
+  return response.data;
+};
+
+export const getMyCompetenciesOverviewApi = async () => {
+  const response = await api.get('/trainees/me/competencies');
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {

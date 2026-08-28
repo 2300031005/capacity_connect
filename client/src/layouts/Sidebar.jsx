@@ -25,7 +25,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       { name: 'Courses', path: '/trainee/courses', icon: BookOpen },
       { name: 'My Courses', path: '/trainee/my-courses', icon: Award },
       { name: 'Assessments', path: '/trainee/assessments', icon: FileCheck },
-      { name: 'My Skills', path: '#', icon: Target, comingSoon: true },
+      { name: 'My Skills', path: '/trainee/skills', icon: Target },
+      { name: 'Competencies', path: '/trainee/competencies', icon: Layers },
       { name: 'Progress', path: '#', icon: BarChart3, comingSoon: true },
     ],
     trainer: [
@@ -37,9 +38,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     ],
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, exact: true },
-      { name: 'Users', path: '#', icon: Users, comingSoon: true },
       { name: 'Courses', path: '/admin/courses', icon: BookOpen },
-      { name: 'Competencies', path: '#', icon: Layers, comingSoon: true },
+      { name: 'Skills', path: '/admin/skills', icon: Target },
+      { name: 'Competencies', path: '/admin/competencies', icon: Layers },
+      { name: 'Users', path: '#', icon: Users, comingSoon: true },
       { name: 'Analytics', path: '#', icon: BarChart3, comingSoon: true },
     ],
   };

@@ -120,4 +120,5 @@ module.exports = {
   protect,
   optionalAuth,
   authorizeRoles,
+  authorize: authorizeRoles,
 };
