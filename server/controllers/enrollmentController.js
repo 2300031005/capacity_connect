@@ -2,6 +2,7 @@ const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Module = require('../models/Module');
 const Assessment = require('../models/Assessment');
+const { invalidateTraineeAICache } = require('./recommendationController');
 
 /**
  * @desc    Enroll authenticated trainee in a published course
@@ -56,6 +57,9 @@ const enrollInCourse = async (req, res, next) => {
     // Increment course enrolled count
     course.enrolledCount = (course.enrolledCount || 0) + 1;
     await course.save();
+
+    // Invalidate AI cache for trainee
+    invalidateTraineeAICache(traineeId);
 
     const populatedEnrollment = await Enrollment.findById(enrollment._id).populate({
       path: 'course',
@@ -251,6 +255,9 @@ const toggleModuleCompletion = async (req, res, next) => {
     }
 
     await enrollment.save();
+
+    // Invalidate AI cache for trainee
+    invalidateTraineeAICache(traineeId);
 
     return res.status(200).json({
       success: true,

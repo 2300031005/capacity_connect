@@ -9,6 +9,8 @@ import {
   setAiCareerGoalApi,
   getAiCareerRoadmapApi,
   refreshAiCareerRoadmapApi,
+  getAiAdaptiveAdvisorApi,
+  refreshAiAdaptiveAdvisorApi,
 } from '../../services/api';
 import {
   Sparkles,
@@ -40,9 +42,22 @@ import {
   Briefcase,
   AlertTriangle,
   GraduationCap,
+  Bot,
 } from 'lucide-react';
 
 const TraineeRecommendationsPage = () => {
+  // Adaptive AI Learning Advisor Data (Phase 7.5)
+  const [advisorData, setAdvisorData] = useState({
+    careerGoal: '',
+    nextAction: null,
+    insight: '',
+    focusArea: '',
+    urgency: 'standard',
+    traineeSummary: null,
+    cached: false,
+    timestamp: null,
+  });
+
   // Recommendation Hub Data (Phase 7.3)
   const [hubData, setHubData] = useState({
     recommendations: [],
@@ -88,31 +103,24 @@ const TraineeRecommendationsPage = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [refreshingAdvisor, setRefreshingAdvisor] = useState(false);
   const [refreshingHub, setRefreshingHub] = useState(false);
   const [refreshingPath, setRefreshingPath] = useState(false);
   const [refreshingRoadmap, setRefreshingRoadmap] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'career', 'path', 'courses', 'skills', 'insights', 'steps'
+  const [activeTab, setActiveTab] = useState('advisor'); // 'advisor', 'career', 'path'
 
   // Skill guidance modal state
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [skillGuidance, setSkillGuidance] = useState(null);
   const [loadingGuidance, setLoadingGuidance] = useState(false);
 
-  // Quick suggestion goal chips
-  const goalSuggestions = [
-    'Full Stack Developer',
-    'Cloud & DevOps Engineer',
-    'AI & Machine Learning Engineer',
-    'Data Analyst',
-    'Backend Microservices Architect',
-  ];
-
-  // Fetch all recommendations, learning path, and career roadmap
+  // Fetch all recommendations, learning path, career roadmap, and adaptive advisor
   const fetchAllData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
+        setRefreshingAdvisor(true);
         setRefreshingHub(true);
         setRefreshingPath(true);
         setRefreshingRoadmap(true);
@@ -121,14 +129,28 @@ const TraineeRecommendationsPage = () => {
       }
       setError(null);
 
-      const [hubRes, pathRes, goalRes, roadmapRes] = await Promise.allSettled([
-        getAiCourseRecommendationsApi(isRefresh ? { refresh: 'true' } : {}),
-        getAiLearningPathApi(isRefresh ? { refresh: 'true' } : {}),
+      const [hubRes, pathRes, goalRes, roadmapRes, advisorRes] = await Promise.allSettled([
+        getAiCourseRecommendationsApi(),
+        getAiLearningPathApi(),
         getAiCareerGoalApi(),
-        getAiCareerRoadmapApi(isRefresh ? { refresh: 'true' } : {}),
+        getAiCareerRoadmapApi(),
+        getAiAdaptiveAdvisorApi(),
       ]);
 
-      if (hubRes.status === 'fulfilled' && hubRes.value?.success && hubRes.value.data) {
+      if (advisorRes.status === 'fulfilled' && advisorRes.value?.success) {
+        setAdvisorData({
+          careerGoal: advisorRes.value.data.careerGoal || '',
+          nextAction: advisorRes.value.data.nextAction || null,
+          insight: advisorRes.value.data.insight || '',
+          focusArea: advisorRes.value.data.focusArea || '',
+          urgency: advisorRes.value.data.urgency || 'standard',
+          traineeSummary: advisorRes.value.data.traineeSummary || null,
+          cached: Boolean(advisorRes.value.data.cached),
+          timestamp: advisorRes.value.data.timestamp || null,
+        });
+      }
+
+      if (hubRes.status === 'fulfilled' && hubRes.value?.success) {
         setHubData({
           recommendations: hubRes.value.data.recommendations || [],
           skillsToDevelop: hubRes.value.data.skillsToDevelop || [],
@@ -139,7 +161,7 @@ const TraineeRecommendationsPage = () => {
         });
       }
 
-      if (pathRes.status === 'fulfilled' && pathRes.value?.success && pathRes.value.data) {
+      if (pathRes.status === 'fulfilled' && pathRes.value?.success) {
         setLearningPathData({
           goal: pathRes.value.data.goal || '',
           summary: pathRes.value.data.summary || '',
@@ -155,15 +177,12 @@ const TraineeRecommendationsPage = () => {
         });
       }
 
-      if (goalRes.status === 'fulfilled' && goalRes.value?.success && goalRes.value.data) {
-        const savedGoal = goalRes.value.data.careerGoal || '';
-        setCareerGoalInput(savedGoal);
-        if (!savedGoal) {
-          setIsEditingGoal(true);
-        }
+      if (goalRes.status === 'fulfilled' && goalRes.value?.success) {
+        const goal = goalRes.value.data?.careerGoal || '';
+        setCareerGoalInput(goal);
       }
 
-      if (roadmapRes.status === 'fulfilled' && roadmapRes.value?.success && roadmapRes.value.data) {
+      if (roadmapRes.status === 'fulfilled' && roadmapRes.value?.success) {
         setCareerRoadmapData({
           careerGoal: roadmapRes.value.data.careerGoal || '',
           targetCompetency: roadmapRes.value.data.targetCompetency || '',
@@ -179,16 +198,13 @@ const TraineeRecommendationsPage = () => {
           },
           cached: Boolean(roadmapRes.value.data.cached),
         });
-        if (roadmapRes.value.data.careerGoal) {
-          setCareerGoalInput(roadmapRes.value.data.careerGoal);
-          setIsEditingGoal(false);
-        }
       }
     } catch (err) {
-      console.warn('Failed to load recommendations / roadmap:', err.message);
-      setError('AI recommendations are temporarily unavailable. You can continue exploring the course catalog.');
+      console.error('Error fetching recommendations and roadmap data:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load recommendations.');
     } finally {
       setLoading(false);
+      setRefreshingAdvisor(false);
       setRefreshingHub(false);
       setRefreshingPath(false);
       setRefreshingRoadmap(false);
@@ -235,6 +251,30 @@ const TraineeRecommendationsPage = () => {
     } finally {
       setSavingGoal(false);
       setRefreshingRoadmap(false);
+    }
+  };
+
+  // Single refresh for Adaptive AI Advisor (Phase 7.5)
+  const handleRefreshAdvisor = async () => {
+    try {
+      setRefreshingAdvisor(true);
+      const res = await refreshAiAdaptiveAdvisorApi();
+      if (res?.success && res.data) {
+        setAdvisorData({
+          careerGoal: res.data.careerGoal || '',
+          nextAction: res.data.nextAction || null,
+          insight: res.data.insight || '',
+          focusArea: res.data.focusArea || '',
+          urgency: res.data.urgency || 'standard',
+          traineeSummary: res.data.traineeSummary || null,
+          cached: Boolean(res.data.cached),
+          timestamp: res.data.timestamp || null,
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to refresh adaptive advisor:', err.message);
+    } finally {
+      setRefreshingAdvisor(false);
     }
   };
 
@@ -312,18 +352,25 @@ const TraineeRecommendationsPage = () => {
     }
   };
 
+  // Quick suggestion goal chips
+  const goalSuggestions = [
+    'Full Stack Developer',
+    'Cloud & DevOps Engineer',
+    'AI & Machine Learning Engineer',
+    'Data Analyst',
+    'Backend Microservices Architect',
+  ];
+
+  // Tab descriptions
+  const tabDescriptions = {
+    advisor: 'Analyzes your real-time course completions, module progress, and quiz scores to recommend your immediate next learning action.',
+    career: 'Structures your custom career goal into an ordered skill progression mapped directly to Capacity Connect courses.',
+    path: 'Provides a sequenced step-by-step milestone timeline guiding you from current abilities to target competencies.',
+  };
+
   useEffect(() => {
     fetchAllData(false);
   }, []);
-
-  const {
-    recommendations = [],
-    skillsToDevelop = [],
-    assessmentInsights = [],
-    nextSteps = [],
-    traineeSummary = null,
-    cached = false,
-  } = hubData;
 
   const {
     goal: pathGoal,
@@ -344,175 +391,78 @@ const TraineeRecommendationsPage = () => {
   } = careerRoadmapData;
 
   return (
-    <div className="space-y-8">
-      {/* 1. Header Banner & Profile Telemetry */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>AI Learning Advisor & Career Hub</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Career Roadmaps & Learning Trajectories
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-              Tell us your target career destination. Our AI maps your verified capabilities, diagnoses missing skills, and crafts an ordered path with published courses.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+    <div className="space-y-6">
+      {/* Top Navigation Tabs Bar */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => fetchAllData(true)}
-              disabled={refreshingHub || refreshingPath || refreshingRoadmap || loading}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-xs font-semibold transition-colors disabled:opacity-50"
+              onClick={() => setActiveTab('advisor')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'advisor'
+                  ? 'bg-indigo-700 text-white shadow-sm'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+              }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshingHub || refreshingPath || refreshingRoadmap ? 'animate-spin' : ''}`} />
-              <span>{refreshingHub || refreshingPath || refreshingRoadmap ? 'Refreshing...' : 'Refresh All AI'}</span>
+              <Bot className="w-4 h-4 text-indigo-300" />
+              <span>🤖 AI Learning Advisor</span>
             </button>
-            <Link
-              to="/trainee/courses"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+            <button
+              type="button"
+              onClick={() => setActiveTab('career')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'career'
+                  ? 'bg-indigo-700 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>All Courses</span>
-            </Link>
+              <Briefcase className="w-4 h-4 text-indigo-400" />
+              <span>🎯 Career Roadmap ({roadmapStages.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('path')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'path'
+                  ? 'bg-teal-700 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <Compass className="w-4 h-4 text-teal-400" />
+              <span>🧭 Learning Path ({pathSteps.length})</span>
+            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => fetchAllData(true)}
+            disabled={refreshingAdvisor || refreshingRoadmap || refreshingPath}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshingAdvisor || refreshingRoadmap || refreshingPath ? 'animate-spin' : ''}`} />
+            <span>{refreshingAdvisor || refreshingRoadmap || refreshingPath ? 'Refreshing...' : 'Refresh AI'}</span>
+          </button>
         </div>
 
-        {/* Trainee Profile Telemetry Badges */}
-        {traineeSummary && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-6 border-t border-slate-100">
-            <div className="bg-slate-50 border border-slate-200 rounded p-3 text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Verified Skills</span>
-              <p className="text-lg font-bold text-slate-800">{traineeSummary.verifiedSkillsCount || 0}</p>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded p-3 text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Target Competencies</span>
-              <p className="text-lg font-bold text-blue-700">{traineeSummary.inProgressCompetenciesCount || 0}</p>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded p-3 text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Completed Courses</span>
-              <p className="text-lg font-bold text-emerald-700">{traineeSummary.completedCoursesCount || 0}</p>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded p-3 text-center">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Active In-Progress</span>
-              <p className="text-lg font-bold text-amber-700">{traineeSummary.activeCoursesCount || 0}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Navigation Filter Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
-        <button
-          type="button"
-          onClick={() => setActiveTab('all')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
-            activeTab === 'all'
-              ? 'bg-slate-900 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          All Recommendations
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('career')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'career'
-              ? 'bg-indigo-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <Briefcase className="w-3 h-3" />
-          <span>🎯 Career Roadmap ({roadmapStages.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('path')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'path'
-              ? 'bg-teal-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <Compass className="w-3 h-3" />
-          <span>🧭 Learning Path ({pathSteps.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('courses')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'courses'
-              ? 'bg-emerald-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <BookOpen className="w-3 h-3" />
-          <span>Recommended Courses ({recommendations.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('skills')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'skills'
-              ? 'bg-blue-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <Target className="w-3 h-3" />
-          <span>Skills to Develop ({skillsToDevelop.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('insights')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'insights'
-              ? 'bg-amber-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <TrendingUp className="w-3 h-3" />
-          <span>Assessment Insights ({assessmentInsights.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('steps')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors flex items-center gap-1.5 ${
-            activeTab === 'steps'
-              ? 'bg-violet-700 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <Zap className="w-3 h-3" />
-          <span>Suggested Next Steps ({nextSteps.length})</span>
-        </button>
+        {/* Single-Line Explanatory Statement */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 flex items-center gap-2 text-xs text-slate-600">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="font-medium">{tabDescriptions[activeTab]}</span>
+        </div>
       </div>
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-sm space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 animate-pulse">
-            <Sparkles className="w-6 h-6 animate-spin" />
+        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-4 shadow-sm">
+          <div className="inline-flex p-3 rounded-full bg-indigo-50 text-indigo-600 animate-pulse">
+            <Sparkles className="w-8 h-8 animate-spin" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900">Synthesizing personalized career roadmap...</h3>
+            <h3 className="text-base font-bold text-slate-900">Synthesizing personalized career roadmap & AI learning guidance...</h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              Comparing your verified skills with career requirements and mapping each stage to real platform courses.
+              Analyzing real-time enrollments, assessment results, and verified skills to determine your immediate next learning action.
             </p>
-          </div>
-        </div>
-      )}
-
-      {/* Error Notice */}
-      {!loading && error && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-800 space-y-1">
-            <p className="font-semibold">{error}</p>
-            <p>You can still explore all platform courses and tracks directly via the catalog.</p>
           </div>
         </div>
       )}
@@ -521,9 +471,222 @@ const TraineeRecommendationsPage = () => {
       {!loading && (
         <div className="space-y-12">
           {/* ========================================================================= */}
+          {/* SECTION 1: 🤖 ADAPTIVE AI LEARNING ADVISOR & NEXT ACTION (Phase 7.5)     */}
+          {/* ========================================================================= */}
+          {activeTab === 'advisor' && advisorData.nextAction && (
+            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-indigo-500/40 relative overflow-hidden space-y-6">
+              {/* Ambient Glow */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-900/50 pb-5 relative z-10">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Adaptive AI Learning Advisor</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                    <span>What to Learn Next</span>
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    Continuously evaluated against your active courses, assessment scores, verified skills, and career roadmap.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRefreshAdvisor}
+                    disabled={refreshingAdvisor}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${refreshingAdvisor ? 'animate-spin' : ''}`} />
+                    <span>{refreshingAdvisor ? 'Re-evaluating...' : 'Re-analyze Progress'}</span>
+                  </button>
+                  {advisorData.cached && (
+                    <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                      Cached
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Primary Action Box */}
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Action Details (Left Col: 7 cols) */}
+                <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border uppercase tracking-wider ${
+                        advisorData.nextAction.type === 'continue_course'
+                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                          : advisorData.nextAction.type === 'review_assessment' || advisorData.nextAction.type === 'retry_assessment'
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          : advisorData.nextAction.type === 'no_action'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                      }`}>
+                        {advisorData.nextAction.type === 'continue_course' && '▶ In Progress Enrollment'}
+                        {(advisorData.nextAction.type === 'review_assessment' || advisorData.nextAction.type === 'retry_assessment') && '⚠ Needs Remediation'}
+                        {advisorData.nextAction.type === 'start_course' && '🚀 Ready for Next Skill'}
+                        {advisorData.nextAction.type === 'course_not_available' && '⚠ Course Not Available'}
+                        {advisorData.nextAction.type === 'no_action' && '✓ All Goals Achieved'}
+                      </span>
+
+                      {advisorData.focusArea && (
+                        <span className="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                          Focus: {advisorData.focusArea}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                      {advisorData.nextAction.title || `Focus on ${advisorData.nextAction.skill}`}
+                    </h3>
+
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block">
+                        Why this step?
+                      </span>
+                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-900/60 border border-slate-800 rounded-lg p-3.5">
+                        {advisorData.nextAction.reason}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Insight / Explanation */}
+                  {advisorData.insight && (
+                    <div className="text-xs text-indigo-200/90 flex items-start gap-2 bg-indigo-950/40 border border-indigo-800/40 rounded-lg p-3">
+                      <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">{advisorData.insight}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Card / Linked Entity (Right Col: 5 cols) */}
+                <div className="lg:col-span-5 flex flex-col justify-between bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-4">
+                  {advisorData.nextAction.course && advisorData.nextAction.courseAvailable ? (
+                    <div className="space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            Capacity Connect Course
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {advisorData.nextAction.course.level || 'Intermediate'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-base font-bold text-white line-clamp-2">
+                          {advisorData.nextAction.course.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-400">
+                          Instructor: <span className="text-slate-200">{typeof advisorData.nextAction.course.trainer === 'object' ? advisorData.nextAction.course.trainer?.name : (advisorData.nextAction.course.trainer || 'Faculty')}</span>
+                        </p>
+
+                        {typeof advisorData.nextAction.progress === 'number' && (
+                          <div className="space-y-1 pt-1">
+                            <div className="flex justify-between text-xs text-amber-300 font-semibold">
+                              <span>Enrolled Progress</span>
+                              <span>{advisorData.nextAction.progress}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                              <div className="bg-amber-400 h-full transition-all" style={{ width: `${advisorData.nextAction.progress}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-800">
+                        <Link
+                          to={`/trainee/courses/${advisorData.nextAction.course.id || advisorData.nextAction.course.courseId || advisorData.nextAction.course._id}`}
+                          className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all shadow-md ${
+                            advisorData.nextAction.type === 'continue_course'
+                              ? 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                              : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {advisorData.nextAction.type === 'continue_course' ? (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              <span>Continue Course ({advisorData.nextAction.progress}%)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>View Course</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (advisorData.nextAction.type === 'review_assessment' || advisorData.nextAction.type === 'retry_assessment') && advisorData.nextAction.assessment ? (
+                    <div className="space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                            Assessment Remediation
+                          </span>
+                          <span className="text-xs font-bold text-rose-400">
+                            Score: {advisorData.nextAction.assessment.score !== undefined ? `${advisorData.nextAction.assessment.score}%` : 'Needs Review'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-base font-bold text-white">
+                          {advisorData.nextAction.assessment.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-300">
+                          Review incorrect answers and AI concept explanations to solidify your foundation before continuing.
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-800 space-y-2">
+                        <Link
+                          to="/trainee/assessments"
+                          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all shadow-md"
+                        >
+                          <FileCheck className="w-3.5 h-3.5" />
+                          <span>Review Assessment Explanations</span>
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Course Not Available or General State */
+                    <div className="space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>⚠ Course Not Available</span>
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {advisorData.nextAction.unavailableMessage ||
+                            'This skill is part of your career roadmap, but Capacity Connect currently has no published course mapped to it.'}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-800">
+                        <Link
+                          to="/trainee/courses"
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded-lg text-xs font-semibold border border-slate-700 transition-colors"
+                        >
+                          <span>Browse Course Catalog</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
           {/* SECTION: 🎯 MY CAREER GOAL → PERSONALIZED LEARNING ROADMAP (Phase 7.4.1) */}
           {/* ========================================================================= */}
-          {(activeTab === 'all' || activeTab === 'career') && (
+          {activeTab === 'career' && (
             <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white rounded-xl p-6 sm:p-8 shadow-md space-y-6 border border-indigo-900/50">
               {/* Header & Goal Input / Switcher */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-800/40 pb-6">
@@ -1166,284 +1329,6 @@ const TraineeRecommendationsPage = () => {
                   })}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* SECTION 1: RECOMMENDED COURSES                                  */}
-          {/* ============================================================== */}
-          {(activeTab === 'all' || activeTab === 'courses') && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-emerald-600" />
-                  <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                    Recommended Courses ({recommendations.length})
-                  </h2>
-                </div>
-                {cached && (
-                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                    Cached
-                  </span>
-                )}
-              </div>
-
-              {recommendations.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-lg p-8 text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                  <h3 className="text-sm font-bold text-slate-900">All Published Courses Explored!</h3>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    You have enrolled in or completed all published courses matching your profile. Check back soon for new offerings!
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {recommendations.map((item, idx) => {
-                    const course = item.course;
-                    const matchScore = item.matchScore || 85;
-
-                    return (
-                      <div
-                        key={course?._id || idx}
-                        className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col md:flex-row gap-5 justify-between items-start"
-                      >
-                        <div className="flex-1 space-y-3">
-                          {/* Badges */}
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                              <Sparkles className="w-3 h-3" />
-                              <span>{matchScore}% Match</span>
-                            </span>
-
-                            {item.priority === 'high' && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200">
-                                High Priority
-                              </span>
-                            )}
-
-                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-100 text-slate-600">
-                              {course?.category || 'General'}
-                            </span>
-
-                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-100 text-slate-600">
-                              Level: {course?.level || 'Intermediate'}
-                            </span>
-                          </div>
-
-                          {/* Title & Description */}
-                          <div>
-                            <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                              {course?.title}
-                            </h3>
-                            <p className="text-xs text-slate-600 mt-1 line-clamp-2">
-                              {course?.description}
-                            </p>
-                          </div>
-
-                          {/* Reason */}
-                          <div className="bg-emerald-50/60 border border-emerald-200 rounded-md p-3 text-xs text-emerald-900 flex items-start gap-2">
-                            <Lightbulb className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                            <p><strong>Why recommended:</strong> {item.reason}</p>
-                          </div>
-
-                          {/* Skill Alignment */}
-                          {Array.isArray(item.skillAlignment) && item.skillAlignment.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              {item.skillAlignment.map((sa, sIdx) => (
-                                <div
-                                  key={sIdx}
-                                  className="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[11px]"
-                                >
-                                  <Target className="w-3 h-3 text-blue-600" />
-                                  <span className="font-semibold text-slate-800">{sa.skill}:</span>
-                                  <span className="text-slate-500">{sa.currentProficiency || 'None'}</span>
-                                  <span className="text-slate-400">→</span>
-                                  <span className="font-bold text-emerald-700">{sa.targetProficiency}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right CTA */}
-                        <div className="w-full md:w-48 shrink-0 bg-slate-50 border border-slate-200 rounded p-4 flex flex-col justify-between space-y-3 self-stretch">
-                          <div className="space-y-1 text-xs">
-                            <span className="text-[10px] uppercase font-bold text-slate-400">Instructor</span>
-                            <p className="font-semibold text-slate-800">{course?.trainer?.name || 'Faculty'}</p>
-                          </div>
-
-                          <Link
-                            to={`/trainee/courses/${course?._id}`}
-                            className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors shadow-xs"
-                          >
-                            <span>View Course</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* SECTION 2: SKILLS TO DEVELOP                                    */}
-          {/* ============================================================== */}
-          {(activeTab === 'all' || activeTab === 'skills') && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-blue-600" />
-                  <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                    Skills to Develop ({skillsToDevelop.length})
-                  </h2>
-                </div>
-                <Link
-                  to="/trainee/skills"
-                  className="text-xs font-semibold text-blue-700 hover:underline"
-                >
-                  View My Skills Passport →
-                </Link>
-              </div>
-
-              {skillsToDevelop.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-lg p-6 text-center text-xs text-slate-500">
-                  No critical skill gaps diagnosed. Keep exploring advanced competency modules!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {skillsToDevelop.map((sk, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs flex flex-col justify-between space-y-3 hover:border-blue-300 transition-colors"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-bold text-slate-900">{typeof sk.skill === 'object' ? sk.skill?.name : (sk.skill || sk.name || 'Skill')}</h3>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                            sk.priority === 'high'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-blue-50 text-blue-700 border border-blue-200'
-                          }`}>
-                            {sk.priority || 'medium'} priority
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-500">Current: <strong>{sk.currentProficiency}</strong></span>
-                          <span className="text-slate-400">→</span>
-                          <span className="text-emerald-700 font-bold">Target: {sk.targetProficiency}</span>
-                        </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          {sk.reason}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400">Competency Gated</span>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenSkillGuidance(sk)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Improve This Skill</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* SECTION 3: ASSESSMENT INSIGHTS                                  */}
-          {/* ============================================================== */}
-          {(activeTab === 'all' || activeTab === 'insights') && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-amber-600" />
-                  <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                    Assessment Insights ({assessmentInsights.length})
-                  </h2>
-                </div>
-                <Link
-                  to="/trainee/assessments"
-                  className="text-xs font-semibold text-amber-800 hover:underline"
-                >
-                  View All Assessments →
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {assessmentInsights.map((ins, idx) => {
-                  const statusColors = {
-                    positive: 'bg-emerald-50/60 border-emerald-200 text-emerald-900',
-                    warning: 'bg-amber-50/60 border-amber-200 text-amber-900',
-                    needs_attention: 'bg-rose-50/60 border-rose-200 text-rose-900',
-                    neutral: 'bg-slate-50 border-slate-200 text-slate-800',
-                  };
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`border rounded-lg p-4 space-y-2 ${statusColors[ins.status] || statusColors.neutral}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5 opacity-80" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider">{ins.title}</h4>
-                      </div>
-                      <p className="text-xs leading-relaxed opacity-90">{ins.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* SECTION 4: SUGGESTED NEXT STEPS                                 */}
-          {/* ============================================================== */}
-          {(activeTab === 'all' || activeTab === 'steps') && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Zap className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                  Suggested Next Steps (Sequential Learning Plan)
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {nextSteps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs flex flex-col justify-between space-y-3"
-                  >
-                    <div className="space-y-2">
-                      <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold">
-                        {step.step || idx + 1}
-                      </div>
-                      <h4 className="text-xs font-bold text-slate-900">{step.title}</h4>
-                      <p className="text-xs text-slate-600 leading-relaxed">{step.description}</p>
-                    </div>
-
-                    {step.actionUrl && (
-                      <Link
-                        to={step.actionUrl}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 hover:text-indigo-900 pt-2 border-t border-slate-100"
-                      >
-                        <span>Take Action</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>

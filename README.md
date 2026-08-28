@@ -8,15 +8,24 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 🎯 AI Career Goal → Personalized Learning Roadmap (Phase 7.4.1)
+### 1. 🤖 Adaptive AI Learning Advisor & Dynamic Next Actions (Phase 7.5)
+- **Real-Time Learning State Engine (`/trainee/recommendations`)**:
+  - Continuously evaluates learner progress across active courses, completed coursework, assessment scores, verified skills, and career roadmaps.
+  - Answers the immediate question: *"What should I do next, and why?"*
+  - **4-Tier Priority Engine**:
+    1. **Incomplete Active Course (`continue_course`)**: Prioritizes completing courses currently in progress (`progress < 100%`) with dynamic progress bars and `[Continue Course]` direct action.
+    2. **Failed / Weak Assessment Remediation (`review_assessment`)**: Detects failed quizzes/exams and guides learners to question-level AI explanations before proceeding.
+    3. **Next Career Roadmap Milestone (`start_course`)**: Identifies the next uncompleted milestone in the learner's career roadmap and matches published database courses.
+    4. **Course Availability Diagnostic (`course_not_available`)**: Transparently flags roadmap skills without published courses.
+  - **Educational Rationale & Invalidation**: Automatically re-analyzes trajectory whenever courses are enrolled, modules completed, or assessments submitted.
+
+### 2. 🎯 AI Career Goal → Personalized Learning Roadmap (Phase 7.4.1)
 - **Natural-Language Career Destination (`/trainee/recommendations`)**:
   - Trainees specify any target career (e.g. *"I want to become a Full Stack Developer"* or *"Cloud & DevOps Engineer"*).
-  - AI parses the goal, extracts required capabilities, maps against platform Skill & Competency taxonomies, and diagnoses skill gaps ($\checkmark$ Demonstrated, 🟡 In Progress, $\bigcirc$ Required/Missing).
-  - **Sequenced Roadmap & Course Sequences**: Organizes learning milestones into ordered stages and maps each stage to actual published courses on Capacity Connect (or marks as unavailable if none exist).
-  - **Database-Authoritative Progress**: Dynamic calculation of overall career progress based strictly on completed verified coursework and active enrollments.
-  - **Career Goal Persistence**: Persists target goal to trainee user document with inline editing (`[ Edit Goal ]`, `[ Refresh Roadmap ]`) and zero duplicate UI.
+  - AI determines the logical skill progression while MongoDB database authoritatively matches available published courses.
+  - Numbered milestone journey (`01`, `02`, `03`) with status badges (`Already Demonstrated ✓`, `In Progress ▶`, `Recommended Milestone 🚀`, `Locked 🔒`).
 
-### 2. 🧭 Personalized AI Learning Path (Phase 7.4)
+### 3. 🧭 Personalized AI Learning Path (Phase 7.4)
 - **Intelligent Trajectory Architecture (`/trainee/recommendations`)**:
   - Dynamically determines *"What should this trainee learn next, and in what order?"*
   - Synthesizes active enrollments, course progress, completed history, verified skills, target competencies, and assessment diagnostics into a single cohesive journey.

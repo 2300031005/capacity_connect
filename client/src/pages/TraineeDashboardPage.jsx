@@ -18,7 +18,10 @@ import {
   Calendar,
   CheckCircle2,
   Lightbulb,
-  Star
+  Star,
+  Zap,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 
 const TraineeDashboardPage = () => {
@@ -26,6 +29,7 @@ const TraineeDashboardPage = () => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [nextSteps, setNextSteps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCertificate, setActiveCertificate] = useState(null);
 
@@ -46,6 +50,7 @@ const TraineeDashboardPage = () => {
         }
         if (recsRes.status === 'fulfilled' && recsRes.value?.success) {
           setRecommendations(recsRes.value.data?.recommendations || []);
+          setNextSteps(recsRes.value.data?.nextSteps || []);
         }
       } catch (err) {
         console.warn('Could not load trainee data on dashboard:', err.message);
@@ -227,6 +232,59 @@ const TraineeDashboardPage = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested Next Steps Section (AI Learning Sequence) */}
+      {nextSteps.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-violet-600" />
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  ⚡ AI Suggested Next Steps (Sequential Learning Plan)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Concrete actionable sequence to advance your verified competencies and career roadmap.
+              </p>
+            </div>
+            <Link
+              to="/trainee/recommendations"
+              className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-1"
+            >
+              <span>AI Hub</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {nextSteps.map((step, idx) => (
+              <div
+                key={idx}
+                className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 shadow-2xs flex flex-col justify-between space-y-3 hover:border-violet-300 transition-colors"
+              >
+                <div className="space-y-2">
+                  <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 text-violet-800 text-xs font-bold">
+                    {step.step || idx + 1}
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900">{step.title}</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">{step.description}</p>
+                </div>
+
+                {step.actionUrl && (
+                  <Link
+                    to={step.actionUrl}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900 pt-2 border-t border-slate-200"
+                  >
+                    <span>Take Action</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

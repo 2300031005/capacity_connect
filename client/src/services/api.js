@@ -482,6 +482,19 @@ export const refreshAiCareerRoadmapApi = async (careerGoal) => {
 };
 
 // ==========================================
+// Adaptive AI Learning Advisor APIs (Phase 7.5)
+// ==========================================
+export const getAiAdaptiveAdvisorApi = async (params = {}) => {
+  const response = await api.get('/ai/adaptive-advisor', { params });
+  return response.data;
+};
+
+export const refreshAiAdaptiveAdvisorApi = async () => {
+  const response = await api.post('/ai/adaptive-advisor/refresh');
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {

@@ -12,6 +12,9 @@ const {
   generateCourseRationale,
   generateLearningPath,
   generateCareerRoadmap,
+  generateFallbackCareerRoadmap,
+  generateAdaptiveAdvisor,
+  generateFallbackAdaptiveAdvisor,
   checkRateLimit,
 } = require('../services/openaiService');
 
@@ -19,7 +22,20 @@ const {
 const recommendationsCache = new Map();
 const learningPathCache = new Map();
 const careerRoadmapCache = new Map();
+const adaptiveAdvisorCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
+/**
+ * Invalidate all AI caches for a specific trainee upon learning events
+ */
+const invalidateTraineeAICache = (traineeId) => {
+  if (!traineeId) return;
+  const idStr = traineeId.toString();
+  recommendationsCache.delete(idStr);
+  learningPathCache.delete(idStr);
+  careerRoadmapCache.delete(idStr);
+  adaptiveAdvisorCache.delete(idStr);
+};
 
 /**
  * Helper to compute trainee's verified skills and completion map
@@ -975,6 +991,285 @@ const getCareerRoadmap = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get Adaptive AI Learning Advisor Next Action & Insights (Phase 7.5)
+ * @route   GET /api/recommendations/adaptive-advisor, POST /api/recommendations/adaptive-advisor/refresh
+ * @access  Private / Trainee
+ */
+const getAdaptiveAdvisor = async (req, res, next) => {
+  try {
+    const traineeId = req.user._id;
+    const forceRefresh = req.query.refresh === 'true' || req.method === 'POST';
+
+    // 1. Check in-memory cache
+    const traineeIdStr = traineeId.toString();
+    if (!forceRefresh) {
+      const cached = adaptiveAdvisorCache.get(traineeIdStr);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            ...cached.data,
+            cached: true,
+          },
+        });
+      }
+    }
+
+    // 2. Rate limiter check
+    const rateCheck = checkRateLimit(traineeIdStr);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: 'AI advisor rate limit reached. Please wait a moment before requesting learning insights.',
+      });
+    }
+
+    // 3. Gather comprehensive real-time database context
+    const user = await User.findById(traineeId).select('careerGoal name email department');
+    const careerGoal = user?.careerGoal || 'Full Stack Developer';
+
+    const traineeContext = await computeTraineeSkillsAndGaps(traineeId);
+
+    // 4. Active & Completed Enrollments
+    const activeEnrollments = await Enrollment.find({
+      trainee: traineeId,
+      status: 'active',
+    })
+      .populate({
+        path: 'course',
+        select: 'title category level status averageRating trainer skills',
+        populate: [
+          { path: 'trainer', select: 'name email' },
+          { path: 'skills.skill', select: 'name category' },
+        ],
+      })
+      .sort({ updatedAt: -1 });
+
+    const activeCourses = activeEnrollments
+      .map((enr) => {
+        if (!enr.course) return null;
+        return {
+          _id: enr.course._id,
+          id: enr.course._id,
+          courseId: enr.course._id,
+          title: enr.course.title,
+          category: enr.course.category,
+          level: enr.course.level,
+          trainer: enr.course.trainer?.name || 'Faculty',
+          progress: enr.progress || 0,
+          status: 'current',
+          skills: (enr.course.skills || []).map((s) => ({
+            name: s.skill?.name || s.name || '',
+            proficiency: s.proficiency || 'proficient',
+          })),
+        };
+      })
+      .filter(Boolean);
+
+    // 5. Recent Assessments & Attempts
+    const recentAttempts = await QuizAttempt.find({ trainee: traineeId })
+      .populate('course', 'title category level')
+      .populate('assessment', 'title type passingPercentage')
+      .sort({ submittedAt: -1 })
+      .limit(10);
+
+    const latestAssessments = recentAttempts.map((att) => ({
+      _id: att._id,
+      attemptId: att._id,
+      assessmentId: att.assessment?._id || att.assessment,
+      title: att.assessment?.title || `${att.course?.title || 'Course'} Assessment`,
+      courseTitle: att.course?.title || 'Course',
+      courseId: att.course?._id || att.course,
+      type: att.type,
+      score: att.score,
+      totalMarks: att.totalMarks,
+      percentage: att.percentage,
+      passed: att.passed,
+      submittedAt: att.submittedAt,
+    }));
+
+    const completedCourseIdSet = new Set((traineeContext.completedCourseIds || []).map((id) => id.toString()));
+
+    const latestAttemptByAssessment = new Map();
+    recentAttempts.forEach((att) => {
+      const aId = (att.assessment?._id || att.assessment || '').toString();
+      if (aId && !latestAttemptByAssessment.has(aId)) {
+        latestAttemptByAssessment.set(aId, att);
+      }
+    });
+
+    const failedAssessments = latestAssessments.filter((att) => {
+      if (att.courseId && completedCourseIdSet.has(att.courseId.toString())) {
+        return false;
+      }
+      const latestForThis = latestAttemptByAssessment.get(att.assessmentId?.toString());
+      if (latestForThis && latestForThis.passed) {
+        return false;
+      }
+      return !att.passed || att.percentage < 70;
+    });
+
+    // 6. Platform Skills & Published Courses
+    const [allPublishedCourses, availableSkills, availableCompetencies] = await Promise.all([
+      Course.find({ status: 'published' })
+        .populate('trainer', 'name email department')
+        .populate('skills.skill', 'name category')
+        .lean(),
+      Skill.find({ isActive: true }).select('name category').lean(),
+      Competency.find({ isActive: true }).populate('skills', 'name category').lean(),
+    ]);
+
+    // 7. Extract or synthesize roadmap context
+    let roadmapSteps = [];
+    const cachedRoadmap = careerRoadmapCache.get(traineeIdStr);
+    if (cachedRoadmap && cachedRoadmap.data?.steps) {
+      roadmapSteps = cachedRoadmap.data.steps;
+    } else {
+      const fallbackRoadmap = generateFallbackCareerRoadmap({
+        careerGoal,
+        traineeContext,
+        availableSkills,
+        availableCompetencies,
+        activeCourses,
+        completedCourses: traineeContext.completedCourseIds || [],
+      });
+      roadmapSteps = fallbackRoadmap.steps || [];
+    }
+
+    // 8. Call AI Adaptive Advisor (with fallback)
+    const rawAdvice = await generateAdaptiveAdvisor({
+      careerGoal,
+      traineeContext,
+      activeCourses,
+      completedCourses: traineeContext.completedCourseIds || [],
+      latestAssessments,
+      failedAssessments,
+      roadmapSteps,
+      availableSkills,
+      availableCompetencies,
+    });
+
+    // 9. Resolve skill & Authoritative Database Matching
+    const normalize = (s) => (s || '').replace(/\[.*?\]/g, '').toLowerCase().trim();
+    const actionSkillRaw = rawAdvice.nextAction?.skill || 'General Progress';
+    const actionSkillNorm = normalize(actionSkillRaw);
+
+    const matchedSkillDoc = availableSkills.find((s) => {
+      const sNorm = normalize(s.name);
+      return sNorm === actionSkillNorm || (actionSkillNorm.length > 2 && (sNorm.includes(actionSkillNorm) || actionSkillNorm.includes(sNorm)));
+    });
+
+    const canonicalSkillName = matchedSkillDoc ? matchedSkillDoc.name : actionSkillRaw;
+    const canonicalNorm = normalize(canonicalSkillName);
+
+    let resolvedCourse = null;
+    let resolvedAssessment = null;
+    const actionType = rawAdvice.nextAction?.type || 'start_course';
+
+    if (actionType === 'continue_course' && activeCourses.length > 0) {
+      resolvedCourse = activeCourses.find((c) => (c.progress || 0) < 100) || activeCourses[0];
+    } else if (actionType === 'review_assessment' || actionType === 'retry_assessment') {
+      if (failedAssessments.length > 0) {
+        resolvedAssessment = failedAssessments[0];
+        if (resolvedAssessment.courseId) {
+          const linkedCourse = allPublishedCourses.find(
+            (c) => c._id.toString() === resolvedAssessment.courseId.toString()
+          );
+          if (linkedCourse) {
+            resolvedCourse = {
+              id: linkedCourse._id.toString(),
+              courseId: linkedCourse._id.toString(),
+              _id: linkedCourse._id.toString(),
+              title: linkedCourse.title,
+              category: linkedCourse.category,
+              level: linkedCourse.level,
+              trainer: linkedCourse.trainer?.name || 'Faculty',
+              status: 'review',
+            };
+          }
+        }
+      }
+    }
+
+    // If still no course resolved and not a 'no_action' state, search published courses strictly via Course.skills
+    if (!resolvedCourse && actionType !== 'no_action') {
+      const completedCourseIdSet = new Set((traineeContext.completedCourseIds || []).map((id) => id.toString()));
+
+      const matchingPublishedCourses = allPublishedCourses.filter((c) => {
+        return (c.skills || []).some((s) => {
+          const skName = s.name || s.skill?.name || '';
+          const skNorm = normalize(skName);
+          const skId = (s.skill?._id || s.skill || '').toString();
+          if (matchedSkillDoc && skId && skId === matchedSkillDoc._id.toString()) return true;
+          return skNorm === canonicalNorm || skNorm === actionSkillNorm;
+        });
+      });
+
+      const candidateCourse = matchingPublishedCourses.find((c) => !completedCourseIdSet.has(c._id.toString())) || matchingPublishedCourses[0];
+
+      if (candidateCourse) {
+        resolvedCourse = {
+          id: candidateCourse._id.toString(),
+          _id: candidateCourse._id.toString(),
+          courseId: candidateCourse._id.toString(),
+          title: candidateCourse.title,
+          category: candidateCourse.category,
+          level: candidateCourse.level,
+          trainer: candidateCourse.trainer?.name || 'Faculty',
+          progress: 0,
+          status: 'recommended',
+          averageRating: candidateCourse.averageRating || 4.8,
+        };
+      }
+    }
+
+    const courseAvailable = Boolean(resolvedCourse);
+    const unavailableMessage = courseAvailable
+      ? null
+      : 'Capacity Connect currently has no published course mapped to this skill.';
+
+    const payload = {
+      careerGoal,
+      nextAction: {
+        type: actionType,
+        title: rawAdvice.nextAction?.title || `Focus on ${canonicalSkillName}`,
+        skill: canonicalSkillName,
+        reason: rawAdvice.nextAction?.reason || `Advancing in ${canonicalSkillName} is the next step for your ${careerGoal} trajectory.`,
+        priority: rawAdvice.nextAction?.priority || 'high',
+        progress: resolvedCourse?.progress !== undefined ? resolvedCourse.progress : null,
+        course: resolvedCourse,
+        courseAvailable,
+        unavailableMessage,
+        assessment: resolvedAssessment,
+      },
+      insight: rawAdvice.insight || `Continuous learning analysis updated for your ${careerGoal} roadmap.`,
+      focusArea: rawAdvice.focusArea || canonicalSkillName,
+      urgency: rawAdvice.urgency || 'standard',
+      traineeSummary: {
+        verifiedSkillCount: (traineeContext.verifiedSkills || []).length,
+        activeEnrollmentCount: activeCourses.length,
+        completedCourseCount: (traineeContext.completedCourseIds || []).length,
+        failedAssessmentCount: failedAssessments.length,
+      },
+      cached: false,
+      timestamp: new Date().toISOString(),
+    };
+
+    adaptiveAdvisorCache.set(traineeIdStr, {
+      data: payload,
+      timestamp: Date.now(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCourseRecommendations,
   getSkillGuidance,
@@ -983,6 +1278,8 @@ module.exports = {
   getCareerGoal,
   setCareerGoal,
   getCareerRoadmap,
+  getAdaptiveAdvisor,
   computeTraineeSkillsAndGaps,
+  invalidateTraineeAICache,
 };
 

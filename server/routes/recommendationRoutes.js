@@ -8,6 +8,7 @@ const {
   getCareerGoal,
   setCareerGoal,
   getCareerRoadmap,
+  getAdaptiveAdvisor,
 } = require('../controllers/recommendationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -24,6 +25,21 @@ router.post(
   protect,
   authorize('trainee'),
   getCourseRecommendations
+);
+
+// Adaptive AI Learning Advisor (Phase 7.5)
+router.get(
+  '/adaptive-advisor',
+  protect,
+  authorize('trainee'),
+  getAdaptiveAdvisor
+);
+
+router.post(
+  '/adaptive-advisor/refresh',
+  protect,
+  authorize('trainee'),
+  getAdaptiveAdvisor
 );
 
 // AI Career Goal & Learning Roadmap (Phase 7.4.1)

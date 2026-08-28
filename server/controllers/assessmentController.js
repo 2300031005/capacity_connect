@@ -8,6 +8,7 @@ const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const { generateCertificatePDF, generateCertificateId } = require('../utils/certificateGenerator');
 const { generateQuestionExplanation, checkRateLimit } = require('../services/openaiService');
+const { invalidateTraineeAICache } = require('./recommendationController');
 
 /**
  * Helper to sanitize assessment questions for Trainee (strip correctOption)
@@ -646,6 +647,9 @@ const submitAssessmentAttempt = async (req, res, next) => {
 
       certificateData = existingCert;
     }
+
+    // Invalidate AI recommendation & advisor caches for this trainee
+    invalidateTraineeAICache(traineeId);
 
     return res.status(201).json({
       success: true,

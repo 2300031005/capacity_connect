@@ -1221,6 +1221,9 @@ const generateFallbackCareerRoadmap = ({
         ? `You already have verified foundation in ${sName}. Advance towards mastery.`
         : `Essential prerequisite capability for achieving your target career as a ${careerGoal}.`,
       targetProficiency: 'Proficient',
+      status: isVerified ? 'completed' : 'upcoming',
+      isDemonstrated: isVerified,
+      isVerified: isVerified,
     };
   });
 
@@ -1233,13 +1236,12 @@ const generateFallbackCareerRoadmap = ({
 };
 
 /**
- * Generate AI-Powered Career Goal Skill Roadmap using OpenAI GPT-4o-mini (Phase 7.4.1 Refinement)
- * AI Responsibility: Determines the logical ordered SKILL SEQUENCE and rationale.
- * Database Responsibility: Backend matches each skill against published courses.
+ * AI Career Roadmap Generator (Phase 7.4.1)
+ * Focuses purely on ordered skills, leaving course matching strictly to the database.
  */
 const generateCareerRoadmap = async ({
   careerGoal = 'Full Stack Developer',
-  traineeContext,
+  traineeContext = {},
   availableSkills = [],
   availableCompetencies = [],
   activeCourses = [],
@@ -1373,6 +1375,282 @@ Please determine the logical ordered skill roadmap.`;
   }
 };
 
+/**
+ * Deterministic Fallback Adaptive Learning Advisor (Phase 7.5)
+ * Analyzes latest trainee state and deterministically decides the next action.
+ */
+const generateFallbackAdaptiveAdvisor = ({
+  careerGoal = 'Full Stack Developer',
+  traineeContext = {},
+  activeCourses = [],
+  completedCourses = [],
+  latestAssessments = [],
+  failedAssessments = [],
+  roadmapSteps = [],
+  learningPathSteps = [],
+}) => {
+  const goal = careerGoal || 'Professional Growth';
+
+  // 1. Priority 1: Incomplete enrolled active course (progress < 100%)
+  const incompleteActiveCourses = (activeCourses || []).filter((c) => (c.progress || 0) < 100);
+
+  if (incompleteActiveCourses.length > 0) {
+    const active = incompleteActiveCourses[0];
+    const progress = active.progress || 0;
+    const activeTitle = active.title || 'Enrolled Course';
+    const primarySkill = (active.skills && active.skills[0]?.name) || active.category || 'Core Skill';
+
+    return {
+      nextAction: {
+        type: 'continue_course',
+        skill: primarySkill,
+        title: `Continue ${activeTitle}`,
+        reason: `You are already ${progress}% through this course. Completing it is the most efficient next step toward your ${goal} goal.`,
+        priority: 'high',
+      },
+      insight: `You are currently progressing through ${activeTitle} (${progress}%). Complete remaining modules and the assessment to verify your ${primarySkill} skills and advance your roadmap.`,
+      focusArea: active.category || primarySkill,
+      urgency: 'immediate',
+    };
+  }
+
+  // 2. Priority 2: Failed/Weak Assessment Remediation
+  if (Array.isArray(failedAssessments) && failedAssessments.length > 0) {
+    const weak = failedAssessments[0];
+    const weakTitle = weak.title || weak.courseTitle || 'Assessment';
+    const weakScore = weak.percentage !== undefined ? `${weak.percentage}%` : 'Below passing threshold';
+
+    return {
+      nextAction: {
+        type: 'review_assessment',
+        skill: weak.courseTitle || 'Assessment Remediation',
+        title: `Remediate ${weakTitle}`,
+        reason: `Your latest score (${weakScore}) indicates areas for improvement before progressing to subsequent milestones.`,
+        priority: 'high',
+        assessmentId: weak.assessmentId || weak._id,
+        assessmentTitle: weakTitle,
+        score: weak.percentage,
+      },
+      insight: `Your result on ${weakTitle} (${weakScore}) suggests additional review is needed. Review the question explanations and concept notes before re-attempting.`,
+      focusArea: weak.courseTitle || 'Conceptual Review',
+      urgency: 'immediate',
+    };
+  }
+
+  // 3. Priority 3: Next uncompleted roadmap skill
+  if (Array.isArray(roadmapSteps) && roadmapSteps.length > 0) {
+    const nextStep = roadmapSteps.find(
+      (st) => !st.isDemonstrated && st.status !== 'Already Demonstrated' && st.status !== 'completed'
+    );
+
+    if (nextStep) {
+      const skillName = nextStep.skill || nextStep.skillName || 'Next Skill';
+      const isAvailable = nextStep.courseAvailable !== false;
+
+      if (!isAvailable) {
+        return {
+          nextAction: {
+            type: 'course_not_available',
+            skill: skillName,
+            title: `Next Skill: ${skillName}`,
+            reason: `This skill is required for your roadmap, but Capacity Connect currently does not have a published course covering this skill.`,
+            priority: 'medium',
+          },
+          insight: `${skillName} is the next milestone on your ${goal} roadmap. Check back as new courses are published by faculty.`,
+          focusArea: skillName,
+          urgency: 'standard',
+        };
+      }
+
+      return {
+        nextAction: {
+          type: 'start_course',
+          skill: skillName,
+          title: `Start ${skillName}`,
+          reason: nextStep.reason || `Essential capability for achieving your target as a ${goal}.`,
+          priority: 'high',
+        },
+        insight: `You have completed prior requirements and are ready to advance to ${skillName} (${nextStep.targetProficiency || 'Proficient'}). Enroll in the recommended course to continue your journey.`,
+        focusArea: skillName,
+        urgency: 'standard',
+      };
+    }
+  }
+
+  // 4. Priority 4: All milestones mastered
+  return {
+    nextAction: {
+      type: 'no_action',
+      skill: 'Roadmap Completed',
+      title: 'Milestones Mastered',
+      reason: `You have completed all active milestones for ${goal}!`,
+      priority: 'low',
+    },
+    insight: `Outstanding progress! You have verified proficiency across your active learning trajectory. You can explore additional elective courses or set a new career milestone.`,
+    focusArea: 'Mastery & Continued Learning',
+    urgency: 'optional',
+  };
+};
+
+/**
+ * Generate Adaptive Learning Advisor via OpenAI (Phase 7.5)
+ * Analyzes latest trainee state and generates actionable guidance.
+ */
+const generateAdaptiveAdvisor = async ({
+  careerGoal = 'Full Stack Developer',
+  traineeContext = {},
+  activeCourses = [],
+  completedCourses = [],
+  latestAssessments = [],
+  failedAssessments = [],
+  roadmapSteps = [],
+  learningPathSteps = [],
+}) => {
+  const { apiKey, model, baseUrl, timeoutMs } = getOpenAiConfig();
+
+  if (!apiKey || apiKey.length < 10) {
+    return generateFallbackAdaptiveAdvisor({
+      careerGoal,
+      traineeContext,
+      activeCourses,
+      completedCourses,
+      latestAssessments,
+      failedAssessments,
+      roadmapSteps,
+      learningPathSteps,
+    });
+  }
+
+  try {
+    const verifiedSkillsList = (traineeContext.verifiedSkills || [])
+      .map((s) => `${s.name} (${s.highestProficiency || 'proficient'})`)
+      .join(', ') || 'None yet';
+
+    const activeCoursesList = (activeCourses || [])
+      .map((c) => `${c.title} (${c.progress || 0}% progress, Category: ${c.category || 'General'})`)
+      .join('; ') || 'None';
+
+    const recentAssessmentsList = (latestAssessments || [])
+      .slice(0, 5)
+      .map((a) => `${a.title || a.courseTitle || 'Assessment'}: ${a.percentage}% (${a.passed ? 'PASSED' : 'FAILED'})`)
+      .join('; ') || 'None';
+
+    const roadmapSequence = (roadmapSteps || [])
+      .map((s, idx) => `${idx + 1}. ${s.skill} [Status: ${s.status || (s.isDemonstrated ? 'Demonstrated' : 'Pending')}]`)
+      .join('\n') || 'None';
+
+    const systemPrompt = `You are the Adaptive AI Learning Advisor for Capacity Connect, an advanced institutional career and skills intelligence platform.
+Your task is to analyze the trainee's real-time state and provide ONE single, most effective NEXT ACTION and educational INSIGHT.
+
+Decision Priority Rules:
+1. If the trainee is currently enrolled in an incomplete course (progress < 100%), prioritize finishing it ("continue_course").
+2. If the trainee recently failed an assessment (score < 70%), prioritize remediation and reviewing weak areas ("review_assessment" or "retry_assessment").
+3. If previous steps are completed, identify the next unmastered skill on their career roadmap ("start_course" or "learn_skill").
+4. If all roadmap steps are mastered, state ("no_action") with congratulations.
+
+Strict Constraints:
+- Output valid JSON only.
+- Output ONLY pure skill names or focus concepts in "nextAction.skill".
+- Do NOT fabricate course titles or course IDs. The platform database resolves all courses.
+- Explanations must be concise, direct, and actionable.
+
+JSON Schema:
+{
+  "nextAction": {
+    "type": "continue_course" | "start_course" | "review_assessment" | "retry_assessment" | "learn_skill" | "no_action",
+    "skill": "Exact skill name",
+    "title": "Clear action title",
+    "reason": "Why this specific action is the optimal next step",
+    "priority": "high" | "medium" | "low"
+  },
+  "insight": "Concise 2-3 sentence educational explanation detailing context, progress, and upcoming trajectory.",
+  "focusArea": "Primary subject or capability domain",
+  "urgency": "immediate" | "standard" | "optional"
+}`;
+
+    const userPrompt = `Trainee State Assessment:
+- Career Goal: "${careerGoal || 'Full Stack Developer'}"
+- Verified Skills: ${verifiedSkillsList}
+- Active Enrollments: ${activeCoursesList}
+- Recent Assessment History: ${recentAssessmentsList}
+- Career Roadmap Progression:
+${roadmapSequence}
+
+Analyze this learner's situation and return the JSON response specifying their immediate next learning action.`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Adaptive Advisor AI responded with status ${response.status}. Using fallback.`);
+      return generateFallbackAdaptiveAdvisor({
+        careerGoal,
+        traineeContext,
+        activeCourses,
+        completedCourses,
+        latestAssessments,
+        failedAssessments,
+        roadmapSteps,
+        learningPathSteps,
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty AI response');
+
+    const parsed = JSON.parse(content);
+    if (!parsed.nextAction || !parsed.nextAction.type) {
+      throw new Error('Invalid JSON structure from AI');
+    }
+
+    return {
+      nextAction: {
+        type: parsed.nextAction.type,
+        skill: parsed.nextAction.skill || 'Next Step',
+        title: parsed.nextAction.title || 'Recommended Action',
+        reason: parsed.nextAction.reason || 'Optimal progression step for your profile.',
+        priority: parsed.nextAction.priority || 'high',
+      },
+      insight: parsed.insight || 'Continuous learning analysis updated based on your recent platform activity.',
+      focusArea: parsed.focusArea || parsed.nextAction.skill || 'Skill Development',
+      urgency: parsed.urgency || 'standard',
+    };
+  } catch (err) {
+    console.warn(`Adaptive Advisor AI error (${err.message}). Using fallback.`);
+    return generateFallbackAdaptiveAdvisor({
+      careerGoal,
+      traineeContext,
+      activeCourses,
+      completedCourses,
+      latestAssessments,
+      failedAssessments,
+      roadmapSteps,
+      learningPathSteps,
+    });
+  }
+};
+
 module.exports = {
   getOpenAiConfig,
   generateQuestionExplanation,
@@ -1387,5 +1665,7 @@ module.exports = {
   generateFallbackLearningPath,
   generateCareerRoadmap,
   generateFallbackCareerRoadmap,
+  generateAdaptiveAdvisor,
+  generateFallbackAdaptiveAdvisor,
   checkRateLimit,
 };

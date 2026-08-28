@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   getMyAssessmentsFeedApi,
   getAssessmentByIdApi,
+  getAiCourseRecommendationsApi,
 } from '../../services/api';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -25,15 +26,40 @@ import {
   HelpCircle,
   Percent,
   Eye,
+  TrendingUp,
+  AlertTriangle,
+  Lightbulb,
 } from 'lucide-react';
 
 const TraineeAssessmentsPage = () => {
-  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'insights' ? 'insights' : (searchParams.get('tab') === 'completed' ? 'completed' : 'available');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const [loadingAssessments, setLoadingAssessments] = useState(true);
+  const [loadingInsights, setLoadingInsights] = useState(true);
   const [error, setError] = useState(null);
   const [availableList, setAvailableList] = useState([]);
   const [completedList, setCompletedList] = useState([]);
-  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'completed'
+  const [assessmentInsights, setAssessmentInsights] = useState([]);
   const [reviewAttemptId, setReviewAttemptId] = useState(null);
+
+  // Sync tab with URL search parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'insights') {
+      setActiveTab('insights');
+    } else if (tabParam === 'completed') {
+      setActiveTab('completed');
+    } else if (tabParam === 'available') {
+      setActiveTab('available');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+  };
 
   // Modal State for taking quiz from assessment feed
   const [activeQuizModal, setActiveQuizModal] = useState({
@@ -50,23 +76,46 @@ const TraineeAssessmentsPage = () => {
 
   const [notification, setNotification] = useState(null);
 
+  // Independent fetch for Assessments Feed
   const fetchFeed = useCallback(async () => {
-    setLoading(true);
+    setLoadingAssessments(true);
     setError(null);
     try {
-      const response = await getMyAssessmentsFeedApi();
-      if (response && response.success) {
-        setAvailableList(response.data?.availableAssessments || []);
-        setCompletedList(response.data?.completedAssessments || []);
+      const feedRes = await getMyAssessmentsFeedApi();
+      if (feedRes?.success) {
+        setAvailableList(feedRes.data?.availableAssessments || []);
+        setCompletedList(feedRes.data?.completedAssessments || []);
       } else {
-        throw new Error(response?.message || 'Failed to load assessments.');
+        throw new Error(feedRes?.message || 'Failed to load assessments.');
       }
     } catch (err) {
       console.error('Error fetching assessments feed:', err);
       setError(err.response?.data?.message || err.message || 'Failed to load assessments.');
     } finally {
-      setLoading(false);
+      setLoadingAssessments(false);
     }
+  }, []);
+
+  // Independent fetch for AI Assessment Insights
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInsights = async () => {
+      setLoadingInsights(true);
+      try {
+        const recsRes = await getAiCourseRecommendationsApi();
+        if (isMounted && recsRes?.success) {
+          setAssessmentInsights(recsRes.data?.assessmentInsights || []);
+        }
+      } catch (err) {
+        console.warn('AI assessment insights notice:', err.message);
+      } finally {
+        if (isMounted) setLoadingInsights(false);
+      }
+    };
+    fetchInsights();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -112,7 +161,7 @@ const TraineeAssessmentsPage = () => {
               My Assessments & Quizzes
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-              Track, attempt, and review all module mini-quizzes and final graduation assessments across your enrolled courses.
+              Track, attempt, and review all module mini-quizzes and final graduation assessments across your enrolled courses, with AI diagnostic mastery insights.
             </p>
           </div>
 
@@ -151,13 +200,13 @@ const TraineeAssessmentsPage = () => {
       {error && <ErrorMessage message={error} onRetry={fetchFeed} />}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 flex-wrap">
         <button
           type="button"
-          onClick={() => setActiveTab('available')}
+          onClick={() => handleTabChange('available')}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
             activeTab === 'available'
-              ? 'bg-slate-900 text-white'
+              ? 'bg-slate-900 text-white shadow-sm'
               : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
           }`}
         >
@@ -167,26 +216,120 @@ const TraineeAssessmentsPage = () => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('completed')}
+          onClick={() => handleTabChange('completed')}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
             activeTab === 'completed'
-              ? 'bg-slate-900 text-white'
+              ? 'bg-slate-900 text-white shadow-sm'
               : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span>Completed Attempts ({completedList.length})</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('insights')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
+            activeTab === 'insights'
+              ? 'bg-amber-700 text-white shadow-sm'
+              : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>📈 AI Assessment Insights ({assessmentInsights.length})</span>
+        </button>
       </div>
 
       {/* Main Content Area */}
-      {loading ? (
-        <div className="py-16 flex justify-center">
-          <Loading message="Loading assessment feed..." />
+      {activeTab === 'insights' ? (
+        /* ASSESSMENT INSIGHTS TAB */
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <span>AI Assessment Diagnostics & Mastery Trajectory</span>
+              </h2>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Detailed evaluation of question responses, recurring weak points, and recommended review areas.
+              </p>
+            </div>
+            <Link
+              to="/trainee/recommendations"
+              className="text-xs font-bold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1 shrink-0"
+            >
+              <span>View AI Recommendations Hub</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {loadingInsights ? (
+            <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-xs">
+              <Loading message="Analyzing assessment performance & calculating diagnostics..." />
+            </div>
+          ) : assessmentInsights.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">No assessment insights yet</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Attempt module quizzes and course graduation exams to generate automated diagnostic insights and mastery feedback.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {assessmentInsights.map((insight, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white border border-amber-100 hover:border-amber-300 rounded-xl p-5 shadow-sm space-y-3 flex flex-col justify-between transition-all"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                        insight.status === 'positive' || insight.status === 'mastered'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : insight.status === 'warning' || insight.status === 'needs_review'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}>
+                        {insight.status || 'Diagnostic'}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>{insight.title || `Assessment Insight ${idx + 1}`}</span>
+                    </h3>
+
+                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      {insight.description || insight.insight}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('completed')}
+                      className="text-xs font-bold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1"
+                    >
+                      <span>Review Completed Attempts</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : activeTab === 'available' ? (
         /* AVAILABLE ASSESSMENTS TAB */
-        availableList.length === 0 ? (
+        loadingAssessments ? (
+          <div className="py-16 flex justify-center">
+            <Loading message="Loading available assessments..." />
+          </div>
+        ) : availableList.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <FileCheck className="w-6 h-6" />
@@ -315,7 +458,11 @@ const TraineeAssessmentsPage = () => {
         )
       ) : (
         /* COMPLETED ASSESSMENTS TAB */
-        completedList.length === 0 ? (
+        loadingAssessments ? (
+          <div className="py-16 flex justify-center">
+            <Loading message="Loading completed attempts..." />
+          </div>
+        ) : completedList.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <CheckCircle2 className="w-6 h-6" />

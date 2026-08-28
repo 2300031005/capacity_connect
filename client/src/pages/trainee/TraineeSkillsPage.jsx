@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { getMySkillsProfileApi, getSkillAiGuidanceApi } from '../../services/api';
+import { Link, useSearchParams } from 'react-router-dom';
+import { getMySkillsProfileApi, getSkillAiGuidanceApi, getAiCourseRecommendationsApi } from '../../services/api';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
 import CertificateModal from '../../components/CertificateModal';
@@ -21,19 +21,45 @@ import {
   Calendar,
   X,
   ChevronRight,
+  Lightbulb,
+  Zap,
+  TrendingUp,
 } from 'lucide-react';
 
 const TraineeSkillsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'develop' ? 'develop' : (searchParams.get('tab') === 'learning' ? 'learning' : 'verified');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
   const [profileData, setProfileData] = useState({
     summary: { totalVerified: 0, advancedCount: 0, proficientCount: 0, beginnerCount: 0, learningCount: 0 },
     verifiedSkills: [],
     learningSkills: [],
   });
-  const [loading, setLoading] = useState(true);
+  const [skillsToDevelop, setSkillsToDevelop] = useState([]);
+  const [loadingSkills, setLoadingSkills] = useState(true);
+  const [loadingSkillsToDevelop, setLoadingSkillsToDevelop] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [proficiencyFilter, setProficiencyFilter] = useState('all');
+
+  // Sync tab with URL search parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'develop') {
+      setActiveTab('develop');
+    } else if (tabParam === 'learning') {
+      setActiveTab('learning');
+    } else if (tabParam === 'verified') {
+      setActiveTab('verified');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+  };
 
   // Certificate Modal Preview State
   const [selectedCertificate, setSelectedCertificate] = useState(null);
@@ -43,12 +69,13 @@ const TraineeSkillsPage = () => {
   const [skillGuidance, setSkillGuidance] = useState(null);
   const [loadingGuidance, setLoadingGuidance] = useState(false);
 
+  // Independent fetch for Verified & In-Progress Skills Profile
   const fetchSkillsProfile = useCallback(async () => {
-    setLoading(true);
+    setLoadingSkills(true);
     setError(null);
     try {
       const response = await getMySkillsProfileApi();
-      if (response && response.success) {
+      if (response?.success) {
         setProfileData({
           summary: response.summary || {
             totalVerified: (response.verifiedSkills || []).length,
@@ -65,10 +92,32 @@ const TraineeSkillsPage = () => {
       }
     } catch (err) {
       console.error('Error loading skills profile:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to load your skill profile.');
+      setError(err.response?.data?.message || err.message || 'Failed to load skill profile.');
     } finally {
-      setLoading(false);
+      setLoadingSkills(false);
     }
+  }, []);
+
+  // Independent fetch for AI Skills to Develop
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSkillsToDevelop = async () => {
+      setLoadingSkillsToDevelop(true);
+      try {
+        const res = await getAiCourseRecommendationsApi();
+        if (isMounted && res?.success) {
+          setSkillsToDevelop(res.data?.skillsToDevelop || []);
+        }
+      } catch (err) {
+        console.warn('AI skills to develop notice:', err.message);
+      } finally {
+        if (isMounted) setLoadingSkillsToDevelop(false);
+      }
+    };
+    fetchSkillsToDevelop();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -76,12 +125,13 @@ const TraineeSkillsPage = () => {
   }, [fetchSkillsProfile]);
 
   const handleOpenSkillGuidance = async (skillName) => {
-    setSelectedSkillForGuidance(skillName);
+    const sName = typeof skillName === 'string' ? skillName : skillName.skill || skillName.name;
+    setSelectedSkillForGuidance(sName);
     setLoadingGuidance(true);
     setSkillGuidance(null);
 
     try {
-      const res = await getSkillAiGuidanceApi(skillName);
+      const res = await getSkillAiGuidanceApi(sName);
       if (res?.success && res.data) {
         setSkillGuidance(res.data);
       }
@@ -231,11 +281,162 @@ const TraineeSkillsPage = () => {
         </div>
       </div>
 
+      {/* Navigation View Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 flex-wrap">
+        <button
+          type="button"
+          onClick={() => handleTabChange('verified')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+            activeTab === 'verified'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Verified Skills ({filteredVerifiedSkills.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('learning')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+            activeTab === 'learning'
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>In-Progress Learning ({filteredLearningSkills.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('develop')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+            activeTab === 'develop'
+              ? 'bg-indigo-700 text-white shadow-sm'
+              : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+          }`}
+        >
+          <Target className="w-3.5 h-3.5 text-indigo-400" />
+          <span>🎯 Skills to Develop ({skillsToDevelop.length})</span>
+        </button>
+      </div>
+
       {error && <ErrorMessage message={error} onRetry={fetchSkillsProfile} />}
+
+      {/* ====================================================
+          SECTION: SKILLS TO DEVELOP (AI Targeted)
+          ==================================================== */}
+      {activeTab === 'develop' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-indigo-50/60 border border-indigo-200 rounded-lg p-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Target className="w-4 h-4 text-indigo-600" />
+                <span>Skills to Develop (AI Targeted)</span>
+              </h2>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Identified based on your competency gaps, career roadmap, and current verified proficiencies.
+              </p>
+            </div>
+            <Link
+              to="/trainee/recommendations"
+              className="text-xs font-bold text-indigo-700 hover:text-indigo-800 inline-flex items-center gap-1 shrink-0"
+            >
+              <span>View Career Roadmap</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {loadingSkillsToDevelop ? (
+            <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-xs">
+              <Loading message="Diagnosing competency gaps & skills to develop..." />
+            </div>
+          ) : skillsToDevelop.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">No skill gaps identified yet</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Continue enrolling in courses and attempting assessments to receive personalized skill recommendations.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {skillsToDevelop.map((sk, idx) => (
+                <div
+                  key={sk._id || idx}
+                  className="bg-white border border-indigo-100 hover:border-indigo-300 rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4 transition-all"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        {sk.category || 'Competency Gap'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        Target: {sk.targetProficiency || 'Proficient'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                        {sk.skill || sk.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Current: <span className="font-semibold text-slate-700">{sk.currentProficiency || 'Not Earned'}</span>
+                      </p>
+                    </div>
+
+                    <div className="bg-indigo-50/50 border border-indigo-100/80 rounded-lg p-3 space-y-1">
+                      <span className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block">
+                        Why Develop This Skill:
+                      </span>
+                      <p className="text-xs text-slate-700 leading-relaxed">
+                        {sk.reason}
+                      </p>
+                    </div>
+
+                    {sk.mappedCourses && sk.mappedCourses.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                          Available Courses Covering This Skill:
+                        </span>
+                        <div className="space-y-1">
+                          {sk.mappedCourses.map((mc, mIdx) => (
+                            <Link
+                              key={mIdx}
+                              to={`/trainee/courses/${mc._id || mc.courseId || mc.id}`}
+                              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 block truncate"
+                            >
+                              • {mc.title}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSkillGuidance(sk.skill || sk.name)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>AI Improvement Guidance</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ====================================================
           SECTION 1: VERIFIED SKILLS (PROOF OF WORK)
           ==================================================== */}
+      {activeTab === 'verified' && (
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -249,7 +450,7 @@ const TraineeSkillsPage = () => {
           </span>
         </div>
 
-        {loading ? (
+        {loadingSkills ? (
           <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-sm">
             <Loading message="Loading verified skills portfolio..." />
           </div>
@@ -392,12 +593,13 @@ const TraineeSkillsPage = () => {
           </div>
         )}
       </div>
+    )}
 
       {/* ====================================================
           SECTION 2: LEARNING / NOT YET VERIFIED SKILLS
           ==================================================== */}
-      {filteredLearningSkills.length > 0 && (
-        <div className="space-y-4 pt-6 border-t border-slate-200">
+      {activeTab === 'learning' && (
+        <div className="space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-amber-600" />
@@ -410,48 +612,71 @@ const TraineeSkillsPage = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredLearningSkills.map((skill) => (
-              <div
-                key={skill._id}
-                className="bg-amber-50/40 border border-amber-200/80 rounded-xl p-4 space-y-2 shadow-2xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-slate-900 text-sm">{skill.name}</span>
-                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
-                      Learning
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">{skill.category}</span>
-                </div>
-
-                <div className="pt-2 border-t border-amber-200/60 space-y-2">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                    Target Course:
-                  </span>
-                  {skill.courses?.map((c, i) => (
-                    <Link
-                      key={i}
-                      to={`/trainee/courses/${c.courseId}`}
-                      className="text-xs text-slate-700 hover:text-amber-900 font-semibold block truncate"
-                    >
-                      {c.courseTitle} ({c.progress}%)
-                    </Link>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSkillGuidance(skill.name)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900 pt-1"
-                  >
-                    <Sparkles className="w-3 h-3 text-blue-600" />
-                    <span>Improve This Skill</span>
-                  </button>
-                </div>
+          {loadingSkills ? (
+            <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-sm">
+              <Loading message="Loading in-progress learning skills..." />
+            </div>
+          ) : filteredLearningSkills.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-xs text-slate-500 shadow-sm space-y-3">
+              <Clock className="w-10 h-10 text-slate-300 mx-auto" />
+              <div>
+                <p className="font-semibold text-slate-800 text-sm">No in-progress skills</p>
+                <p className="text-slate-400 mt-1 max-w-sm mx-auto">
+                  When you enroll in courses with mapped skills, they will appear here until you pass the final assessment.
+                </p>
               </div>
-            ))}
-          </div>
+              <Link
+                to="/trainee/courses"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs transition-colors"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Explore Course Catalog</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {filteredLearningSkills.map((skill) => (
+                <div
+                  key={skill._id}
+                  className="bg-amber-50/40 border border-amber-200/80 rounded-xl p-4 space-y-2 shadow-2xs flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-slate-900 text-sm">{skill.name}</span>
+                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                        Learning
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 block">{skill.category}</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-amber-200/60 space-y-2">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                      Target Course:
+                    </span>
+                    {skill.courses?.map((c, i) => (
+                      <Link
+                        key={i}
+                        to={`/trainee/courses/${c.courseId}`}
+                        className="text-xs text-slate-700 hover:text-amber-900 font-semibold block truncate"
+                      >
+                        {c.courseTitle} ({c.progress}%)
+                      </Link>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSkillGuidance(skill.name)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900 pt-1"
+                    >
+                      <Sparkles className="w-3 h-3 text-blue-600" />
+                      <span>Improve This Skill</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
