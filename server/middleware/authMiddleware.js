@@ -74,6 +74,33 @@ const protect = async (req, res, next) => {
 };
 
 /**
+ * Optional authentication middleware that attaches user if valid token present,
+ * but allows unauthenticated visitors to proceed without error
+ */
+const optionalAuth = async (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      if (token && process.env.JWT_SECRET) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (mongoose.connection.readyState === 1) {
+          const user = await User.findById(decoded.userId).select('-password');
+          if (user && user.isActive) {
+            req.user = user;
+          }
+        }
+      }
+    } catch (err) {
+      // Allow unauthenticated pass-through
+    }
+  }
+  next();
+};
+
+/**
  * Role authorization middleware factory
  * @param  {...string} roles - Permitted roles (e.g. 'admin', 'trainer', 'trainee')
  */
@@ -91,5 +118,6 @@ const authorizeRoles = (...roles) => {
 
 module.exports = {
   protect,
+  optionalAuth,
   authorizeRoles,
 };

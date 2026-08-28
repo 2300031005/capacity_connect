@@ -1,0 +1,211 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { createCourseApi } from '../../services/api';
+import Button from '../../components/Button';
+import ErrorMessage from '../../components/ErrorMessage';
+import { BookPlus, ArrowLeft } from 'lucide-react';
+
+const CreateCoursePage = () => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    level: 'beginner',
+    prerequisites: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    const { title, description, category, level, prerequisites } = formData;
+    if (!title.trim() || !description.trim() || !category.trim()) {
+      setError('Please fill in all required fields (Title, Description, Category).');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await createCourseApi({
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim(),
+        level,
+        prerequisites: prerequisites.trim(),
+      });
+
+      if (response && response.success && response.data) {
+        navigate(`/trainer/courses/${response.data._id}/manage`, {
+          state: { message: 'Course created as draft. Add modules and learning resources before publishing.' },
+        });
+      } else {
+        throw new Error(response?.message || 'Failed to create course');
+      }
+    } catch (err) {
+      console.error('Course creation error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to create course.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Breadcrumb Header */}
+      <div className="flex items-center gap-3">
+        <Link
+          to="/trainer/courses"
+          className="p-1.5 rounded hover:bg-slate-100 text-slate-600 transition-colors"
+          title="Back to courses"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Create New Course
+          </h1>
+          <p className="text-xs text-slate-500">
+            Define basic course metadata. You will add modules and resources on the next step.
+          </p>
+        </div>
+      </div>
+
+      {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
+
+      {/* Course Form */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="title">
+              Course Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              required
+              maxLength={150}
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="e.g. Modern Full-Stack Development with React & Node.js"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              disabled={loading}
+            />
+            <span className="text-[11px] text-slate-400 block mt-1">
+              Max 150 characters ({formData.title.length}/150)
+            </span>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="description">
+              Course Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows={4}
+              required
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Comprehensive summary of course objectives, syllabus scope, and learning outcomes..."
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Prerequisites */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="prerequisites">
+              Prerequisites <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              id="prerequisites"
+              name="prerequisites"
+              type="text"
+              value={formData.prerequisites}
+              onChange={handleChange}
+              placeholder="e.g. Basic JavaScript, HTML, CSS"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Category & Level Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Category */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="category">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="category"
+                name="category"
+                type="text"
+                required
+                value={formData.category}
+                onChange={handleChange}
+                placeholder="e.g. Software Engineering, Data Science"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Level */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="level">
+                Target Difficulty Level <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="level"
+                name="level"
+                value={formData.level}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                disabled={loading}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+            <Link
+              to="/trainer/courses"
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </Link>
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              loading={loading}
+              disabled={loading}
+              className="inline-flex items-center gap-2 text-xs font-semibold"
+            >
+              <BookPlus className="w-4 h-4" />
+              <span>{loading ? 'Creating...' : 'Save as Draft & Continue'}</span>
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default CreateCoursePage;

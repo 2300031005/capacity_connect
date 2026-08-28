@@ -22,14 +22,15 @@ const Sidebar = ({ isOpen, onClose }) => {
   const roleNavItems = {
     trainee: [
       { name: 'Dashboard', path: '/trainee/dashboard', icon: LayoutDashboard, exact: true },
-      { name: 'My Courses', path: '#', icon: BookOpen, comingSoon: true },
+      { name: 'Courses', path: '/trainee/courses', icon: BookOpen },
+      { name: 'My Courses', path: '/trainee/my-courses', icon: Award },
       { name: 'Assessments', path: '#', icon: FileCheck, comingSoon: true },
       { name: 'My Skills', path: '#', icon: Target, comingSoon: true },
-      { name: 'Progress', path: '#', icon: Award, comingSoon: true },
+      { name: 'Progress', path: '#', icon: BarChart3, comingSoon: true },
     ],
     trainer: [
       { name: 'Dashboard', path: '/trainer/dashboard', icon: LayoutDashboard, exact: true },
-      { name: 'Courses', path: '#', icon: BookOpen, comingSoon: true },
+      { name: 'Courses', path: '/trainer/courses', icon: BookOpen },
       { name: 'Assessments', path: '#', icon: FileCheck, comingSoon: true },
       { name: 'Learners', path: '#', icon: Users, comingSoon: true },
       { name: 'Analytics', path: '#', icon: BarChart3, comingSoon: true },
@@ -37,7 +38,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, exact: true },
       { name: 'Users', path: '#', icon: Users, comingSoon: true },
-      { name: 'Courses', path: '#', icon: BookOpen, comingSoon: true },
+      { name: 'Courses', path: '/admin/courses', icon: BookOpen },
       { name: 'Competencies', path: '#', icon: Layers, comingSoon: true },
       { name: 'Analytics', path: '#', icon: BarChart3, comingSoon: true },
     ],

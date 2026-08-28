@@ -1,0 +1,168 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { getCourseLearnersApi } from '../services/api';
+import Loading from './Loading';
+import ErrorMessage from './ErrorMessage';
+import { Users, X, Search, GraduationCap, Calendar, CheckCircle2 } from 'lucide-react';
+
+const LearnersModal = ({ courseId, onClose }) => {
+  if (!courseId) return null;
+
+  const [learnersData, setLearnersData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const fetchLearners = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getCourseLearnersApi(courseId);
+      if (response && response.success) {
+        setLearnersData(response.data);
+      } else {
+        throw new Error(response?.message || 'Failed to fetch enrolled learners');
+      }
+    } catch (err) {
+      console.error('Error loading learners:', err);
+      setError(err.response?.data?.message || err.message || 'Could not load enrolled learners.');
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchLearners();
+  }, [fetchLearners]);
+
+  const learners = learnersData?.learners || [];
+  const courseInfo = learnersData?.course;
+
+  const filteredLearners = learners.filter((l) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      l.name.toLowerCase().includes(term) ||
+      l.email.toLowerCase().includes(term) ||
+      l.department.toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+      <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <Users className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Enrolled Learners {courseInfo ? `(${courseInfo.enrolledCount || learners.length})` : ''}
+              </h3>
+              {courseInfo && (
+                <p className="text-xs text-slate-500 truncate max-w-md mt-0.5">
+                  Course: <span className="font-semibold text-slate-700">{courseInfo.title}</span>
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-800 rounded hover:bg-slate-200 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="p-4 border-b border-slate-100 bg-white">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by learner name, email, or department..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="overflow-y-auto flex-1 p-4 sm:p-6 bg-slate-50/50">
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <Loading message="Loading learner list..." />
+            </div>
+          ) : error ? (
+            <ErrorMessage message={error} onRetry={fetchLearners} />
+          ) : filteredLearners.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-lg p-10 text-center text-xs text-slate-500 space-y-2">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <p className="font-semibold text-slate-700">
+                {searchTerm ? 'No learners match your search.' : 'No learners have enrolled in this course yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                      <th className="py-3 px-4">Learner Name</th>
+                      <th className="py-3 px-4">Email</th>
+                      <th className="py-3 px-4">Department</th>
+                      <th className="py-3 px-4">Enrolled Date</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {filteredLearners.map((learner) => {
+                      const formattedDate = new Date(learner.enrolledAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      });
+
+                      return (
+                        <tr key={learner._id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-slate-900">
+                            {learner.name}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600">{learner.email}</td>
+                          <td className="py-3 px-4 text-slate-600">{learner.department}</td>
+                          <td className="py-3 px-4 text-slate-500">{formattedDate}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>{learner.status}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LearnersModal;

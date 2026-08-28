@@ -4,13 +4,28 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import DashboardLayout from './layouts/DashboardLayout';
+
+// Public Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import TraineeDashboardPage from './pages/TraineeDashboardPage';
-import TrainerDashboardPage from './pages/TrainerDashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
+
+// Trainee Workspace Pages
+import TraineeDashboardPage from './pages/TraineeDashboardPage';
+import CourseCatalogPage from './pages/trainee/CourseCatalogPage';
+import CourseDetailsPage from './pages/trainee/CourseDetailsPage';
+import MyCoursesPage from './pages/trainee/MyCoursesPage';
+
+// Trainer Workspace Pages
+import TrainerDashboardPage from './pages/TrainerDashboardPage';
+import TrainerCoursesPage from './pages/trainer/TrainerCoursesPage';
+import CreateCoursePage from './pages/trainer/CreateCoursePage';
+import ManageCoursePage from './pages/trainer/ManageCoursePage';
+
+// Admin Workspace Pages
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 
 function App() {
   return (
@@ -34,6 +49,9 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TraineeDashboardPage />} />
+          <Route path="courses" element={<CourseCatalogPage />} />
+          <Route path="courses/:id" element={<CourseDetailsPage />} />
+          <Route path="my-courses" element={<MyCoursesPage />} />
         </Route>
 
         {/* Role-Protected Trainer Workspace */}
@@ -46,6 +64,9 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TrainerDashboardPage />} />
+          <Route path="courses" element={<TrainerCoursesPage />} />
+          <Route path="courses/create" element={<CreateCoursePage />} />
+          <Route path="courses/:id/manage" element={<ManageCoursePage />} />
         </Route>
 
         {/* Role-Protected Admin Workspace */}
@@ -58,6 +79,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="courses" element={<AdminCoursesPage />} />
         </Route>
       </Routes>
     </AuthProvider>
