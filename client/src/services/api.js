@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get API base URL from environment or default to local backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Create configured Axios instance
 const api = axios.create({
@@ -191,10 +191,70 @@ export const createCourseDiscussionMessageApi = async (courseId, messageData) =>
 };
 
 // ==========================================
-// Trainer Learners Inspection APIs
+// Assessment & Quiz APIs
 // ==========================================
-export const getCourseLearnersApi = async (courseId) => {
-  const response = await api.get(`/courses/${courseId}/learners`);
+export const getModuleQuizApi = async (moduleId) => {
+  const response = await api.get(`/modules/${moduleId}/quiz`);
+  return response.data;
+};
+
+export const saveModuleQuizApi = async (moduleId, quizData) => {
+  const response = await api.post(`/modules/${moduleId}/quiz`, quizData);
+  return response.data;
+};
+
+export const getFinalAssessmentApi = async (courseId) => {
+  const response = await api.get(`/courses/${courseId}/final-assessment`);
+  return response.data;
+};
+
+export const saveFinalAssessmentApi = async (courseId, assessmentData) => {
+  const response = await api.post(`/courses/${courseId}/final-assessment`, assessmentData);
+  return response.data;
+};
+
+export const deleteAssessmentApi = async (assessmentId) => {
+  const response = await api.delete(`/assessments/${assessmentId}`);
+  return response.data;
+};
+
+export const toggleAssessmentStatusApi = async (assessmentId) => {
+  const response = await api.put(`/assessments/${assessmentId}/status`);
+  return response.data;
+};
+
+export const submitAssessmentAttemptApi = async (assessmentId, attemptData) => {
+  const response = await api.post(`/assessments/${assessmentId}/attempt`, attemptData);
+  return response.data;
+};
+
+export const getMyAssessmentAttemptsApi = async (assessmentId) => {
+  const response = await api.get(`/assessments/${assessmentId}/my-attempts`);
+  return response.data;
+};
+
+export const getCourseAssessmentResultsApi = async (courseId) => {
+  const response = await api.get(`/courses/${courseId}/trainer-results`);
+  return response.data;
+};
+
+// ==========================================
+// Certificate APIs
+// ==========================================
+export const getMyCertificatesApi = async () => {
+  const response = await api.get('/certificates/my');
+  return response.data;
+};
+
+export const getCertificateByIdApi = async (certificateId) => {
+  const response = await api.get(`/certificates/${certificateId}`);
+  return response.data;
+};
+
+export const downloadCertificateApi = async (certificateId) => {
+  const response = await api.get(`/certificates/${certificateId}/download`, {
+    responseType: 'blob',
+  });
   return response.data;
 };
 

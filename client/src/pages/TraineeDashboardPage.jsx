@@ -1,30 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMyCoursesApi } from '../services/api';
+import { getMyCoursesApi, getMyCertificatesApi } from '../services/api';
+import CertificateModal from '../components/CertificateModal';
 import {
   BookOpen,
   Award,
   Target,
   Sparkles,
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  Download,
+  Calendar,
+  CheckCircle2
 } from 'lucide-react';
 
 const TraineeDashboardPage = () => {
   const { user } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeCertificate, setActiveCertificate] = useState(null);
 
   useEffect(() => {
     const loadTraineeData = async () => {
       try {
-        const response = await getMyCoursesApi();
-        if (response && response.success) {
-          setEnrolledCourses(response.data || []);
+        const [coursesRes, certsRes] = await Promise.allSettled([
+          getMyCoursesApi(),
+          getMyCertificatesApi(),
+        ]);
+
+        if (coursesRes.status === 'fulfilled' && coursesRes.value?.success) {
+          setEnrolledCourses(coursesRes.value.data || []);
+        }
+        if (certsRes.status === 'fulfilled' && certsRes.value?.success) {
+          setCertificates(certsRes.value.data || []);
         }
       } catch (err) {
-        console.warn('Could not load enrollments on dashboard:', err.message);
+        console.warn('Could not load trainee data on dashboard:', err.message);
       } finally {
         setLoading(false);
       }
@@ -70,20 +83,20 @@ const TraineeDashboardPage = () => {
           </div>
           <p className="text-2xl font-bold text-slate-900">{enrolledCourses.length}</p>
           <p className="text-[11px] text-slate-400 mt-1">
-            {enrolledCourses.length > 0
-              ? 'Active learning pathways'
-              : 'No courses enrolled yet'}
+            {enrolledCourses.length > 0 ? 'Active learning pathways' : 'No courses enrolled yet'}
           </p>
         </div>
 
-        {/* Current Competency */}
+        {/* Certificates Earned */}
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Current Competency</span>
-            <Award className="w-4 h-4 text-teal-600" />
+            <span className="text-xs font-semibold uppercase tracking-wider">Certificates Earned</span>
+            <Award className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">Not assessed yet</p>
-          <p className="text-[11px] text-slate-400 mt-2">Assessments unlock in Phase 4</p>
+          <p className="text-2xl font-bold text-emerald-700">{certificates.length}</p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            {certificates.length > 0 ? 'Graduated course credentials' : 'Pass final assessments'}
+          </p>
         </div>
 
         {/* Skill Gaps */}
@@ -92,18 +105,18 @@ const TraineeDashboardPage = () => {
             <span className="text-xs font-semibold uppercase tracking-wider">Skill Gaps</span>
             <Target className="w-4 h-4 text-amber-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">No skill gaps identified</p>
+          <p className="text-sm font-semibold text-slate-700">No gaps identified</p>
           <p className="text-[11px] text-slate-400 mt-2">Diagnosed via assessments</p>
         </div>
 
         {/* Recommended Learning */}
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Recommended Learning</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Recommended</span>
             <Sparkles className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">Available soon</p>
-          <p className="text-[11px] text-slate-400 mt-2">AI-driven recommendations</p>
+          <p className="text-sm font-semibold text-slate-700">Active catalog</p>
+          <p className="text-[11px] text-slate-400 mt-2">Explore available courses</p>
         </div>
       </div>
 
@@ -167,6 +180,85 @@ const TraineeDashboardPage = () => {
           </div>
         )}
       </div>
+
+      {/* Certificates Section */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Award className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              My Earned Certificates ({certificates.length})
+            </h2>
+          </div>
+        </div>
+
+        {certificates.length === 0 ? (
+          <div className="text-center py-8 text-xs text-slate-400 space-y-1">
+            <p className="font-semibold text-slate-600">No certificates earned yet.</p>
+            <p>Complete all course modules and pass the final course assessment to graduate and receive your certificate.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {certificates.map((cert) => (
+              <div
+                key={cert._id}
+                className="bg-emerald-50/40 border border-emerald-200 rounded-lg p-4 flex flex-col justify-between space-y-3"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase">
+                      {cert.certificateId}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                      Score: {cert.percentage}%
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                    {cert.course?.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Instructor: {cert.trainer?.name || 'Instructor'}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-emerald-100 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400">
+                    Issued: {new Date(cert.issuedAt).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCertificate(cert)}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+                    >
+                      View
+                    </button>
+                    <a
+                      href={`http://localhost:5002/${cert.filePath}`}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 text-emerald-800 hover:text-emerald-950 rounded hover:bg-emerald-100 transition-colors"
+                      title="Download PDF"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Certificate Viewer Modal */}
+      {activeCertificate && (
+        <CertificateModal
+          isOpen={Boolean(activeCertificate)}
+          onClose={() => setActiveCertificate(null)}
+          certificate={activeCertificate}
+        />
+      )}
     </div>
   );
 };

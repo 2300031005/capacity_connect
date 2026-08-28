@@ -11,7 +11,8 @@ import {
   Layers,
   ArrowRight,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 
 const CourseCatalogPage = () => {
@@ -173,9 +174,17 @@ const CourseCatalogPage = () => {
                 <div className="space-y-3">
                   {/* Category & Level Badges */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      {course.category}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        {course.category}
+                      </span>
+                      {course.isEnrolled && (
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Enrolled</span>
+                        </span>
+                      )}
+                    </div>
                     <span
                       className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
                         levelStyles[course.level] || 'bg-slate-100 text-slate-700 border-slate-200'
@@ -217,9 +226,13 @@ const CourseCatalogPage = () => {
 
                   <Link
                     to={`/trainee/courses/${course._id}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+                      course.isEnrolled
+                        ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
                   >
-                    <span>View Course</span>
+                    <span>{course.isEnrolled ? 'Continue Course' : 'View Course'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

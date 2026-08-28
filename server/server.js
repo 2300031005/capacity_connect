@@ -11,6 +11,8 @@ const resourceRoutes = require('./routes/resourceRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const discussionRoutes = require('./routes/discussionRoutes');
+const assessmentRoutes = require('./routes/assessmentRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
 
@@ -52,6 +54,8 @@ app.use('/api', resourceRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api', reviewRoutes);
 app.use('/api', discussionRoutes);
+app.use('/api', assessmentRoutes);
+app.use('/api', certificateRoutes);
 
 // 404 Handler for unknown routes
 app.use(notFoundHandler);

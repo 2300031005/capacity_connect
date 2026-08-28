@@ -9,13 +9,17 @@ import {
   deleteCourseReviewApi,
   getCourseDiscussionsApi,
   createCourseDiscussionMessageApi,
-  toggleModuleCompleteApi
+  toggleModuleCompleteApi,
+  getModuleQuizApi,
+  getFinalAssessmentApi
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
 import ResourceViewer from '../../components/ResourceViewer';
+import QuizTakeModal from '../../components/QuizTakeModal';
+import CertificateModal from '../../components/CertificateModal';
 import {
   ArrowLeft,
   BookOpen,
@@ -43,7 +47,10 @@ import {
   ShieldCheck,
   Sparkles,
   CheckSquare,
-  Square
+  Square,
+  HelpCircle,
+  FileCheck,
+  RotateCcw
 } from 'lucide-react';
 
 const CourseDetailsPage = () => {
@@ -89,6 +96,15 @@ const CourseDetailsPage = () => {
   // Resource previewer modal state
   const [previewResource, setPreviewResource] = useState(null);
 
+  // Assessment & Certification State
+  const [moduleQuizzes, setModuleQuizzes] = useState({}); // { [moduleId]: { quiz, latestAttempt } }
+  const [finalAssessmentData, setFinalAssessmentData] = useState(null); // { assessment, latestAttempt, certificate }
+  const [activeQuizModal, setActiveQuizModal] = useState({ isOpen: false, assessment: null });
+  const [activeCertificateModal, setActiveCertificateModal] = useState({
+    isOpen: false,
+    certificate: null,
+  });
+
   const isOwnerTrainer =
     user?.role === 'trainer' &&
     course?.trainer &&
@@ -104,7 +120,8 @@ const CourseDetailsPage = () => {
       const response = await getCourseByIdApi(courseId);
       if (response && response.success && response.data) {
         setCourse(response.data.course);
-        setModules(response.data.modules || []);
+        const mods = response.data.modules || [];
+        setModules(mods);
         setIsEnrolled(response.data.isEnrolled);
         setEnrollment(response.data.enrollment);
         if (response.data.enrollment?.completedModules) {
@@ -114,6 +131,30 @@ const CourseDetailsPage = () => {
             )
           );
         }
+
+        // Fetch Final Assessment (if enrolled or published)
+        try {
+          const finalRes = await getFinalAssessmentApi(courseId);
+          if (finalRes && finalRes.success) {
+            setFinalAssessmentData(finalRes.data || null);
+          }
+        } catch (e) {
+          console.error('Final assessment load error:', e);
+        }
+
+        // Fetch Module Quizzes
+        const quizMap = {};
+        await Promise.all(
+          mods.map(async (m) => {
+            try {
+              const qRes = await getModuleQuizApi(m._id);
+              if (qRes && qRes.success && qRes.data) {
+                quizMap[m._id] = qRes.data;
+              }
+            } catch (e) {}
+          })
+        );
+        setModuleQuizzes(quizMap);
       } else {
         throw new Error(response?.message || 'Course details not found');
       }
@@ -701,11 +742,181 @@ const CourseDetailsPage = () => {
                       <p className="text-xs text-slate-400 italic">No resources attached to this module yet.</p>
                     )
                   )}
+
+                {/* Module Quiz Card for Enrolled Trainees */}
+                {isEnrolled && moduleQuizzes[mod._id]?.quiz && (
+                  <div className="bg-emerald-50/50 border border-emerald-200 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0">
+                        <HelpCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            {moduleQuizzes[mod._id].quiz.title}
+                          </span>
+                          {moduleQuizzes[mod._id].latestAttempt && (
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              Score: {moduleQuizzes[mod._id].latestAttempt.score}/
+                              {moduleQuizzes[mod._id].latestAttempt.totalMarks} (
+                              {moduleQuizzes[mod._id].latestAttempt.percentage}%)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-mono">
+                          {moduleQuizzes[mod._id].quiz.questions?.length || 0} Questions •{' '}
+                          {moduleQuizzes[mod._id].quiz.questions?.reduce(
+                            (sum, q) => sum + (q.marks || 1),
+                            0
+                          ) || 0}{' '}
+                          Marks • Pass: {moduleQuizzes[mod._id].quiz.passingPercentage || 50}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewResource(null);
+                        setActiveQuizModal({
+                          isOpen: true,
+                          assessment: moduleQuizzes[mod._id].quiz,
+                        });
+                      }}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs flex-shrink-0"
+                    >
+                      {moduleQuizzes[mod._id].latestAttempt ? (
+                        <>
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Retake Quiz</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5" />
+                          <span>Start Quiz</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
                   </div>
                 );
               })}
             </div>
           )}
+
+        {/* Final Course Assessment Section for Enrolled Trainees */}
+        {isEnrolled && finalAssessmentData?.assessment && (
+          <div className="bg-white border-2 border-indigo-100 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                  <FileCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-700">
+                      Final Course Assessment
+                    </span>
+                    {finalAssessmentData.certificate ? (
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                        <Award className="w-3 h-3 text-emerald-600" />
+                        <span>Certified</span>
+                      </span>
+                    ) : finalAssessmentData.latestAttempt ? (
+                      <span
+                        className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                          finalAssessmentData.latestAttempt.passed
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-red-50 text-red-800 border-red-200'
+                        }`}
+                      >
+                        {finalAssessmentData.latestAttempt.percentage}% •{' '}
+                        {finalAssessmentData.latestAttempt.passed ? 'PASSED' : 'FAILED'}
+                      </span>
+                    ) : null}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {finalAssessmentData.assessment.title}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Passing requirement: {finalAssessmentData.assessment.passingPercentage || 60}% •{' '}
+                    {finalAssessmentData.assessment.questions?.length || 0} Questions
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {finalAssessmentData.certificate ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveCertificateModal({
+                        isOpen: true,
+                        certificate: finalAssessmentData.certificate,
+                      })
+                    }
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Award className="w-4 h-4" />
+                    <span>View Certificate</span>
+                  </button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    onClick={() => {
+                      setPreviewResource(null);
+                      setActiveQuizModal({
+                        isOpen: true,
+                        assessment: finalAssessmentData.assessment,
+                      });
+                    }}
+                    className="px-5 text-xs font-bold inline-flex items-center gap-1.5"
+                  >
+                    {finalAssessmentData.latestAttempt ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Retake Final Assessment</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Start Final Assessment</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Certificate Banner */}
+            {finalAssessmentData.certificate && (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-900">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    You have earned the Certificate of Completion! Identifier:{' '}
+                    <strong className="font-mono font-bold">
+                      {finalAssessmentData.certificate.certificateId}
+                    </strong>
+                  </span>
+                </div>
+                <a
+                  href={`http://localhost:5002/${finalAssessmentData.certificate.filePath}`}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-emerald-800 hover:underline inline-flex items-center gap-1 flex-shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
           {/* Enrollment Callout Banner for Non-Enrolled Trainees */}
           {!isEnrolled && modules.length > 0 && (
@@ -1050,6 +1261,39 @@ const CourseDetailsPage = () => {
         <ResourceViewer
           resource={previewResource}
           onClose={() => setPreviewResource(null)}
+        />
+      )}
+
+      {/* Quiz / Assessment Taking Modal */}
+      {activeQuizModal.isOpen && (
+        <QuizTakeModal
+          isOpen={activeQuizModal.isOpen}
+          onClose={() => setActiveQuizModal({ isOpen: false, assessment: null })}
+          assessment={activeQuizModal.assessment}
+          courseTitle={course?.title || ''}
+          onCompleted={(result) => {
+            setActiveQuizModal({ isOpen: false, assessment: null });
+            setPreviewResource(null);
+            fetchCourseDetails();
+            if (result?.attempt) {
+              setSuccessMessage(
+                result.certificate
+                  ? `🎉 Congratulations! Final Course Assessment passed (${result.attempt.percentage}%). Certificate generated!`
+                  : `✓ Quiz submitted successfully (${result.attempt.percentage}%)! Module progress recorded.`
+              );
+            }
+          }}
+        />
+      )}
+
+      {/* Certificate Viewer Modal */}
+      {activeCertificateModal.isOpen && (
+        <CertificateModal
+          isOpen={activeCertificateModal.isOpen}
+          onClose={() =>
+            setActiveCertificateModal({ isOpen: false, certificate: null })
+          }
+          certificate={activeCertificateModal.certificate}
         />
       )}
     </div>

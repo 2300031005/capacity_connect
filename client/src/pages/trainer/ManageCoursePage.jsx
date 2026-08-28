@@ -8,13 +8,17 @@ import {
   updateModuleApi,
   deleteModuleApi,
   createResourceApi,
-  deleteResourceApi
+  deleteResourceApi,
+  getFinalAssessmentApi,
+  getModuleQuizApi,
+  toggleAssessmentStatusApi
 } from '../../services/api';
 import Button from '../../components/Button';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
 import ResourceViewer from '../../components/ResourceViewer';
 import LearnersModal from '../../components/LearnersModal';
+import QuizBuilderModal from '../../components/QuizBuilderModal';
 import {
   ArrowLeft,
   BookOpen,
@@ -35,7 +39,11 @@ import {
   FileSpreadsheet,
   Download,
   Play,
-  Users
+  Users,
+  HelpCircle,
+  FileCheck,
+  Percent,
+  Check
 } from 'lucide-react';
 
 const ManageCoursePage = () => {
@@ -45,6 +53,8 @@ const ManageCoursePage = () => {
 
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
+  const [finalAssessment, setFinalAssessment] = useState(null);
+  const [moduleQuizzes, setModuleQuizzes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState(location.state?.message || null);
@@ -74,6 +84,15 @@ const ManageCoursePage = () => {
   });
   const [selectedFile, setSelectedFile] = useState(null);
 
+  // Quiz Builder Modal Config State
+  const [quizModalConfig, setQuizModalConfig] = useState({
+    isOpen: false,
+    type: 'module',
+    moduleId: null,
+    moduleTitle: '',
+    initialAssessment: null,
+  });
+
   // Resource Viewer Modal state
   const [previewResource, setPreviewResource] = useState(null);
 
@@ -86,7 +105,8 @@ const ManageCoursePage = () => {
       const response = await getCourseByIdApi(courseId);
       if (response && response.success && response.data) {
         setCourse(response.data.course);
-        setModules(response.data.modules || []);
+        const mods = response.data.modules || [];
+        setModules(mods);
         setCourseFormData({
           title: response.data.course.title,
           description: response.data.course.description,
@@ -94,6 +114,30 @@ const ManageCoursePage = () => {
           level: response.data.course.level,
           prerequisites: response.data.course.prerequisites || '',
         });
+
+        // Fetch Final Assessment
+        try {
+          const finalRes = await getFinalAssessmentApi(courseId);
+          if (finalRes && finalRes.success) {
+            setFinalAssessment(finalRes.data?.assessment || null);
+          }
+        } catch (e) {
+          console.error('Error loading final assessment:', e);
+        }
+
+        // Fetch Module Quizzes
+        const quizMap = {};
+        await Promise.all(
+          mods.map(async (m) => {
+            try {
+              const qRes = await getModuleQuizApi(m._id);
+              if (qRes && qRes.success && qRes.data?.quiz) {
+                quizMap[m._id] = qRes.data.quiz;
+              }
+            } catch (e) {}
+          })
+        );
+        setModuleQuizzes(quizMap);
       } else {
         throw new Error(response?.message || 'Course not found');
       }
@@ -317,6 +361,39 @@ const ManageCoursePage = () => {
       setFeedback('Resource removed.');
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to delete resource.');
+    }
+  };
+
+  // ====================================================
+  // ASSESSMENT & QUIZ HANDLERS
+  // ====================================================
+  const openModuleQuizBuilder = (mod) => {
+    setQuizModalConfig({
+      isOpen: true,
+      type: 'module',
+      moduleId: mod._id,
+      moduleTitle: mod.title,
+      initialAssessment: moduleQuizzes[mod._id] || null,
+    });
+  };
+
+  const openFinalAssessmentBuilder = () => {
+    setQuizModalConfig({
+      isOpen: true,
+      type: 'final',
+      moduleId: null,
+      moduleTitle: '',
+      initialAssessment: finalAssessment,
+    });
+  };
+
+  const handleToggleAssessmentStatus = async (assessmentId) => {
+    try {
+      await toggleAssessmentStatusApi(assessmentId);
+      await fetchCourseData();
+      setFeedback('Assessment publication status updated.');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to update assessment status.');
     }
   };
 
@@ -640,10 +717,182 @@ const ManageCoursePage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Module Quiz Section */}
+                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">
+                          {moduleQuizzes[mod._id]?.title || 'Module Quiz'}
+                        </span>
+                        {moduleQuizzes[mod._id] ? (
+                          <span
+                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${
+                              moduleQuizzes[mod._id].status === 'published'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}
+                          >
+                            {moduleQuizzes[mod._id].status}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">No quiz created</span>
+                        )}
+                      </div>
+                      {moduleQuizzes[mod._id] && (
+                        <p className="text-[10px] text-slate-500 font-mono">
+                          {moduleQuizzes[mod._id].questions?.length || 0} Questions •{' '}
+                          {moduleQuizzes[mod._id].questions?.reduce(
+                            (sum, q) => sum + (q.marks || 1),
+                            0
+                          ) || 0}{' '}
+                          Marks • Pass: {moduleQuizzes[mod._id].passingPercentage || 50}%
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {moduleQuizzes[mod._id] ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleToggleAssessmentStatus(moduleQuizzes[mod._id]._id)
+                          }
+                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors"
+                        >
+                          {moduleQuizzes[mod._id].status === 'published'
+                            ? 'Unpublish'
+                            : 'Publish'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openModuleQuizBuilder(mod)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Manage Quiz</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openModuleQuizBuilder(mod)}
+                        className="px-2.5 py-1 text-xs font-semibold bg-white text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-300 transition-colors inline-flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Create Quiz</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Final Course Assessment Card */}
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                <FileCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {finalAssessment?.title || 'Final Course Assessment'}
+                  </h3>
+                  {finalAssessment ? (
+                    <span
+                      className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
+                        finalAssessment.status === 'published'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                      }`}
+                    >
+                      {finalAssessment.status}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic">Not created</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Comprehensive evaluation for automatic certificate generation.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {finalAssessment ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAssessmentStatus(finalAssessment._id)}
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors"
+                  >
+                    {finalAssessment.status === 'published' ? 'Unpublish' : 'Publish'}
+                  </button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={openFinalAssessmentBuilder}
+                    className="px-4 text-xs font-bold inline-flex items-center gap-1.5"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>Manage Assessment</span>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={openFinalAssessmentBuilder}
+                  className="px-4 text-xs font-bold inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Final Assessment</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {finalAssessment ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded border border-slate-200 text-xs">
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-mono block">Questions</span>
+                <strong className="text-slate-800 font-bold">
+                  {finalAssessment.questions?.length || 0} Questions
+                </strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Marks</span>
+                <strong className="text-slate-800 font-bold">
+                  {finalAssessment.questions?.reduce(
+                    (sum, q) => sum + (q.marks || 1),
+                    0
+                  ) || 0}{' '}
+                  Marks
+                </strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-mono block">Passing Percentage</span>
+                <strong className="text-indigo-700 font-bold">
+                  {finalAssessment.passingPercentage || 60}% required
+                </strong>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 italic">
+              No final assessment created yet. Trainees who complete the curriculum must pass the final assessment to be issued an official Certificate of Completion.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* ====================================================
@@ -939,6 +1188,31 @@ const ManageCoursePage = () => {
         <LearnersModal
           courseId={courseId}
           onClose={() => setShowLearnersModal(false)}
+        />
+      )}
+
+      {/* ====================================================
+          MODAL 6: QUIZ & ASSESSMENT BUILDER MODAL
+          ==================================================== */}
+      {quizModalConfig.isOpen && (
+        <QuizBuilderModal
+          isOpen={quizModalConfig.isOpen}
+          onClose={() =>
+            setQuizModalConfig({
+              isOpen: false,
+              type: 'module',
+              moduleId: null,
+              moduleTitle: '',
+              initialAssessment: null,
+            })
+          }
+          onSaved={fetchCourseData}
+          type={quizModalConfig.type}
+          moduleId={quizModalConfig.moduleId}
+          courseId={courseId}
+          moduleTitle={quizModalConfig.moduleTitle}
+          courseTitle={course?.title || ''}
+          initialAssessment={quizModalConfig.initialAssessment}
         />
       )}
     </div>

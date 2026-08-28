@@ -70,9 +70,25 @@ const getCourses = async (req, res, next) => {
       moduleCountMap[item._id.toString()] = item.count;
     });
 
+    // Check enrollment status if user is a trainee
+    const enrollmentMap = {};
+    if (req.user && req.user.role === 'trainee') {
+      const userEnrollments = await Enrollment.find({
+        trainee: req.user._id,
+        course: { $in: courseIds },
+      }).select('course status progress');
+
+      userEnrollments.forEach((e) => {
+        enrollmentMap[e.course.toString()] = e;
+      });
+    }
+
     const coursesWithCount = courses.map((course) => {
       const courseObj = course.toObject();
       courseObj.moduleCount = moduleCountMap[course._id.toString()] || 0;
+      const userEnrollment = enrollmentMap[course._id.toString()];
+      courseObj.isEnrolled = Boolean(userEnrollment);
+      courseObj.enrollmentProgress = userEnrollment ? userEnrollment.progress : 0;
       return courseObj;
     });
 
