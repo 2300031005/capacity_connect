@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Assessment = require('../models/Assessment');
 const QuizAttempt = require('../models/QuizAttempt');
 const Certificate = require('../models/Certificate');
@@ -228,12 +229,24 @@ const getFinalAssessment = async (req, res, next) => {
       const certificate = await Certificate.findOne({
         trainee: req.user._id,
         course: courseId,
-      });
+      })
+        .populate('trainee', 'name email')
+        .populate('course', 'title')
+        .populate('trainer', 'name');
 
       const latestAttempt = await QuizAttempt.findOne({
         trainee: req.user._id,
         assessment: assessment._id,
       }).sort({ createdAt: -1 });
+
+      // Check module completion gating
+      const courseModules = await Module.find({ course: course._id }).select('_id');
+      const completedSet = new Set(
+        (enrollment.completedModules || []).map((id) => id.toString())
+      );
+      const allModulesCompleted =
+        courseModules.length === 0 ||
+        courseModules.every((mod) => completedSet.has(mod._id.toString()));
 
       const sanitizedAssessment = assessment.toObject();
       sanitizedAssessment.questions = sanitizeQuestionsForTrainee(assessment.questions);
@@ -244,6 +257,12 @@ const getFinalAssessment = async (req, res, next) => {
           assessment: sanitizedAssessment,
           latestAttempt,
           certificate,
+          isLocked: !allModulesCompleted,
+          totalModules: courseModules.length,
+          completedCount: completedSet.size,
+          gatingMessage: !allModulesCompleted
+            ? 'Complete all required course modules before attempting the final assessment.'
+            : null,
         },
       });
     }
@@ -466,6 +485,29 @@ const submitAssessmentAttempt = async (req, res, next) => {
         success: false,
         message: 'Access denied. You must be enrolled in this course to take this assessment.',
       });
+    }
+
+    // Final Assessment Gating Enforcement (Backend Authority)
+    if (assessment.type === 'final') {
+      const courseModules = await Module.find({ course: course._id }).select('_id');
+      const completedSet = new Set(
+        (enrollment.completedModules || []).map((id) => id.toString())
+      );
+      const allModulesCompleted =
+        courseModules.length === 0 ||
+        courseModules.every((mod) => completedSet.has(mod._id.toString()));
+
+      if (!allModulesCompleted) {
+        return res.status(403).json({
+          success: false,
+          isLocked: true,
+          message: 'Complete all required course modules before attempting the final assessment.',
+          data: {
+            totalModules: courseModules.length,
+            completedModules: completedSet.size,
+          },
+        });
+      }
     }
 
     // Evaluate answers
@@ -724,6 +766,305 @@ const getCourseAssessmentResults = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get trainee's centralized assessments feed (Available & Completed across enrolled courses)
+ * @route   GET /api/assessments/my-feed
+ * @access  Private (Trainee only)
+ */
+const getMyAssessmentsFeed = async (req, res, next) => {
+  try {
+    const traineeId = req.user._id;
+
+    // Find all active/completed enrollments for this trainee
+    const enrollments = await Enrollment.find({ trainee: traineeId }).populate({
+      path: 'course',
+      select: 'title category level status trainer',
+      populate: { path: 'trainer', select: 'name email department' },
+    });
+
+    const availableAssessments = [];
+    const completedAssessments = [];
+
+    for (const enrollment of enrollments) {
+      const course = enrollment.course;
+      if (!course || course.status !== 'published') continue;
+
+      const courseModules = await Module.find({ course: course._id }).sort({ order: 1 });
+      const completedSet = new Set(
+        (enrollment.completedModules || []).map((id) => id.toString())
+      );
+      const allModulesCompleted =
+        courseModules.length === 0 ||
+        courseModules.every((mod) => completedSet.has(mod._id.toString()));
+
+      // 1. Module Quizzes for this course
+      for (const mod of courseModules) {
+        const quiz = await Assessment.findOne({
+          course: course._id,
+          module: mod._id,
+          type: 'module',
+          status: 'published',
+        });
+
+        if (quiz && quiz.questions && quiz.questions.length > 0) {
+          const latestAttempt = await QuizAttempt.findOne({
+            trainee: traineeId,
+            $or: [{ assessment: quiz._id }, { module: mod._id }],
+          }).sort({ createdAt: -1 });
+
+          const totalMarks = quiz.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
+          const passThreshold = quiz.passingPercentage || 50;
+
+          if (latestAttempt) {
+            completedAssessments.push({
+              _id: quiz._id,
+              type: 'module',
+              title: quiz.title || `${mod.title} Quiz`,
+              courseId: course._id,
+              courseTitle: course.title,
+              moduleId: mod._id,
+              moduleTitle: mod.title,
+              questionCount: quiz.questions.length,
+              totalMarks,
+              passThreshold,
+              latestAttempt: {
+                _id: latestAttempt._id,
+                score: latestAttempt.score,
+                totalMarks: latestAttempt.totalMarks,
+                percentage: latestAttempt.percentage,
+                passed: latestAttempt.passed,
+                createdAt: latestAttempt.createdAt,
+              },
+            });
+          } else {
+            availableAssessments.push({
+              _id: quiz._id,
+              type: 'module',
+              title: quiz.title || `${mod.title} Quiz`,
+              courseId: course._id,
+              courseTitle: course.title,
+              moduleId: mod._id,
+              moduleTitle: mod.title,
+              questionCount: quiz.questions.length,
+              totalMarks,
+              passThreshold,
+              isLocked: false,
+            });
+          }
+        }
+      }
+
+      // 2. Final Course Assessment
+      const finalAssessment = await Assessment.findOne({
+        course: course._id,
+        type: 'final',
+        status: 'published',
+      });
+
+      if (finalAssessment && finalAssessment.questions && finalAssessment.questions.length > 0) {
+        const latestAttempt = await QuizAttempt.findOne({
+          trainee: traineeId,
+          $or: [{ assessment: finalAssessment._id }, { course: course._id, type: 'final' }],
+        }).sort({ createdAt: -1 });
+
+        const certificate = await Certificate.findOne({
+          trainee: traineeId,
+          course: course._id,
+        })
+          .populate('trainee', 'name email')
+          .populate('course', 'title')
+          .populate('trainer', 'name');
+
+        const totalMarks = finalAssessment.questions.reduce((sum, q) => sum + (q.marks || 1), 0);
+        const passThreshold = finalAssessment.passingPercentage || 60;
+
+        if (latestAttempt) {
+          completedAssessments.push({
+            _id: finalAssessment._id,
+            type: 'final',
+            title: finalAssessment.title || `${course.title} Final Assessment`,
+            courseId: course._id,
+            courseTitle: course.title,
+            questionCount: finalAssessment.questions.length,
+            totalMarks,
+            passThreshold,
+            certificate: certificate || null,
+            latestAttempt: {
+              _id: latestAttempt._id,
+              score: latestAttempt.score,
+              totalMarks: latestAttempt.totalMarks,
+              percentage: latestAttempt.percentage,
+              passed: latestAttempt.passed,
+              createdAt: latestAttempt.createdAt,
+            },
+          });
+        } else {
+          availableAssessments.push({
+            _id: finalAssessment._id,
+            type: 'final',
+            title: finalAssessment.title || `${course.title} Final Assessment`,
+            courseId: course._id,
+            courseTitle: course.title,
+            questionCount: finalAssessment.questions.length,
+            totalMarks,
+            passThreshold,
+            isLocked: !allModulesCompleted,
+            totalModules: courseModules.length,
+            completedModules: completedSet.size,
+          });
+        }
+      }
+    }
+
+    console.log(
+      `[GET /api/assessments/my-feed] Trainee: ${req.user.name || traineeId} | Available: ${availableAssessments.length} | Completed: ${completedAssessments.length}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        availableAssessments,
+        completedAssessments,
+      },
+    });
+  } catch (error) {
+    console.error('[GET /api/assessments/my-feed] Error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get trainer's centralized assessments overview across all their courses
+ * @route   GET /api/assessments/trainer-overview
+ * @access  Private (Owner Trainer, Admin)
+ */
+const getTrainerAssessmentsOverview = async (req, res, next) => {
+  try {
+    const query = req.user.role === 'admin' ? {} : { trainer: req.user._id };
+    const courses = await Course.find(query).sort({ createdAt: -1 });
+
+    const courseIds = courses.map((c) => c._id);
+    const assessments = await Assessment.find({ course: { $in: courseIds } })
+      .populate('module', 'title order')
+      .populate('course', 'title status');
+
+    const overview = await Promise.all(
+      assessments.map(async (ass) => {
+        const attempts = await QuizAttempt.find({ assessment: ass._id });
+        const passedCount = attempts.filter((a) => a.passed).length;
+        const avgScore =
+          attempts.length > 0
+            ? Math.round(attempts.reduce((sum, a) => sum + a.percentage, 0) / attempts.length)
+            : null;
+
+        return {
+          _id: ass._id,
+          title: ass.title,
+          type: ass.type,
+          status: ass.status,
+          courseId: ass.course?._id,
+          courseTitle: ass.course?.title,
+          moduleTitle: ass.module?.title || null,
+          questionCount: ass.questions?.length || 0,
+          totalMarks: ass.questions?.reduce((sum, q) => sum + (q.marks || 1), 0) || 0,
+          passingPercentage: ass.passingPercentage || (ass.type === 'final' ? 60 : 50),
+          totalAttempts: attempts.length,
+          passedCount,
+          avgScore,
+          updatedAt: ass.updatedAt,
+        };
+      })
+    );
+
+    console.log(
+      `[GET /api/assessments/trainer-overview] User: ${req.user.name} | Assessments: ${overview.length}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: overview,
+    });
+  } catch (error) {
+    console.error('[GET /api/assessments/trainer-overview] Error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get assessment by ID (Sanitized for trainee)
+ * @route   GET /api/assessments/:id
+ * @access  Private (Authenticated)
+ */
+const getAssessmentById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    console.log(`[GET /api/assessments/${id}] Requested by: ${req.user.email} (${req.user.role})`);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.warn(`[GET /api/assessments/${id}] Invalid ObjectId format`);
+      return res.status(400).json({ success: false, message: 'Invalid assessment ID format' });
+    }
+
+    const assessment = await Assessment.findById(id)
+      .populate('course', 'title trainer')
+      .populate('module', 'title order');
+    if (!assessment) {
+      console.warn(`[GET /api/assessments/${id}] Assessment not found in database`);
+      return res.status(404).json({ success: false, message: 'Assessment not found' });
+    }
+
+    if (req.user.role === 'trainee') {
+      const enrollment = await Enrollment.findOne({
+        trainee: req.user._id,
+        course: assessment.course._id,
+      });
+
+      if (!enrollment) {
+        console.warn(`[GET /api/assessments/${id}] Trainee ${req.user.email} not enrolled in course ${assessment.course._id}`);
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You must be enrolled in this course to view this assessment.',
+        });
+      }
+
+      if (assessment.status !== 'published') {
+        return res.status(403).json({
+          success: false,
+          message: 'Assessment is not published.',
+        });
+      }
+
+      const latestAttempt = await QuizAttempt.findOne({
+        trainee: req.user._id,
+        $or: [{ assessment: assessment._id }, { module: assessment.module?._id }],
+      }).sort({ createdAt: -1 });
+
+      const sanitized = assessment.toObject();
+      sanitized.questions = sanitizeQuestionsForTrainee(assessment.questions);
+
+      console.log(`[GET /api/assessments/${id}] Success -> Title: "${sanitized.title}" (${sanitized.questions.length} Qs)`);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          assessment: sanitized,
+          latestAttempt,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        assessment,
+      },
+    });
+  } catch (error) {
+    console.error(`[GET /api/assessments/${req.params.id}] Error:`, error);
+    next(error);
+  }
+};
+
 module.exports = {
   getModuleQuiz,
   saveModuleQuiz,
@@ -734,4 +1075,7 @@ module.exports = {
   submitAssessmentAttempt,
   getMyAssessmentAttempts,
   getCourseAssessmentResults,
+  getMyAssessmentsFeed,
+  getTrainerAssessmentsOverview,
+  getAssessmentById,
 };

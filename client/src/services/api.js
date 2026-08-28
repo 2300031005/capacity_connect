@@ -238,6 +238,21 @@ export const getCourseAssessmentResultsApi = async (courseId) => {
   return response.data;
 };
 
+export const getMyAssessmentsFeedApi = async () => {
+  const response = await api.get('/assessments/my-feed');
+  return response.data;
+};
+
+export const getTrainerAssessmentsOverviewApi = async () => {
+  const response = await api.get('/assessments/trainer-overview');
+  return response.data;
+};
+
+export const getAssessmentByIdApi = async (assessmentId) => {
+  const response = await api.get(`/assessments/${assessmentId}`);
+  return response.data;
+};
+
 // ==========================================
 // Certificate APIs
 // ==========================================

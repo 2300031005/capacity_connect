@@ -10,8 +10,20 @@ const {
   submitAssessmentAttempt,
   getMyAssessmentAttempts,
   getCourseAssessmentResults,
+  getMyAssessmentsFeed,
+  getTrainerAssessmentsOverview,
+  getAssessmentById,
 } = require('../controllers/assessmentController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
+
+// Centralized Assessment Feed & Overview Routes (Defined before /assessments/:id)
+router.get('/assessments/my-feed', protect, authorizeRoles('trainee'), getMyAssessmentsFeed);
+router.get(
+  '/assessments/trainer-overview',
+  protect,
+  authorizeRoles('trainer', 'admin'),
+  getTrainerAssessmentsOverview
+);
 
 // Module Quiz Routes
 router.get('/modules/:moduleId/quiz', protect, getModuleQuiz);
@@ -26,7 +38,8 @@ router.post(
   saveFinalAssessment
 );
 
-// Assessment Management Routes
+// Assessment Details & Management Routes
+router.get('/assessments/:id', protect, getAssessmentById);
 router.delete('/assessments/:id', protect, authorizeRoles('trainer', 'admin'), deleteAssessment);
 router.put(
   '/assessments/:id/status',

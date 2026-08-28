@@ -16,12 +16,14 @@ import TraineeDashboardPage from './pages/TraineeDashboardPage';
 import CourseCatalogPage from './pages/trainee/CourseCatalogPage';
 import CourseDetailsPage from './pages/trainee/CourseDetailsPage';
 import MyCoursesPage from './pages/trainee/MyCoursesPage';
+import TraineeAssessmentsPage from './pages/trainee/TraineeAssessmentsPage';
 
 // Trainer Workspace Pages
 import TrainerDashboardPage from './pages/TrainerDashboardPage';
 import TrainerCoursesPage from './pages/trainer/TrainerCoursesPage';
 import CreateCoursePage from './pages/trainer/CreateCoursePage';
 import ManageCoursePage from './pages/trainer/ManageCoursePage';
+import TrainerAssessmentsPage from './pages/trainer/TrainerAssessmentsPage';
 
 // Admin Workspace Pages
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -52,6 +54,7 @@ function App() {
           <Route path="courses" element={<CourseCatalogPage />} />
           <Route path="courses/:id" element={<CourseDetailsPage />} />
           <Route path="my-courses" element={<MyCoursesPage />} />
+          <Route path="assessments" element={<TraineeAssessmentsPage />} />
         </Route>
 
         {/* Role-Protected Trainer Workspace */}
@@ -67,6 +70,7 @@ function App() {
           <Route path="courses" element={<TrainerCoursesPage />} />
           <Route path="courses/create" element={<CreateCoursePage />} />
           <Route path="courses/:id/manage" element={<ManageCoursePage />} />
+          <Route path="assessments" element={<TrainerAssessmentsPage />} />
         </Route>
 
         {/* Role-Protected Admin Workspace */}

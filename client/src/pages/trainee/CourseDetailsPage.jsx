@@ -818,7 +818,12 @@ const CourseDetailsPage = () => {
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-700">
                       Final Course Assessment
                     </span>
-                    {finalAssessmentData.certificate ? (
+                    {finalAssessmentData.isLocked ? (
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        <span>Locked</span>
+                      </span>
+                    ) : finalAssessmentData.certificate ? (
                       <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
                         <Award className="w-3 h-3 text-emerald-600" />
                         <span>Certified</span>
@@ -837,17 +842,28 @@ const CourseDetailsPage = () => {
                     ) : null}
                   </div>
                   <h3 className="text-lg font-bold text-slate-900">
-                    {finalAssessmentData.assessment.title}
+                    {finalAssessmentData.assessment?.title || 'Final Course Assessment'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Passing requirement: {finalAssessmentData.assessment.passingPercentage || 60}% •{' '}
-                    {finalAssessmentData.assessment.questions?.length || 0} Questions
+                    Passing requirement: {finalAssessmentData.assessment?.passingPercentage || 60}% •{' '}
+                    {finalAssessmentData.assessment?.questions?.length || 0} Questions
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {finalAssessmentData.certificate ? (
+                {finalAssessmentData.isLocked ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    disabled
+                    className="px-5 text-xs font-bold opacity-60 cursor-not-allowed inline-flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Locked</span>
+                  </Button>
+                ) : finalAssessmentData.certificate ? (
                   <button
                     type="button"
                     onClick={() =>
@@ -890,6 +906,16 @@ const CourseDetailsPage = () => {
                 )}
               </div>
             </div>
+
+            {/* Gating Locked Prompt */}
+            {finalAssessmentData.isLocked && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-xs text-amber-900 flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <span>
+                  Complete all required course modules before attempting the final assessment.
+                </span>
+              </div>
+            )}
 
             {/* Certificate Banner */}
             {finalAssessmentData.certificate && (
