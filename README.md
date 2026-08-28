@@ -8,7 +8,19 @@ Capacity Connect is a full-stack learning management and skill verification port
 
 ## 🚀 Key Features & Capabilities
 
-### 1. 👥 Platform Governance, Trainer Management & Assessment Review (Phase 6.5)
+### 1. 🤖 AI-Powered Assessment Explanation (Phase 7.1)
+- **Contextual AI Tutor**: Post-submission question-by-question remediation using OpenAI GPT-4o-mini (`POST /api/assessments/attempts/:attemptId/questions/:questionId/explain`).
+- **Structured Educational Feedback**:
+  - `explanation`: High-level summary connecting the question to the target skill.
+  - `whyYourAnswerWasWrong` / `whyYourAnswerWasCorrect`: Constructive analysis explaining why the selected choice was correct or incorrect.
+  - `correctConcept`: Core theoretical principle the learner should master.
+  - `keyTakeaway`: Memorable rule of thumb.
+  - `studyTip`: Practical actionable advice or mnemonic.
+- **Authoritative Instructor Context**: Uses instructor-provided question explanations as authoritative ground truth without hallucination.
+- **Anti-Cheat & Strict RBAC**: Explanations are strictly gated to submitted attempts owned by the authenticated trainee. Correct answers and explanations remain fully stripped from pre-submission quiz payloads.
+- **Resilient AI Architecture**: Isolated backend service (`server/services/openaiService.js`) with in-memory abuse rate protection, fallback generation when offline/unconfigured, and zero exposure of API keys to client.
+
+### 2. 👥 Platform Governance, Trainer Management & Assessment Review (Phase 6.5)
 - **Admin User Management (`/admin/users`)**:
   - Centralized directory for all platform users (Trainees, Trainers, Admins) with keyword search and role/status filtering.
   - Role-specific audit modals: Trainees (enrolled courses, completions, certificates, progress) & Trainers (authored courses, learners, ratings).
@@ -192,6 +204,9 @@ Run the automated test suites from the `server` directory:
 ```bash
 cd server
 
+# Phase 7.1 AI Assessment Explanation Test Suite (10 Groups / 35 Tests)
+node test_phase7_1.js
+
 # Phase 6.5 User/Trainer Governance & Assessment Review Suite (16 Groups / 37 Tests)
 node test_phase6_5.js
 
@@ -217,6 +232,11 @@ npm run build
 ---
 
 ## 🔌 API Reference Overview
+
+### AI-Powered Assessment Tutor (Phase 7.1)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/assessments/attempts/:attemptId/questions/:questionId/explain` | Trainee | Generate structured educational explanation for submitted question using GPT-4o-mini |
 
 ### User & Trainer Management (Phase 6.5)
 | Method | Endpoint | Access | Description |
@@ -298,6 +318,30 @@ npm run build
 - **Server-Side Verification**: Skill awards, certificate generation, and anti-cheat validation are computed strictly on the backend.
 - **Ownership Verification**: Trainers can only modify their own courses; Admins maintain platform-wide governance.
 - **Sanitized Responses**: Correct quiz options and internal assessment keys are stripped before returning data to learners.
+
+---
+
+## 🧪 Automated Testing Suite (`server/tests/`)
+
+All integration and regression test suites are organized in `server/tests/`:
+
+```bash
+# Run all platform test suites sequentially
+npm run test:all
+
+# Run Phase 7.1 AI Tutor test suite (35 tests)
+npm test # or npm run test:p7_1
+
+# Run live OpenAI connectivity & security verification
+node tests/verify_live_openai.js
+
+# Run individual phase regression suites
+npm run test:p6_5  # Phase 6.5 User/Trainer Management & Review (37 tests)
+npm run test:p6    # Phase 6 Analytics & Visual Dashboards (12 tests)
+npm run test:p5_5  # Phase 5.5 Skill Attainment & Competency (14 tests)
+npm run test:p5    # Phase 5 Skill Library & Taxonomy (20 tests)
+npm run test:p4_5  # Phase 4.5 Assessment Gating & Certificates (20 tests)
+```
 
 ---
 

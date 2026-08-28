@@ -3,16 +3,16 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const { generateCertificatePDF, generateCertificateId } = require('./utils/certificateGenerator');
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const { generateCertificatePDF, generateCertificateId } = require('../utils/certificateGenerator');
 
 async function runPhase4Tests() {
   console.log('--- STARTING PHASE 4 AUTOMATED TEST SUITE ---');
@@ -275,7 +275,7 @@ async function runPhase4Tests() {
         issuedAt: new Date(),
       });
 
-      const fullPath = path.join(__dirname, filePath);
+      const fullPath = path.resolve(__dirname, '../', filePath);
       if (!fs.existsSync(fullPath)) {
         throw new Error(`FAILED: PDF Certificate was not written to filesystem at ${fullPath}`);
       }

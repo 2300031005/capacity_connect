@@ -1,20 +1,21 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+
+// Load environment variables from server root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Models
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const Skill = require('./models/Skill');
-const Competency = require('./models/Competency');
-
-// Load environment variables
-dotenv.config();
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const Skill = require('../models/Skill');
+const Competency = require('../models/Competency');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/capacity_connect_test';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_in_production';
@@ -39,12 +40,12 @@ const {
   toggleUserStatus,
   getTrainers,
   getTrainerById,
-} = require('./controllers/userManagementController');
+} = require('../controllers/userManagementController');
 
 const {
   getTrainerLearners,
   getTrainerLearnerDetails,
-} = require('./controllers/trainerLearnerController');
+} = require('../controllers/trainerLearnerController');
 
 const {
   getModuleQuiz,
@@ -54,9 +55,9 @@ const {
   submitAssessmentAttempt,
   getAssessmentAttemptReview,
   getCourseAssessmentResults,
-} = require('./controllers/assessmentController');
+} = require('../controllers/assessmentController');
 
-const { getMySkills } = require('./controllers/traineeSkillController');
+const { getMySkills } = require('../controllers/traineeSkillController');
 
 // Mock response creator
 function createMockRes() {

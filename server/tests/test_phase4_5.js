@@ -1,19 +1,19 @@
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Resource = require('./models/Resource');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const CourseReview = require('./models/CourseReview');
-const CourseDiscussionMessage = require('./models/CourseDiscussionMessage');
-const { generateCertificatePDF, generateCertificateId } = require('./utils/certificateGenerator');
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Resource = require('../models/Resource');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const CourseReview = require('../models/CourseReview');
+const CourseDiscussionMessage = require('../models/CourseDiscussionMessage');
+const { generateCertificatePDF, generateCertificateId } = require('../utils/certificateGenerator');
 
 const MONGO_URI =
   process.env.MONGO_URI ||
@@ -287,7 +287,7 @@ async function runPhase45RegressionTests() {
     console.log(`✓ PASS: Certificate generated: ${certDoc.certificateId}`);
 
     // Verify PDF on filesystem
-    const diskPath = path.join(__dirname, filePath1);
+    const diskPath = path.resolve(__dirname, '../', filePath1);
     if (!fs.existsSync(diskPath)) {
       throw new Error(`Generated PDF file not found at: ${diskPath}`);
     }

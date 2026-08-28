@@ -1,16 +1,19 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const Skill = require('./models/Skill');
-const Competency = require('./models/Competency');
+const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const Skill = require('../models/Skill');
+const Competency = require('../models/Competency');
+
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/capacity_connect';
 
 async function testSkillAttainmentWorkflow() {
@@ -110,7 +113,7 @@ async function testSkillAttainmentWorkflow() {
     // STEP 1: Trainee is enrolled with 0% progress
     // ==============================================================
     console.log('\nSTEP 1: Trainee Enrolled (0% Progress)');
-    let { getMySkills, getMyCompetencies } = require('./controllers/traineeSkillController');
+    let { getMySkills, getMyCompetencies } = require('../controllers/traineeSkillController');
 
     // Simulate GET /api/trainees/me/skills
     let mockReq = { user: trainee };

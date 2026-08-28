@@ -1,18 +1,22 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const Skill = require('./models/Skill');
-const Competency = require('./models/Competency');
-const { getMySkills, getMyCompetencies } = require('./controllers/traineeSkillController');
-const { createCourse, updateCourse } = require('./controllers/courseController');
+const path = require('path');
 
-dotenv.config();
+// Load environment variables from server root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const Skill = require('../models/Skill');
+const Competency = require('../models/Competency');
+const { getMySkills, getMyCompetencies } = require('../controllers/traineeSkillController');
+const { createCourse, updateCourse } = require('../controllers/courseController');
+
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/capacity_connect';
 
 async function runTestPhase5_5() {

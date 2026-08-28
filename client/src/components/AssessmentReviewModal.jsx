@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAssessmentAttemptReviewApi } from '../services/api';
+import { getAssessmentAttemptReviewApi, explainAssessmentQuestionApi } from '../services/api';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
 import {
@@ -15,17 +15,27 @@ import {
   FileCheck,
   AlertCircle,
   Info,
+  Lightbulb,
+  Target,
+  RefreshCw,
 } from 'lucide-react';
 
 const AssessmentReviewModal = ({ isOpen, onClose, attemptId }) => {
   const [reviewData, setReviewData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [aiModalQuestion, setAiModalQuestion] = useState(null);
+
+  // AI Explanation State
+  const [activeAiQuestion, setActiveAiQuestion] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiExplanationsMap, setAiExplanationsMap] = useState({}); // { [questionId]: aiExplanationData }
 
   useEffect(() => {
     if (!isOpen || !attemptId) {
       setReviewData(null);
+      setActiveAiQuestion(null);
+      setAiExplanationsMap({});
       return;
     }
 
@@ -50,7 +60,44 @@ const AssessmentReviewModal = ({ isOpen, onClose, attemptId }) => {
     fetchReview();
   }, [isOpen, attemptId]);
 
+  const handleOpenAiExplanation = async (question) => {
+    const qId = question.questionId || question._id;
+    setActiveAiQuestion(question);
+    setAiError(null);
+
+    // If already fetched during this session, use cached result
+    if (aiExplanationsMap[qId]) {
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const response = await explainAssessmentQuestionApi(attemptId, qId);
+      if (response && response.success && response.data) {
+        setAiExplanationsMap((prev) => ({
+          ...prev,
+          [qId]: response.data,
+        }));
+      } else {
+        throw new Error(response?.message || 'Failed to generate AI explanation.');
+      }
+    } catch (err) {
+      console.error('Error generating AI explanation:', err);
+      setAiError(
+        err.response?.data?.message ||
+        err.message ||
+        'AI explanation is temporarily unavailable. Please try again later.'
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const currentAiData = activeAiQuestion
+    ? aiExplanationsMap[activeAiQuestion.questionId || activeAiQuestion._id]
+    : null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
@@ -272,15 +319,15 @@ const AssessmentReviewModal = ({ isOpen, onClose, attemptId }) => {
                         </div>
                       )}
 
-                      {/* Phase 7 AI Integration Hook */}
+                      {/* Phase 7.1 AI Explanation Action */}
                       <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[11px] text-slate-400 italic">
-                          {isCorrect ? 'Well done!' : 'Need additional clarification?'}
+                          {isCorrect ? 'Great job!' : 'Need personalized conceptual help?'}
                         </span>
                         <button
                           type="button"
-                          onClick={() => setAiModalQuestion(q)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors"
+                          onClick={() => handleOpenAiExplanation(q)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition-colors shadow-2xs"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                           <span>Explain with AI</span>
@@ -306,40 +353,168 @@ const AssessmentReviewModal = ({ isOpen, onClose, attemptId }) => {
         </div>
       </div>
 
-      {/* Phase 7 AI Explanation Modal Hook */}
-      {aiModalQuestion && (
-        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-purple-700 font-bold text-sm">
-                <Sparkles className="w-4 h-4" />
-                <span>AI Tutor Explanation</span>
+      {/* Phase 7.1 Structured AI Explanation Modal */}
+      {activeAiQuestion && (
+        <div className="fixed inset-0 z-60 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[88vh] flex flex-col border border-purple-200 overflow-hidden">
+            {/* AI Modal Header */}
+            <div className="px-6 py-4 border-b border-purple-100 bg-purple-50/70 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-purple-950 flex items-center gap-2">
+                    <span>AI Tutor Explanation</span>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-200/80 text-purple-800">
+                      Phase 7.1 AI
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-purple-700">
+                    Question {activeAiQuestion.questionIndex} &bull; Conceptual Remediation
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setAiModalQuestion(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded"
+                onClick={() => setActiveAiQuestion(null)}
+                className="p-1.5 text-purple-400 hover:text-purple-800 rounded-lg hover:bg-purple-100 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-purple-50/50 border border-purple-200 rounded-lg space-y-2 text-xs text-slate-700">
-              <p className="font-semibold text-purple-900">
-                Phase 7 AI Learning Integration Point
-              </p>
-              <p className="text-[11px] text-slate-600 leading-relaxed">
-                In <strong>Phase 7 (AI Integration)</strong>, this button will dispatch question context, your selected answer (<strong className="font-mono">{aiModalQuestion.selectedOption || 'None'}</strong>), and the correct answer (<strong className="font-mono">{aiModalQuestion.correctOption}</strong>) to an intelligent tutoring agent to provide personalized, concept-level remediation!
-              </p>
+            {/* AI Modal Content */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+              {/* Question Context Card */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Question Prompt
+                </span>
+                <p className="font-semibold text-slate-900 text-xs sm:text-sm">
+                  {activeAiQuestion.questionText}
+                </p>
+                <div className="flex items-center gap-4 pt-1 text-[11px]">
+                  <span className="text-slate-600">
+                    Your Selection:{' '}
+                    <strong className={activeAiQuestion.isCorrect ? 'text-emerald-700' : 'text-red-700'}>
+                      Option {activeAiQuestion.selectedOption || 'None'}
+                    </strong>
+                  </span>
+                  <span className="text-slate-600">
+                    Correct Option:{' '}
+                    <strong className="text-emerald-700">Option {activeAiQuestion.correctOption}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {aiLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-10 h-10 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs font-semibold text-purple-900">
+                    AI is analyzing your answer and synthesizing conceptual feedback...
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Evaluating question choices & instructor context
+                  </p>
+                </div>
+              ) : aiError ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3 text-red-900">
+                  <div className="flex items-center gap-2 font-bold text-xs">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <span>AI Explanation Notice</span>
+                  </div>
+                  <p className="text-xs text-red-800">{aiError}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAiExplanation(activeAiQuestion)}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry Request</span>
+                  </button>
+                </div>
+              ) : currentAiData?.aiExplanation ? (
+                <div className="space-y-3.5 animate-fadeIn">
+                  {/* High Level Explanation */}
+                  <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl space-y-1">
+                    <div className="flex items-center gap-1.5 text-purple-900 font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Executive Explanation</span>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {currentAiData.aiExplanation.explanation}
+                    </p>
+                  </div>
+
+                  {/* Why Your Answer Was Right / Wrong */}
+                  {currentAiData.isCorrect ? (
+                    <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Why Your Answer Was Correct</span>
+                      </div>
+                      <p className="text-emerald-950 leading-relaxed">
+                        {currentAiData.aiExplanation.whyYourAnswerWasCorrect}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                        <Info className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Why Your Selection Was Incorrect</span>
+                      </div>
+                      <p className="text-amber-950 leading-relaxed">
+                        {currentAiData.aiExplanation.whyYourAnswerWasWrong}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Correct Concept */}
+                  <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-1">
+                    <div className="flex items-center gap-1.5 text-blue-900 font-bold">
+                      <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Core Concept to Master</span>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">
+                      {currentAiData.aiExplanation.correctConcept}
+                    </p>
+                  </div>
+
+                  {/* Key Takeaway & Study Tip Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-900 font-bold text-[11px]">
+                        <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Key Takeaway</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        {currentAiData.aiExplanation.keyTakeaway}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-900 font-bold text-[11px]">
+                        <Target className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Recommended Study Tip</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        {currentAiData.aiExplanation.studyTip}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <div className="text-right">
+            {/* AI Modal Footer */}
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setAiModalQuestion(null)}
-                className="px-4 py-1.5 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                onClick={() => setActiveAiQuestion(null)}
+                className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors shadow-xs"
               >
-                Got It
+                Close Explanation
               </button>
             </div>
           </div>
@@ -350,3 +525,4 @@ const AssessmentReviewModal = ({ isOpen, onClose, attemptId }) => {
 };
 
 export default AssessmentReviewModal;
+

@@ -423,6 +423,11 @@ export const getAssessmentAttemptReviewApi = async (attemptId) => {
   return response.data;
 };
 
+export const explainAssessmentQuestionApi = async (attemptId, questionId) => {
+  const response = await api.post(`/assessments/attempts/${attemptId}/questions/${questionId}/explain`);
+  return response.data;
+};
+
 // ==========================================
 // Health Check API
 // ==========================================

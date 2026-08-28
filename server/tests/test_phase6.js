@@ -6,25 +6,26 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from server root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const User = require('./models/User');
-const Course = require('./models/Course');
-const Module = require('./models/Module');
-const Enrollment = require('./models/Enrollment');
-const Assessment = require('./models/Assessment');
-const QuizAttempt = require('./models/QuizAttempt');
-const Certificate = require('./models/Certificate');
-const Skill = require('./models/Skill');
-const Competency = require('./models/Competency');
+const User = require('../models/User');
+const Course = require('../models/Course');
+const Module = require('../models/Module');
+const Enrollment = require('../models/Enrollment');
+const Assessment = require('../models/Assessment');
+const QuizAttempt = require('../models/QuizAttempt');
+const Certificate = require('../models/Certificate');
+const Skill = require('../models/Skill');
+const Competency = require('../models/Competency');
 
 const {
   getTraineeAnalytics,
   getTrainerAnalytics,
   getAdminAnalytics,
-} = require('./controllers/analyticsController');
+} = require('../controllers/analyticsController');
 
 // Mock Express Response Helper
 const createMockRes = () => {
@@ -465,7 +466,7 @@ const runPhase6Tests = async () => {
     // TEST 12: RBAC Route Protection Verification
     // -------------------------------------------------------------
     console.log('\nTEST 12: RBAC Route Protection Guards');
-    const analyticsRoutes = require('./routes/analyticsRoutes');
+    const analyticsRoutes = require('../routes/analyticsRoutes');
     const getLayerMethods = (path, method) => {
       const route = analyticsRoutes.stack.find((l) => l.route && l.route.path === path && l.route.methods[method]);
       return route ? route.route.stack.map((s) => s.name) : [];

@@ -7,6 +7,7 @@ const Module = require('../models/Module');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const { generateCertificatePDF, generateCertificateId } = require('../utils/certificateGenerator');
+const { generateQuestionExplanation, checkRateLimit } = require('../services/openaiService');
 
 /**
  * Helper to sanitize assessment questions for Trainee (strip correctOption)
@@ -1189,6 +1190,151 @@ const getAssessmentAttemptReview = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Generate personalized AI explanation for an assessment question after submission (Phase 7.1)
+ * @route   POST /api/assessments/attempts/:attemptId/questions/:questionId/explain
+ * @access  Private (Attempt Owner Trainee, Admin, Course Owner Trainer)
+ */
+const explainAssessmentQuestion = async (req, res, next) => {
+  try {
+    const { attemptId, questionId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(attemptId) || !mongoose.Types.ObjectId.isValid(questionId)) {
+      return res.status(400).json({ success: false, message: 'Invalid attempt or question ID.' });
+    }
+
+    // 1. Rate limiting check
+    const rateCheck = checkRateLimit(req.user._id.toString());
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: 'You have requested multiple AI explanations recently. Please wait a moment before trying again.',
+        retryAfterMs: rateCheck.remainingMs,
+      });
+    }
+
+    // 2. Fetch QuizAttempt with related Course, Module, and Assessment
+    const attempt = await QuizAttempt.findById(attemptId)
+      .populate({
+        path: 'course',
+        select: 'title description category level status skills trainer',
+        populate: { path: 'skills.skill', select: 'name category' },
+      })
+      .populate('module', 'title order')
+      .populate('assessment');
+
+    if (!attempt) {
+      return res.status(404).json({ success: false, message: 'Assessment attempt not found.' });
+    }
+
+    // 3. RBAC Check: Trainee MUST own the attempt; Trainer can inspect if owns the course; Admin has platform visibility
+    const isOwnerTrainee = attempt.trainee.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    const isOwnerTrainer =
+      req.user.role === 'trainer' &&
+      attempt.course?.trainer &&
+      attempt.course.trainer.toString() === req.user._id.toString();
+
+    if (!isOwnerTrainee && !isAdmin && !isOwnerTrainer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only request AI explanations for your own assessment attempts.',
+      });
+    }
+
+    // 4. Anti-Cheat: Attempt MUST have been submitted (not in progress)
+    if (!attempt.submittedAt && attempt.percentage === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'AI explanations are only available after submitting the assessment.',
+      });
+    }
+
+    // 5. Find the requested question within the attempt's recorded answers
+    const ans = attempt.answers.find(
+      (a) =>
+        (a.question && a.question.toString() === questionId) ||
+        (a._id && a._id.toString() === questionId)
+    );
+
+    if (!ans) {
+      return res.status(404).json({
+        success: false,
+        message: 'Question was not found in this assessment attempt.',
+      });
+    }
+
+    // Lookup original question doc from assessment definition for fallback text/options if needed
+    const qDoc =
+      attempt.assessment?.questions?.id(ans.question) ||
+      attempt.assessment?.questions?.id(questionId) ||
+      {};
+
+    const questionText = ans.questionText || qDoc.questionText || 'Assessment Question';
+    const optionA = ans.optionA || qDoc.optionA || 'Option A';
+    const optionB = ans.optionB || qDoc.optionB || 'Option B';
+    const optionC = ans.optionC || qDoc.optionC || 'Option C';
+    const optionD = ans.optionD || qDoc.optionD || 'Option D';
+    const selectedOption = ans.selectedOption || '';
+    const correctOption = ans.correctOption || qDoc.correctOption || 'A';
+    const trainerExplanation = ans.explanation || qDoc.explanation || '';
+    const marks = ans.marksAwarded !== undefined ? ans.marksAwarded : qDoc.marks || 1;
+
+    // Extract Skill and Proficiency context from course skills
+    let skillName = attempt.course?.category || 'General';
+    let targetProficiency = 'General';
+
+    if (attempt.course?.skills && attempt.course.skills.length > 0) {
+      const primarySkillItem = attempt.course.skills[0];
+      if (primarySkillItem.skill?.name) {
+        skillName = primarySkillItem.skill.name;
+      }
+      if (primarySkillItem.proficiency) {
+        targetProficiency = primarySkillItem.proficiency;
+      }
+    }
+
+    // 6. Generate structured explanation via OpenAI service
+    const explanationData = await generateQuestionExplanation({
+      courseTitle: attempt.course?.title || 'Capacity Connect Course',
+      moduleTitle: attempt.module?.title || (attempt.type === 'final' ? 'Final Comprehensive Exam' : ''),
+      assessmentType: attempt.type || 'Assessment',
+      skillName,
+      targetProficiency,
+      questionText,
+      optionA,
+      optionB,
+      optionC,
+      optionD,
+      selectedOption,
+      correctOption,
+      trainerExplanation,
+      marks,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        attemptId: attempt._id,
+        questionId,
+        questionText,
+        selectedOption,
+        correctOption,
+        isCorrect: ans.isCorrect,
+        skill: {
+          name: skillName,
+          proficiency: targetProficiency,
+        },
+        trainerExplanation: trainerExplanation || null,
+        aiExplanation: explanationData,
+      },
+    });
+  } catch (error) {
+    console.error(`[POST /api/assessments/attempts/:attemptId/questions/:questionId/explain] Error:`, error);
+    next(error);
+  }
+};
+
 module.exports = {
   getModuleQuiz,
   saveModuleQuiz,
@@ -1203,4 +1349,5 @@ module.exports = {
   getTrainerAssessmentsOverview,
   getAssessmentById,
   getAssessmentAttemptReview,
+  explainAssessmentQuestion,
 };
