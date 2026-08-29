@@ -41,7 +41,7 @@ const MainLayout = () => {
   const userDashboard = user?.role ? roleDashboardMap[user.role] : '/login';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 selection:bg-[#dcfce7] selection:text-emerald-950 font-sans">
+    <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#172B3A] selection:bg-blue-100 selection:text-[#0B3D62] font-sans">
       {/* SECTION 1 — TOP GOVERNMENT MASTHEAD (Utility Bar - Height 48-52px, IN Badge, larger font) */}
       <div className="w-full bg-[#EA580C] text-white h-12 sm:h-[50px] px-4 sm:px-6 lg:px-8 border-b border-[#d97706]/40 flex items-center justify-between text-[13px] font-bold tracking-wide shadow-xs shrink-0">
         <div className="flex items-center gap-2.5">

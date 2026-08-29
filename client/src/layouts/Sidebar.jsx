@@ -8,7 +8,6 @@ import {
   Target,
   BarChart3,
   Users,
-  Award,
   Layers,
   GraduationCap,
   ShieldCheck,
@@ -57,9 +56,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
   const navItems = roleNavItems[role] || roleNavItems.trainee;
 
   const roleBadgeInfo = {
-    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-50 text-[#005A8D] border-[#D7E0E7]' },
-    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-[#F7F9FB] text-[#526575] border-[#D7E0E7]' },
-    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-[#F7F9FB] text-[#16834B] border-[#D7E0E7]' },
+    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-950/70 text-blue-300 border-blue-800/80' },
+    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-teal-950/70 text-teal-300 border-teal-800/80' },
+    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-indigo-950/70 text-indigo-300 border-indigo-800/80' },
   };
 
   const currentBadge = roleBadgeInfo[role] || roleBadgeInfo.trainee;
@@ -70,28 +69,31 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container: Deep Navy Identity in Light and Dark mode */}
+      {/* Sidebar Container: Light & Professional by Default, Adapts in Dark Theme */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-white border-r border-[#D7E0E7] transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${isCollapsed ? 'md:w-20 w-64' : 'md:w-64 w-64'}`}
+        className={`fixed inset-y-0 left-0 z-50 bg-[#0F172A] dark:bg-[#080F1D] border-r border-slate-800 dark:border-slate-800/80 transform transition-all duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto overflow-x-hidden text-[#CBD5E1] dark:text-[#94A3B8] ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } ${isCollapsed ? 'md:w-20 w-64' : 'md:w-64 w-64'}`}
       >
         <div className="flex-1">
           {/* Sidebar Role Badge */}
-          <div className="p-4 border-b border-[#D7E0E7]">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-semibold ${currentBadge.color}`}>
-              <RoleIcon className="w-4 h-4" />
-              <span>{currentBadge.label}</span>
+          <div className={`p-3 border-b border-slate-800/80 transition-all ${isCollapsed ? 'px-2' : 'px-4'}`}>
+            <div
+              className={`flex items-center gap-2.5 py-2 rounded-lg border text-xs font-semibold ${currentBadge.color} ${isCollapsed ? 'justify-center px-2' : 'px-3'
+                }`}
+              title={currentBadge.label}
+            >
+              <RoleIcon className="w-4 h-4 shrink-0 text-blue-400" />
+              {!isCollapsed && <span className="truncate tracking-wide">{currentBadge.label}</span>}
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-2 space-y-1 mt-2">
+          <nav className="p-3 space-y-1">
             {navItems.map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -102,29 +104,45 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
                   onClick={onClose}
                   title={item.name}
                   className={({ isActive }) =>
-                    `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                      isCollapsed ? 'justify-center px-2' : ''
-                    } ${
-                      isActive
-                        ? 'bg-blue-50 text-[#005A8D] font-semibold'
-                        : 'text-[#526575] hover:text-[#172B3A] hover:bg-[#F7F9FB]'
+                    `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 ${isCollapsed ? 'justify-center px-2' : ''
+                    } ${isActive
+                      ? 'bg-blue-600/20 dark:bg-[#172554] text-white dark:text-[#F8FAFC] border-l-3 border-[#2563EB] dark:border-[#60A5FA] font-bold shadow-xs'
+                      : 'text-[#CBD5E1] dark:text-[#94A3B8] hover:text-white dark:hover:text-[#F8FAFC] hover:bg-slate-800/60 dark:hover:bg-slate-900/60 border-l-3 border-transparent'
                     }`
                   }
                 >
-                  <Icon className={`w-4 h-4 ${ 
-                    /* Icon inherits parent color from NavLink className above */ '' 
-                  }`} />
-                  <span>{item.name}</span>
+                  <Icon
+                    className={`w-4 h-4 shrink-0 transition-colors group-hover:text-blue-400 ${window.location.pathname === item.path ? 'text-blue-400' : 'text-slate-400'
+                      }`}
+                  />
+                  {!isCollapsed && <span className="truncate">{item.name}</span>}
                 </NavLink>
               );
             })}
           </nav>
         </div>
 
-        {/* Sidebar Footer Info */}
-        <div className="p-4 border-t border-[#D7E0E7] text-xs">
-          <p className="font-semibold text-[#0B3D62]">PRAGATI</p>
-          <p className="text-[11px] text-[#526575]">Digital Capacity Building Platform</p>
+        {/* Sidebar Footer & Exclusive Bottom Collapse Action */}
+        <div className="p-3 border-t border-slate-800/80">
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className={`flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors border border-transparent hover:border-slate-700/80 cursor-pointer ${isCollapsed ? 'justify-center' : 'justify-start'
+                }`}
+              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            >
+              {isCollapsed ? (
+                <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
+              ) : (
+                <>
+                  <ArrowLeft className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">Collapse Sidebar</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </aside>
     </>
