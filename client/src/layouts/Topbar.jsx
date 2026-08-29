@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
-import { Menu, LogOut, User, ChevronDown, ShieldCheck, Sparkles, ExternalLink } from 'lucide-react';
+import { Menu, LogOut, User, ChevronDown } from 'lucide-react';
 
 const Topbar = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
@@ -59,16 +59,16 @@ const Topbar = ({ onMenuClick }) => {
   }, [profileOpen]);
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-30 transition-colors shadow-xs">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white sticky top-0 z-30 transition-colors shadow-xs">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Brand Logo & Title (Clean layout with generous breathing room, NO top-left collapse icon) */}
+          {/* Left: Brand Logo & Title */}
           <div className="flex items-center gap-3">
             {/* Mobile Menu Trigger */}
             <button
               type="button"
               onClick={onMenuClick}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden transition-colors"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden transition-colors"
               aria-label="Open navigation menu"
             >
               <Menu className="w-5 h-5" />
@@ -82,10 +82,10 @@ const Topbar = ({ onMenuClick }) => {
                 className="w-8 h-8 object-contain"
               />
               <div className="flex flex-col">
-                <span className="font-bold text-sm tracking-wider text-white leading-tight">
+                <span className="font-bold text-sm tracking-wider text-slate-900 dark:text-white leading-tight">
                   COGNISPHERE
                 </span>
-                <span className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-widest uppercase">
                   Capacity Connect
                 </span>
               </div>
@@ -97,7 +97,7 @@ const Topbar = ({ onMenuClick }) => {
             {/* Theme Toggle Button */}
             <ThemeToggle />
 
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
             {/* User Profile Popover Trigger Button */}
             <div className="relative">
@@ -107,10 +107,10 @@ const Topbar = ({ onMenuClick }) => {
                 onClick={() => setProfileOpen((prev) => !prev)}
                 aria-expanded={profileOpen}
                 aria-haspopup="true"
-                className={`flex items-center gap-2.5 p-1.5 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+                className={`flex items-center gap-2.5 p-1.5 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer ${
                   profileOpen
-                    ? 'bg-slate-800 border-slate-700 text-white shadow-xs'
-                    : 'bg-slate-900 hover:bg-slate-800/80 border-transparent hover:border-slate-800 text-slate-200'
+                    ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white shadow-xs'
+                    : 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/80 border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200'
                 }`}
                 title="Account Menu"
               >
@@ -135,10 +135,10 @@ const Topbar = ({ onMenuClick }) => {
 
                 {/* User Name & Role */}
                 <div className="hidden sm:block text-left pr-1">
-                  <span className="text-xs font-bold text-white block leading-tight">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block leading-tight">
                     {user?.name || 'User'}
                   </span>
-                  <span className="text-[10px] font-semibold text-slate-400 capitalize block">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 capitalize block">
                     {roleLabelMap[user?.role] || user?.role || 'Trainee'}
                   </span>
                 </div>
@@ -146,7 +146,7 @@ const Topbar = ({ onMenuClick }) => {
                 {/* Chevron indicator */}
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                    profileOpen ? 'rotate-180 text-white' : ''
+                    profileOpen ? 'rotate-180 text-slate-900 dark:text-white' : ''
                   }`}
                 />
               </button>
@@ -155,18 +155,18 @@ const Topbar = ({ onMenuClick }) => {
               {profileOpen && (
                 <div
                   ref={popoverRef}
-                  className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-fadeIn divide-y divide-slate-800"
+                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-fadeIn divide-y divide-slate-100 dark:divide-slate-800"
                 >
                   {/* Account Header Info */}
-                  <div className="p-4 bg-slate-950/60">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/60">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0 border border-blue-500/40">
                         {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate">{user?.name || 'User'}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{user?.email || 'user@capacityconnect.gov'}</p>
-                        <span className="inline-block mt-1 px-1.5 py-0.2 text-[9px] font-bold uppercase rounded bg-blue-950 text-blue-300 border border-blue-800/80">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'User'}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email || 'user@capacityconnect.gov'}</p>
+                        <span className="inline-block mt-1 px-1.5 py-0.2 text-[9px] font-bold uppercase rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80">
                           {roleLabelMap[user?.role] || user?.role || 'Trainee'}
                         </span>
                       </div>
@@ -178,9 +178,9 @@ const Topbar = ({ onMenuClick }) => {
                     <button
                       type="button"
                       onClick={handleViewProfile}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-left cursor-pointer"
                     >
-                      <User className="w-4 h-4 text-blue-400 shrink-0" />
+                      <User className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                       <span>View Profile</span>
                     </button>
                   </div>
@@ -190,9 +190,9 @@ const Topbar = ({ onMenuClick }) => {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors text-left cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
+                      <LogOut className="w-4 h-4 text-rose-500 shrink-0" />
                       <span>Logout</span>
                     </button>
                   </div>

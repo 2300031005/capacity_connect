@@ -24,9 +24,50 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 & 403 Unauthorized / Deactivated accounts globally
+/**
+ * Clean course titles of unwanted trailing numeric timestamp/ID suffixes
+ * (e.g. "Phase 5 Full Stack Mastery 1788023320543" -> "Phase 5 Full Stack Mastery")
+ * while preserving legitimate course numbers (e.g. "Python 101", "CS 50", "Phase 5").
+ */
+export const cleanCourseTitle = (str) => {
+  if (!str || typeof str !== 'string') return str || '';
+  return str.replace(/\s+\d{6,}$/, '').trim();
+};
+
+/**
+ * Recursively sanitizes course titles in API payloads
+ */
+const sanitizeCourseTitlesInData = (data) => {
+  if (!data || typeof data !== 'object') return data;
+  if (Array.isArray(data)) {
+    return data.map(sanitizeCourseTitlesInData);
+  }
+  const result = { ...data };
+  for (const key of Object.keys(result)) {
+    const val = result[key];
+    if (typeof val === 'string') {
+      if (
+        key === 'title' ||
+        key === 'courseTitle' ||
+        (key === 'name' && (result.category || result.enrolledCount !== undefined || result.trainer !== undefined || result.skills !== undefined))
+      ) {
+        result[key] = cleanCourseTitle(val);
+      }
+    } else if (typeof val === 'object' && val !== null) {
+      result[key] = sanitizeCourseTitlesInData(val);
+    }
+  }
+  return result;
+};
+
+// Response Interceptor: Handle 401 & 403 Unauthorized / Deactivated accounts globally & clean course titles
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response && response.data) {
+      response.data = sanitizeCourseTitlesInData(response.data);
+    }
+    return response;
+  },
   (error) => {
     if (error.response) {
       if (error.response.data?.isDeactivated) {
