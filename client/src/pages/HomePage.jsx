@@ -39,15 +39,15 @@ const HomePage = () => {
           {/* Left Hero Content */}
           <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
             {/* Small badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Institutional Digital Skilling & Competency Platform</span>
             </div>
 
             {/* Main heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
               Bridge Skill Gaps. <br className="hidden sm:inline" />
-              <span className="text-emerald-600 dark:text-emerald-400">Verify Real Competency.</span>
+              <span className="text-blue-600 dark:text-blue-400">Verify Real Competency.</span>
             </h1>
 
             {/* Supporting text */}
@@ -59,7 +59,7 @@ const HomePage = () => {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
               <Link
                 to="/login"
-                className="px-6 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-all inline-flex items-center gap-2"
+                className="px-6 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition-all inline-flex items-center gap-2"
               >
                 <span>Get Started</span>
                 <ArrowRight className="w-4 h-4" />
@@ -80,7 +80,7 @@ const HomePage = () => {
               {/* Preview Header */}
               <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                     Competency Intelligence
                   </span>
@@ -92,10 +92,10 @@ const HomePage = () => {
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-bold">
                   <span className="text-slate-800 dark:text-slate-200">Curriculum Progress</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">78% Verified</span>
+                  <span className="text-blue-600 dark:text-blue-400">78% Verified</span>
                 </div>
                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                  <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-600 rounded-full" style={{ width: '78%' }} />
+                  <div className="h-full bg-gradient-to-r from-blue-600 to-teal-500 rounded-full" style={{ width: '78%' }} />
                 </div>
               </div>
 

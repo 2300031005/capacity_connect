@@ -8,11 +8,13 @@ const Loading = ({ message = 'Loading...', size = 'md', className = '' }) => {
   };
 
   return (
-    <div className={`flex items-center justify-center gap-3 py-4 text-slate-600 ${className}`}>
+    <div className={`flex items-center justify-center gap-3 py-6 text-slate-600 dark:text-slate-300 ${className}`}>
       <div
-        className={`animate-spin rounded-full border-slate-300 border-t-emerald-600 ${sizeClasses[size] || sizeClasses.md}`}
+        className={`animate-spin rounded-full border-slate-200 dark:border-slate-700 border-t-blue-600 dark:border-t-blue-400 ${
+          sizeClasses[size] || sizeClasses.md
+        }`}
       />
-      {message && <span className="text-sm font-medium">{message}</span>}
+      {message && <span className="text-xs sm:text-sm font-medium">{message}</span>}
     </div>
   );
 };
