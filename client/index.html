@@ -12,12 +12,16 @@
     <script>
       (function() {
         try {
-          var theme = localStorage.getItem('cognisphere_theme');
+          var theme = localStorage.getItem('capacity-connect-theme') || localStorage.getItem('cognisphere_theme');
           if (theme === 'dark') {
             document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            document.documentElement.setAttribute('data-theme', 'dark');
             document.body && document.body.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.setAttribute('data-theme', 'light');
             document.body && document.body.classList.remove('dark');
           }
         } catch (e) {}

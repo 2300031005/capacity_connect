@@ -57,9 +57,9 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
   const navItems = roleNavItems[role] || roleNavItems.trainee;
 
   const roleBadgeInfo = {
-    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/80' },
-    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800/80' },
-    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80' },
+    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-950/70 text-blue-300 border-blue-800/80' },
+    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-teal-950/70 text-teal-300 border-teal-800/80' },
+    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-indigo-950/70 text-indigo-300 border-indigo-800/80' },
   };
 
   const currentBadge = roleBadgeInfo[role] || roleBadgeInfo.trainee;
@@ -70,27 +70,27 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-xs md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container: Deep Navy Identity in Light and Dark mode */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-all duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto overflow-x-hidden text-slate-700 dark:text-slate-300 ${
+        className={`fixed inset-y-0 left-0 z-50 bg-[#0F172A] dark:bg-[#080F1D] border-r border-slate-800 dark:border-slate-800/80 transform transition-all duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto overflow-x-hidden text-[#CBD5E1] dark:text-[#94A3B8] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'md:w-20 w-64' : 'md:w-64 w-64'}`}
       >
         <div className="flex-1">
           {/* Sidebar Role Badge */}
-          <div className={`p-3 border-b border-slate-100 dark:border-slate-800/80 transition-all ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          <div className={`p-3 border-b border-slate-800/80 transition-all ${isCollapsed ? 'px-2' : 'px-4'}`}>
             <div
               className={`flex items-center gap-2.5 py-2 rounded-lg border text-xs font-semibold ${currentBadge.color} ${
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               }`}
               title={currentBadge.label}
             >
-              <RoleIcon className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <RoleIcon className="w-4 h-4 shrink-0 text-blue-400" />
               {!isCollapsed && <span className="truncate tracking-wide">{currentBadge.label}</span>}
             </div>
           </div>
@@ -111,14 +111,14 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
                       isCollapsed ? 'justify-center px-2' : ''
                     } ${
                       isActive
-                        ? 'bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-white border-l-3 border-blue-600 dark:border-blue-500 font-bold shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70 border-l-3 border-transparent'
+                        ? 'bg-blue-600/20 dark:bg-[#172554] text-white dark:text-[#F8FAFC] border-l-3 border-[#2563EB] dark:border-[#60A5FA] font-bold shadow-xs'
+                        : 'text-[#CBD5E1] dark:text-[#94A3B8] hover:text-white dark:hover:text-[#F8FAFC] hover:bg-slate-800/60 dark:hover:bg-slate-900/60 border-l-3 border-transparent'
                     }`
                   }
                 >
                   <Icon
-                    className={`w-4 h-4 shrink-0 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 ${
-                      window.location.pathname === item.path ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+                    className={`w-4 h-4 shrink-0 transition-colors group-hover:text-blue-400 ${
+                      window.location.pathname === item.path ? 'text-blue-400' : 'text-slate-400'
                     }`}
                   />
                   {!isCollapsed && <span className="truncate">{item.name}</span>}
@@ -129,22 +129,22 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
         </div>
 
         {/* Sidebar Footer & Exclusive Bottom Collapse Action */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800/80">
+        <div className="p-3 border-t border-slate-800/80">
           {onToggleCollapse && (
             <button
               type="button"
               onClick={onToggleCollapse}
-              className={`flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700/80 cursor-pointer ${
+              className={`flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors border border-transparent hover:border-slate-700/80 cursor-pointer ${
                 isCollapsed ? 'justify-center' : 'justify-start'
               }`}
               title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
               aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
               {isCollapsed ? (
-                <ArrowRight className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
               ) : (
                 <>
-                  <ArrowLeft className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                  <ArrowLeft className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="truncate">Collapse Sidebar</span>
                 </>
               )}

@@ -2,10 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
+const THEME_STORAGE_KEY = 'capacity-connect-theme';
+const LEGACY_THEME_STORAGE_KEY = 'cognisphere_theme';
+
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     try {
-      const savedTheme = localStorage.getItem('cognisphere_theme');
+      const savedTheme =
+        localStorage.getItem(THEME_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
       if (savedTheme === 'dark' || savedTheme === 'light') {
         return savedTheme;
       }
@@ -18,15 +23,28 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+
     if (theme === 'dark') {
       root.classList.add('dark');
-      if (body) body.classList.add('dark');
+      root.classList.remove('light');
+      root.setAttribute('data-theme', 'dark');
+      if (body) {
+        body.classList.add('dark');
+        body.classList.remove('light');
+      }
     } else {
       root.classList.remove('dark');
-      if (body) body.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+      if (body) {
+        body.classList.remove('dark');
+        body.classList.add('light');
+      }
     }
+
     try {
-      localStorage.setItem('cognisphere_theme', theme);
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
     } catch (e) {
       console.warn('Unable to persist theme to localStorage:', e);
     }
@@ -43,7 +61,14 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark: theme === 'dark', toggleTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        isDark: theme === 'dark',
+        toggleTheme,
+        setTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
