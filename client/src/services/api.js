@@ -88,6 +88,11 @@ export const updateCourseApi = async (courseId, courseData) => {
   return response.data;
 };
 
+export const updateCourseTitleApi = async (courseId, title) => {
+  const response = await api.put(`/courses/${courseId}`, { title });
+  return response.data;
+};
+
 export const publishCourseApi = async (courseId, status) => {
   const response = await api.patch(`/courses/${courseId}/publish`, { status });
   return response.data;
@@ -230,6 +235,11 @@ export const deleteAssessmentApi = async (assessmentId) => {
 
 export const toggleAssessmentStatusApi = async (assessmentId) => {
   const response = await api.put(`/assessments/${assessmentId}/status`);
+  return response.data;
+};
+
+export const duplicateAssessmentApi = async (assessmentId) => {
+  const response = await api.post(`/assessments/${assessmentId}/duplicate`);
   return response.data;
 };
 
@@ -408,8 +418,8 @@ export const getTrainerByIdApi = async (trainerId) => {
   return response.data;
 };
 
-export const getTrainerLearnersApi = async () => {
-  const response = await api.get('/trainer/learners');
+export const getTrainerLearnersApi = async (params = {}) => {
+  const response = await api.get('/trainer/learners', { params });
   return response.data;
 };
 

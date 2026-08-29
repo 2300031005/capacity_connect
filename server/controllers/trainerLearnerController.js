@@ -15,9 +15,17 @@ const Assessment = require('../models/Assessment');
 const getTrainerLearners = async (req, res, next) => {
   try {
     const trainerId = req.user._id;
+    const { courseId } = req.query;
 
     // 1. Fetch courses owned strictly by this trainer
-    const trainerCourses = await Course.find({ trainer: trainerId }).select('_id title category level');
+    const courseQuery = { trainer: trainerId };
+    if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
+      courseQuery._id = courseId;
+    }
+
+    const trainerCourses = await Course.find(courseQuery)
+      .select('_id title category level skills')
+      .populate('skills.skill', 'name category');
     const courseIds = trainerCourses.map((c) => c._id);
 
     if (courseIds.length === 0) {
@@ -28,17 +36,21 @@ const getTrainerLearners = async (req, res, next) => {
       });
     }
 
-    // 2. Fetch all enrollments for trainer's courses
-    const enrollments = await Enrollment.find({ course: { $in: courseIds } })
-      .populate('trainee', 'name email department isActive createdAt')
-      .populate('course', 'title category level')
-      .sort({ updatedAt: -1 });
-
-    // 3. Fetch certificates earned for trainer's courses
-    const certificates = await Certificate.find({
-      course: { $in: courseIds },
-      status: 'valid',
-    }).select('trainee course certificateId percentage');
+    // 2. Fetch all enrollments, certificates, and quiz attempts for trainer's courses
+    const [enrollments, certificates, quizAttempts] = await Promise.all([
+      Enrollment.find({ course: { $in: courseIds } })
+        .populate('trainee', 'name email department isActive createdAt')
+        .populate('course', 'title category level skills')
+        .sort({ updatedAt: -1 }),
+      Certificate.find({
+        course: { $in: courseIds },
+        status: 'valid',
+      }).select('trainee course certificateId percentage issueDate'),
+      QuizAttempt.find({ course: { $in: courseIds } })
+        .populate('trainee', 'name email')
+        .populate('assessment', 'title type passingPercentage')
+        .sort({ submittedAt: -1 }),
+    ]);
 
     const certMap = new Map();
     certificates.forEach((c) => {
@@ -46,12 +58,51 @@ const getTrainerLearners = async (req, res, next) => {
       certMap.set(key, c);
     });
 
-    // 4. Group by Trainee (Unique Learners)
+    const attemptsMap = new Map();
+    quizAttempts.forEach((a) => {
+      const tId = a.trainee?._id?.toString() || a.trainee?.toString();
+      const cId = a.course?.toString();
+      const key = `${tId}_${cId}`;
+      if (!attemptsMap.has(key)) attemptsMap.set(key, []);
+      attemptsMap.get(key).push(a);
+    });
+
+    // 3. Group by Trainee (Unique Learners)
     const learnerMap = new Map();
 
     enrollments.forEach((e) => {
       if (!e.trainee) return;
       const tId = e.trainee._id.toString();
+      const cId = e.course?._id?.toString() || e.course?.toString();
+      const certKey = `${tId}_${cId}`;
+      const hasCert = certMap.has(certKey);
+      const courseAttempts = attemptsMap.get(certKey) || [];
+
+      const totalAttempts = courseAttempts.length;
+      const passedAttempts = courseAttempts.filter((a) => a.passed).length;
+      const failedAttempts = totalAttempts - passedAttempts;
+      const avgScore = totalAttempts > 0
+        ? Math.round(courseAttempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / totalAttempts)
+        : null;
+      const latestAttempt = courseAttempts[0] || null;
+
+      const progress = e.progress || 0;
+      let status = 'In Progress';
+      if (e.status === 'completed' || progress === 100) {
+        status = 'Completed';
+      } else if (failedAttempts >= 2 || (totalAttempts > 0 && avgScore !== null && avgScore < 50)) {
+        status = 'At Risk';
+      } else if (progress <= 0 && totalAttempts === 0) {
+        status = 'Not Started';
+      }
+
+      // Compute current skill level
+      let currentSkillLevel = 'Beginner';
+      if (status === 'Completed' || (avgScore !== null && avgScore >= 80)) {
+        currentSkillLevel = e.course?.level === 'advanced' ? 'Advanced' : 'Proficient';
+      } else if (progress >= 50 || (avgScore !== null && avgScore >= 60)) {
+        currentSkillLevel = 'Proficient';
+      }
 
       if (!learnerMap.has(tId)) {
         learnerMap.set(tId, {
@@ -69,35 +120,64 @@ const getTrainerLearners = async (req, res, next) => {
           certificatesEarnedCount: 0,
           lastActivity: e.updatedAt || e.createdAt,
           enrolledCourses: [],
+          status,
+          averageScore: avgScore,
+          currentSkillLevel,
+          enrolledAt: e.createdAt,
+          courseProgress: progress,
         });
       }
 
       const entry = learnerMap.get(tId);
       entry.coursesEnrolledCount += 1;
-      const progress = e.progress || 0;
       entry.totalProgressSum += progress;
 
-      const isCompleted = e.status === 'completed' || progress === 100;
-      if (isCompleted) {
+      if (status === 'Completed') {
         entry.coursesCompletedCount += 1;
       }
-
-      const certKey = `${tId}_${e.course?._id?.toString()}`;
-      const hasCert = certMap.has(certKey);
       if (hasCert) {
         entry.certificatesEarnedCount += 1;
       }
 
-      if (e.updatedAt && new Date(e.updatedAt) > new Date(entry.lastActivity)) {
-        entry.lastActivity = e.updatedAt;
+      const enrollmentLastActivity = latestAttempt?.submittedAt || e.updatedAt || e.createdAt;
+      if (new Date(enrollmentLastActivity) > new Date(entry.lastActivity)) {
+        entry.lastActivity = enrollmentLastActivity;
+      }
+
+      // If viewing single course, adopt that course's status and scores directly
+      if (courseId) {
+        entry.status = status;
+        entry.averageScore = avgScore;
+        entry.latestScore = latestAttempt ? latestAttempt.percentage : null;
+        entry.currentSkillLevel = currentSkillLevel;
+        entry.courseProgress = progress;
+        entry.enrolledAt = e.createdAt;
+        entry.failedAttemptsCount = failedAttempts;
+        entry.passedAttemptsCount = passedAttempts;
       }
 
       entry.enrolledCourses.push({
         courseId: e.course?._id,
         courseTitle: e.course?.title,
+        category: e.course?.category,
+        level: e.course?.level,
         progress,
-        status: e.status,
+        status,
         hasCertificate: hasCert,
+        averageScore: avgScore,
+        currentSkillLevel,
+        enrolledAt: e.createdAt,
+        lastActivity: enrollmentLastActivity,
+        attempts: courseAttempts.map((a) => ({
+          attemptId: a._id,
+          assessmentTitle: a.assessment?.title || 'Assessment',
+          type: a.type,
+          score: a.score,
+          totalMarks: a.totalMarks,
+          percentage: a.percentage,
+          passed: a.passed,
+          submittedAt: a.submittedAt,
+        })),
       });
     });
 
@@ -111,6 +191,14 @@ const getTrainerLearners = async (req, res, next) => {
           : 0,
       certificatesEarnedCount: item.certificatesEarnedCount,
       lastActivity: item.lastActivity,
+      status: item.status,
+      averageScore: item.averageScore,
+      latestScore: item.latestScore,
+      currentSkillLevel: item.currentSkillLevel,
+      enrolledAt: item.enrolledAt,
+      courseProgress: item.courseProgress !== undefined ? item.courseProgress : (item.coursesEnrolledCount > 0 ? Math.round(item.totalProgressSum / item.coursesEnrolledCount) : 0),
+      failedAttemptsCount: item.failedAttemptsCount || 0,
+      passedAttemptsCount: item.passedAttemptsCount || 0,
       enrolledCourses: item.enrolledCourses,
     }));
 

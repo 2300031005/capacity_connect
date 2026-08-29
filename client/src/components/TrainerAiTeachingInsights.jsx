@@ -263,18 +263,25 @@ const TrainerAiTeachingInsights = ({ onOpenCourseAiModal }) => {
         {activeTab === 'overview' && (
           <div className="space-y-3">
             {teachingSuggestions.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No immediate teaching interventions required.</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                <h4 className="text-xs font-bold text-slate-800">Healthy Pedagogical Flow</h4>
+                <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                  No immediate critical teaching interventions required across published course modules.
+                </p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {teachingSuggestions.map((sug, idx) => (
                   <div
                     key={idx}
-                    className="bg-white border border-indigo-100/90 rounded-xl p-4 shadow-2xs flex flex-col justify-between space-y-3 hover:border-indigo-300 transition-colors"
+                    className="bg-white border border-indigo-100/90 rounded-xl p-5 shadow-2xs flex flex-col justify-between space-y-4 hover:border-indigo-300 transition-colors"
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                          {sug.type?.replace(/_/g, ' ') || 'Instructional Advice'}
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          <span>{sug.type?.replace(/_/g, ' ') || 'Actionable Advice'}</span>
                         </span>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
                           sug.priority === 'high' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-slate-50 text-slate-600 border-slate-200'
@@ -283,21 +290,44 @@ const TrainerAiTeachingInsights = ({ onOpenCourseAiModal }) => {
                         </span>
                       </div>
 
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug flex items-start gap-1.5">
-                        <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <h4 className="text-sm font-bold text-slate-900 leading-snug flex items-start gap-1.5">
+                        <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                         <span>{sug.title}</span>
                       </h4>
 
-                      <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-2.5 border border-slate-100">
-                        {sug.action}
-                      </p>
+                      {/* 4-Part Structure */}
+                      <div className="space-y-2 text-xs bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div>
+                          <strong className="text-[10px] uppercase font-bold text-slate-400 block">What Happened:</strong>
+                          <p className="text-slate-700 mt-0.5">{sug.courseTitle ? `Friction detected in "${sug.courseTitle}".` : 'Cohort-wide learning pattern analyzed.'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-[10px] uppercase font-bold text-slate-400 block">Why It Matters:</strong>
+                          <p className="text-slate-700 mt-0.5">{sug.action || 'Concept mastery contributes to verified competency ratings.'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-[10px] uppercase font-bold text-emerald-700 block">Recommended Action:</strong>
+                          <p className="text-slate-900 font-semibold mt-0.5">{sug.action}</p>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>{sug.courseTitle ? `Course: ${sug.courseTitle}` : 'Portfolio-wide recommendation'}</span>
-                      <span className="text-indigo-600 font-semibold flex items-center gap-0.5">
-                        Trainer Decision <ChevronRight className="w-3 h-3" />
-                      </span>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <Link
+                        to="/trainer/learners"
+                        className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors inline-flex items-center gap-1"
+                      >
+                        <Users className="w-3 h-3 text-slate-500" />
+                        <span>View Learners</span>
+                      </Link>
+
+                      <Link
+                        to="/trainer/assessments"
+                        className="px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>Review Assessment</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -322,7 +352,7 @@ const TrainerAiTeachingInsights = ({ onOpenCourseAiModal }) => {
                 {difficultyAreas.map((q, idx) => (
                   <div
                     key={idx}
-                    className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3 flex flex-col justify-between"
+                    className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -340,14 +370,31 @@ const TrainerAiTeachingInsights = ({ onOpenCourseAiModal }) => {
                         "{q.topic}"
                       </h4>
 
-                      <div className="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-lg p-2.5 space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">AI Diagnostic:</span>
-                        <p>{q.insight}</p>
+                      <div className="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2">
+                        <div>
+                          <strong className="text-[10px] font-bold text-slate-400 uppercase block">What Happened:</strong>
+                          <p className="text-slate-700">{q.attempts} total attempts with {q.incorrectCount} incorrect submissions ({q.accuracyPercentage}% success rate).</p>
+                        </div>
+                        <div>
+                          <strong className="text-[10px] font-bold text-slate-400 uppercase block">Why It Matters:</strong>
+                          <p className="text-slate-700">{q.insight}</p>
+                        </div>
+                        <div>
+                          <strong className="text-[10px] font-bold text-emerald-700 uppercase block">Recommended Action:</strong>
+                          <p className="text-slate-900 font-semibold">Review this concept in course lecture notes or add a supplementary practice exercise.</p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>{q.attempts} attempts ({q.incorrectCount} incorrect)</span>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <Link
+                        to="/trainer/learners"
+                        className="text-slate-600 hover:text-slate-900 font-medium inline-flex items-center gap-1"
+                      >
+                        <Users className="w-3 h-3 text-slate-400" />
+                        <span>Inspect Learners</span>
+                      </Link>
+
                       <Link
                         to="/trainer/assessments"
                         className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1"

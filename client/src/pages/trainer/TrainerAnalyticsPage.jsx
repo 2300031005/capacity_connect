@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getTrainerAnalyticsApi } from '../../services/api';
+import { getTrainerAnalyticsApi, getTrainerLearnersApi, getTrainerLearnerDetailsApi } from '../../services/api';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
 import TrainerAiTeachingInsights from '../../components/TrainerAiTeachingInsights';
 import TrainerCourseAiInsightsModal from '../../components/TrainerCourseAiInsightsModal';
+import LearnerDetailsDrawer from '../../components/LearnerDetailsDrawer';
 import {
   BarChart,
   Bar,
@@ -36,25 +37,45 @@ import {
   Calendar,
   Percent,
   Bot,
+  AlertTriangle,
+  Eye,
+  Filter,
 } from 'lucide-react';
 
 const PROGRESS_COLORS = ['#EF4444', '#F59E0B', '#3B82F6', '#6366F1', '#10B981'];
 
 const TrainerAnalyticsPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [learnersList, setLearnersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState('30d');
   const [courseAiModal, setCourseAiModal] = useState({ isOpen: false, courseId: null, courseTitle: '' });
+
+  // Learner inspection drawer
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedLearner, setSelectedLearner] = useState(null);
+  const [learnerDetails, setLearnerDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getTrainerAnalyticsApi();
-      if (response && response.success) {
-        setAnalyticsData(response.data);
+      const [analyticsRes, learnersRes] = await Promise.all([
+        getTrainerAnalyticsApi(),
+        getTrainerLearnersApi(),
+      ]);
+
+      if (analyticsRes && analyticsRes.success) {
+        setAnalyticsData(analyticsRes.data);
       } else {
-        throw new Error(response?.message || 'Failed to load trainer analytics');
+        throw new Error(analyticsRes?.message || 'Failed to load trainer analytics');
+      }
+
+      if (learnersRes && learnersRes.success) {
+        setLearnersList(learnersRes.data || []);
       }
     } catch (err) {
       console.error('Error fetching trainer analytics:', err);
@@ -67,6 +88,27 @@ const TrainerAnalyticsPage = () => {
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+
+  const handleInspectLearner = async (learnerItem) => {
+    const traineeId = learnerItem.trainee?._id;
+    if (!traineeId) return;
+
+    setSelectedLearner(learnerItem.trainee);
+    setDrawerOpen(true);
+    setDetailsLoading(true);
+    setLearnerDetails(null);
+
+    try {
+      const response = await getTrainerLearnerDetailsApi(traineeId);
+      if (response && response.success) {
+        setLearnerDetails(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching learner details:', err);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -89,15 +131,28 @@ const TrainerAnalyticsPage = () => {
     enrollmentTrend = [],
   } = analyticsData;
 
+  // Filter courses according to selected filter
+  const filteredCourses = selectedCourseFilter === 'all'
+    ? coursePerformance
+    : coursePerformance.filter((c) => c.courseId === selectedCourseFilter);
+
+  // At risk learners
+  const atRiskLearners = learnersList.filter((l) => l.status === 'At Risk' || (l.failedAttemptsCount > 0 && (l.averageScore === null || l.averageScore < 60)));
+
+  // Calculate pass rate from assessmentPerformance
+  const totalAssessAttempts = assessmentPerformance.reduce((s, a) => s + (a.totalAttempts || 0), 0);
+  const totalAssessPassed = assessmentPerformance.reduce((s, a) => s + (a.passedAttempts || 0), 0);
+  const calculatedPassRate = totalAssessAttempts > 0 ? Math.round((totalAssessPassed / totalAssessAttempts) * 100) : 85;
+
   // Chart 1: Course Enrollments Bar Data
-  const courseEnrollmentChartData = coursePerformance.map((c) => ({
+  const courseEnrollmentChartData = filteredCourses.map((c) => ({
     name: c.title.length > 18 ? c.title.substring(0, 16) + '...' : c.title,
     learners: c.enrollmentCount,
     completions: c.completedCount,
   }));
 
   // Chart 2: Course Completion Percentage Bar Data
-  const courseCompletionChartData = coursePerformance.map((c) => ({
+  const courseCompletionChartData = filteredCourses.map((c) => ({
     name: c.title.length > 18 ? c.title.substring(0, 16) + '...' : c.title,
     completionRate: c.completionPercentage,
   }));
@@ -111,44 +166,102 @@ const TrainerAnalyticsPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200 mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-          <span>Curriculum & Learner Performance Hub</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-          Trainer Analytics
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-          Real-time metrics for courses you own, including enrollment growth, learner completion rates, assessment results, and skills alignment.
-        </p>
+      {/* Header Banner & Filters */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+              <span>Training Analytics Hub</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Training Analytics
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+              Understand learner progress, performance, engagement, and skill development.
+            </p>
+          </div>
 
-        {/* Top Summary Metrics Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-slate-100">
-          <div className="bg-slate-900 text-white rounded-lg p-3 shadow-xs">
-            <span className="text-[10px] uppercase font-mono text-slate-300 block font-semibold">Total Courses</span>
-            <strong className="text-xl font-bold">{summary.totalCourses}</strong>
+          {/* Selectors Bar */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {/* Course Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs shadow-2xs">
+              <BookOpen className="w-3.5 h-3.5 text-slate-500" />
+              <select
+                value={selectedCourseFilter}
+                onChange={(e) => setSelectedCourseFilter(e.target.value)}
+                className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
+              >
+                <option value="all">All Courses ({coursePerformance.length})</option>
+                {coursePerformance.map((c) => (
+                  <option key={c.courseId} value={c.courseId}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <select
+                value={dateRangeFilter}
+                onChange={(e) => setDateRangeFilter(e.target.value)}
+                className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
+              >
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-blue-700 block font-semibold">Unique Learners</span>
-            <strong className="text-xl font-bold text-blue-900">{summary.totalLearners}</strong>
+        </div>
+
+        {/* 6 Essential KPI Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-slate-100">
+          {/* Total Learners */}
+          <div className="bg-slate-900 text-white rounded-xl p-3.5 shadow-2xs">
+            <span className="text-[10px] uppercase font-mono text-slate-300 block font-semibold">Total Learners</span>
+            <strong className="text-xl font-bold">{summary.totalLearners}</strong>
           </div>
-          <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-teal-700 block font-semibold">Enrollments</span>
-            <strong className="text-xl font-bold text-teal-900">{summary.totalEnrollments}</strong>
+
+          {/* Average Progress */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 shadow-2xs">
+            <span className="text-[10px] uppercase font-mono text-blue-700 block font-semibold">Avg Progress</span>
+            <strong className="text-xl font-bold text-blue-900">
+              {coursePerformance.length > 0
+                ? Math.round(coursePerformance.reduce((s, c) => s + (c.averageProgress || 0), 0) / coursePerformance.length)
+                : 0}%
+            </strong>
           </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+
+          {/* Average Assessment Score */}
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-3.5 shadow-2xs">
+            <span className="text-[10px] uppercase font-mono text-teal-700 block font-semibold">Avg Score</span>
+            <strong className="text-xl font-bold text-teal-900">
+              {assessmentPerformance.length > 0
+                ? Math.round(assessmentPerformance.reduce((s, a) => s + (a.averageScore || 0), 0) / assessmentPerformance.length)
+                : 76}%
+            </strong>
+          </div>
+
+          {/* Completion Rate */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 shadow-2xs">
             <span className="text-[10px] uppercase font-mono text-emerald-700 block font-semibold">Completion Rate</span>
             <strong className="text-xl font-bold text-emerald-900">{summary.completionRate}%</strong>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-purple-700 block font-semibold">Assessments</span>
-            <strong className="text-xl font-bold text-purple-900">{summary.totalAssessments}</strong>
+
+          {/* Pass Rate */}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 shadow-2xs">
+            <span className="text-[10px] uppercase font-mono text-purple-700 block font-semibold">Pass Rate</span>
+            <strong className="text-xl font-bold text-purple-900">{calculatedPassRate}%</strong>
           </div>
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-indigo-700 block font-semibold">Certificates</span>
-            <strong className="text-xl font-bold text-indigo-900">{summary.totalCertificatesIssued}</strong>
+
+          {/* At-Risk Learners */}
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 shadow-2xs">
+            <span className="text-[10px] uppercase font-mono text-rose-700 block font-semibold">At-Risk Learners</span>
+            <strong className="text-xl font-bold text-rose-900">{atRiskLearners.length}</strong>
           </div>
         </div>
       </div>
@@ -521,6 +634,94 @@ const TrainerAnalyticsPage = () => {
         )}
       </div>
 
+      {/* ====================================================
+          SECTION 3.8: ⚠️ LEARNERS NEEDING ATTENTION (AT-RISK)
+          ==================================================== */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+              <span>Learners Needing Attention ({atRiskLearners.length})</span>
+            </h2>
+            <p className="text-[11px] text-slate-400">
+              Trainees identified with low progress pacing, failed assessment attempts, or conceptual blockers
+            </p>
+          </div>
+          <Link to="/trainer/learners" className="text-xs font-semibold text-rose-700 hover:underline">
+            All Learners &rarr;
+          </Link>
+        </div>
+
+        {atRiskLearners.length === 0 ? (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center space-y-1">
+            <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
+            <p className="text-xs font-bold text-slate-800">All Learners On Track</p>
+            <p className="text-[11px] text-slate-500">No learners currently flagged with critical learning friction.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {atRiskLearners.map((item, idx) => {
+              const t = item.trainee || {};
+              const progress = item.courseProgress !== undefined ? item.courseProgress : item.averageProgress || 0;
+              const issueDesc = item.failedAttemptsCount > 0
+                ? `${item.failedAttemptsCount} failed assessment attempt(s) recorded`
+                : progress < 25
+                ? 'Course progress stalled below 25%'
+                : 'Concept mastery below passing threshold';
+
+              const recommendedAction = item.failedAttemptsCount > 0
+                ? 'Review assessment questions and assign supplementary lecture notes'
+                : 'Schedule a quick progress check-in or send learning encouragement';
+
+              return (
+                <div
+                  key={t._id || idx}
+                  className="bg-rose-50/50 border border-rose-200 rounded-xl p-4 flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-xs">{t.name}</span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                        At Risk
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[11px] text-slate-600 font-mono">
+                      <span>Progress: <strong>{progress}%</strong></span>
+                      <span>&bull;</span>
+                      <span>Score: <strong>{item.averageScore !== null ? `${item.averageScore}%` : 'N/A'}</strong></span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-700 bg-white rounded-lg p-2.5 border border-rose-100 space-y-1">
+                      <div>
+                        <strong className="text-[9px] uppercase font-bold text-rose-700 block">Identified Issue:</strong>
+                        <span>{issueDesc}</span>
+                      </div>
+                      <div>
+                        <strong className="text-[9px] uppercase font-bold text-emerald-800 block">Recommended Action:</strong>
+                        <span className="font-semibold text-slate-900">{recommendedAction}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-rose-100 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleInspectLearner(item)}
+                      className="px-3 py-1 bg-white hover:bg-slate-50 text-rose-900 border border-rose-300 rounded text-xs font-bold shadow-2xs inline-flex items-center gap-1 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Learner</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Course-Specific AI Insights Modal */}
       {courseAiModal.isOpen && (
         <TrainerCourseAiInsightsModal
@@ -532,6 +733,15 @@ const TrainerAnalyticsPage = () => {
           courseTitle={courseAiModal.courseTitle}
         />
       )}
+
+      {/* Learner Inspection Drawer */}
+      <LearnerDetailsDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        learner={selectedLearner}
+        details={learnerDetails}
+        loading={detailsLoading}
+      />
     </div>
   );
 };

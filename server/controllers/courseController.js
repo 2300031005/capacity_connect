@@ -324,7 +324,22 @@ const getCourseById = async (req, res, next) => {
  */
 const createCourse = async (req, res, next) => {
   try {
-    const { title, description, category, level, thumbnail, prerequisites, skills } = req.body;
+    const {
+      title,
+      description,
+      shortDescription,
+      category,
+      level,
+      thumbnail,
+      prerequisites,
+      skills,
+      learningOutcomes,
+      estimatedDuration,
+      language,
+      passingScore,
+      certificateEligibility,
+      enrollmentStatus,
+    } = req.body;
 
     // Validation
     if (!title || !title.trim()) {
@@ -375,12 +390,19 @@ const createCourse = async (req, res, next) => {
     const course = await Course.create({
       title: title.trim(),
       description: description.trim(),
+      shortDescription: shortDescription ? shortDescription.trim() : '',
       category: category.trim(),
       level: chosenLevel,
       trainer: req.user._id,
       thumbnail: thumbnail || '',
       prerequisites: prerequisites ? prerequisites.trim() : '',
       skills: verifiedSkills,
+      learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes.filter((o) => typeof o === 'string' && o.trim().length > 0).map((o) => o.trim()) : [],
+      estimatedDuration: estimatedDuration ? estimatedDuration.trim() : '',
+      language: language ? language.trim() : 'English',
+      passingScore: passingScore !== undefined ? Math.max(0, Math.min(100, Number(passingScore))) : 60,
+      certificateEligibility: certificateEligibility !== undefined ? Boolean(certificateEligibility) : true,
+      enrollmentStatus: enrollmentStatus === 'closed' ? 'closed' : 'open',
       status: 'draft',
     });
 
@@ -414,17 +436,53 @@ const updateCourse = async (req, res, next) => {
       });
     }
 
-    const { title, description, category, level, thumbnail, prerequisites, skills } = req.body;
+    const {
+      title,
+      description,
+      shortDescription,
+      category,
+      level,
+      thumbnail,
+      prerequisites,
+      skills,
+      learningOutcomes,
+      estimatedDuration,
+      language,
+      passingScore,
+      certificateEligibility,
+      enrollmentStatus,
+      status,
+    } = req.body;
     const course = check.course;
 
     if (title && title.trim()) course.title = title.trim();
     if (description && description.trim()) course.description = description.trim();
+    if (shortDescription !== undefined) course.shortDescription = shortDescription.trim();
     if (category && category.trim()) course.category = category.trim();
     if (level && ['beginner', 'intermediate', 'advanced'].includes(level.toLowerCase().trim())) {
       course.level = level.toLowerCase().trim();
     }
     if (thumbnail !== undefined) course.thumbnail = thumbnail;
     if (prerequisites !== undefined) course.prerequisites = prerequisites.trim();
+    if (learningOutcomes !== undefined && Array.isArray(learningOutcomes)) {
+      course.learningOutcomes = learningOutcomes
+        .filter((o) => typeof o === 'string' && o.trim().length > 0)
+        .map((o) => o.trim());
+    }
+    if (estimatedDuration !== undefined) course.estimatedDuration = estimatedDuration.trim();
+    if (language !== undefined && language.trim()) course.language = language.trim();
+    if (passingScore !== undefined) {
+      course.passingScore = Math.max(0, Math.min(100, Number(passingScore) || 60));
+    }
+    if (certificateEligibility !== undefined) {
+      course.certificateEligibility = Boolean(certificateEligibility);
+    }
+    if (enrollmentStatus !== undefined && ['open', 'closed'].includes(enrollmentStatus)) {
+      course.enrollmentStatus = enrollmentStatus;
+    }
+    if (status !== undefined && ['draft', 'published'].includes(status)) {
+      course.status = status;
+    }
 
     if (skills !== undefined && skills !== null) {
       try {
