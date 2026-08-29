@@ -2,24 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   getCourseByIdApi,
-  updateCourseApi,
   publishCourseApi,
   createModuleApi,
   updateModuleApi,
   deleteModuleApi,
   createResourceApi,
   deleteResourceApi,
-  getFinalAssessmentApi,
-  getModuleQuizApi,
-  toggleAssessmentStatusApi
 } from '../../services/api';
 import Button from '../../components/Button';
 import Loading from '../../components/Loading';
 import ErrorMessage from '../../components/ErrorMessage';
+import Toast from '../../components/Toast';
+import InlineCourseTitleEdit from '../../components/InlineCourseTitleEdit';
+import EditCourseDetailsModal from '../../components/EditCourseDetailsModal';
+import CourseLearnersView from '../../components/CourseLearnersView';
+import CourseAssessmentsView from '../../components/CourseAssessmentsView';
+import TrainerCourseAiInsightsModal from '../../components/TrainerCourseAiInsightsModal';
 import ResourceViewer from '../../components/ResourceViewer';
-import LearnersModal from '../../components/LearnersModal';
-import QuizBuilderModal from '../../components/QuizBuilderModal';
-import SkillsSelect from '../../components/SkillsSelect';
 import {
   ArrowLeft,
   BookOpen,
@@ -45,7 +44,13 @@ import {
   FileCheck,
   Percent,
   Check,
-  Tag
+  Tag,
+  BarChart3,
+  Bot,
+  Sparkles,
+  Award,
+  Clock,
+  Settings,
 } from 'lucide-react';
 
 const ManageCoursePage = () => {
@@ -55,28 +60,26 @@ const ManageCoursePage = () => {
 
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
-  const [finalAssessment, setFinalAssessment] = useState(null);
-  const [moduleQuizzes, setModuleQuizzes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [feedback, setFeedback] = useState(location.state?.message || null);
-  const [showLearnersModal, setShowLearnersModal] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  // Modals / Forms State
-  const [showEditCourseModal, setShowEditCourseModal] = useState(false);
-  const [courseFormData, setCourseFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    level: 'beginner',
-    prerequisites: '',
-    skills: [],
-  });
+  // Active Top Navigation Tab
+  // 'overview' | 'content' | 'learners' | 'assessments' | 'analytics'
+  const [activeTab, setActiveTab] = useState('overview');
 
+  // Modals State
+  const [showEditDetailsModal, setShowEditDetailsModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+
+  // Module Editor State
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
   const [moduleFormData, setModuleFormData] = useState({ title: '', description: '', order: 1 });
+  const [savingModule, setSavingModule] = useState(false);
+  const [moduleError, setModuleError] = useState(null);
 
+  // Resource Upload Modal State
   const [showResourceModal, setShowResourceModal] = useState(false);
   const [targetModuleId, setTargetModuleId] = useState(null);
   const [resourceFormData, setResourceFormData] = useState({
@@ -86,71 +89,26 @@ const ManageCoursePage = () => {
     externalUrl: '',
   });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingResource, setUploadingResource] = useState(false);
+  const [resourceError, setResourceError] = useState(null);
 
-  // Quiz Builder Modal Config State
-  const [quizModalConfig, setQuizModalConfig] = useState({
-    isOpen: false,
-    type: 'module',
-    moduleId: null,
-    moduleTitle: '',
-    initialAssessment: null,
-  });
-
-  // Resource Viewer Modal state
+  // Resource Preview Modal
   const [previewResource, setPreviewResource] = useState(null);
-
-  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchCourseData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await getCourseByIdApi(courseId);
-      if (response && response.success && response.data) {
+      if (response && response.success) {
         setCourse(response.data.course);
-        const mods = response.data.modules || [];
-        setModules(mods);
-        setCourseFormData({
-          title: response.data.course.title,
-          description: response.data.course.description,
-          category: response.data.course.category,
-          level: response.data.course.level,
-          prerequisites: response.data.course.prerequisites || '',
-          skills: (response.data.course.skills || []).map((s) => ({
-            skill: s._id || s.skill?._id || s,
-            proficiency: s.proficiency || response.data.course.level || 'beginner',
-          })),
-        });
-
-        // Fetch Final Assessment
-        try {
-          const finalRes = await getFinalAssessmentApi(courseId);
-          if (finalRes && finalRes.success) {
-            setFinalAssessment(finalRes.data?.assessment || null);
-          }
-        } catch (e) {
-          console.error('Error loading final assessment:', e);
-        }
-
-        // Fetch Module Quizzes
-        const quizMap = {};
-        await Promise.all(
-          mods.map(async (m) => {
-            try {
-              const qRes = await getModuleQuizApi(m._id);
-              if (qRes && qRes.success && qRes.data?.quiz) {
-                quizMap[m._id] = qRes.data.quiz;
-              }
-            } catch (e) {}
-          })
-        );
-        setModuleQuizzes(quizMap);
+        setModules(response.data.modules || []);
       } else {
-        throw new Error(response?.message || 'Course not found');
+        throw new Error(response?.message || 'Failed to fetch course data');
       }
     } catch (err) {
-      console.error('Error fetching course:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to load course.');
+      console.error('Error loading course:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load course details.');
     } finally {
       setLoading(false);
     }
@@ -160,1114 +118,948 @@ const ManageCoursePage = () => {
     fetchCourseData();
   }, [fetchCourseData]);
 
-  // ====================================================
-  // COURSE HANDLERS
-  // ====================================================
-  const handleUpdateCourse = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-    setError(null);
-
+  // Handler: Toggle Publish Status
+  const handleTogglePublish = async () => {
+    if (!course) return;
     try {
-      const response = await updateCourseApi(courseId, courseFormData);
+      const response = await publishCourseApi(course._id);
       if (response && response.success) {
         setCourse(response.data);
-        setShowEditCourseModal(false);
-        setFeedback('Course details updated successfully.');
+        setToast({
+          type: 'success',
+          message: `Course ${response.data.status === 'published' ? 'published to catalog' : 'reverted to draft'}.`,
+        });
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to update course.');
-    } finally {
-      setActionLoading(false);
+      setToast({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to update publication status.',
+      });
     }
   };
 
-  const handlePublishToggle = async () => {
-    setActionLoading(true);
-    setFeedback(null);
-    setError(null);
-
-    const nextStatus = course.status === 'published' ? 'draft' : 'published';
-
-    try {
-      const response = await publishCourseApi(courseId, nextStatus);
-      if (response && response.success) {
-        setCourse((prev) => ({ ...prev, status: nextStatus }));
-        setFeedback(`Course is now ${nextStatus === 'published' ? 'published in the trainee catalog' : 'moved back to draft'}.`);
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        'Could not update publish state. Ensure course has at least one module.'
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ====================================================
-  // MODULE HANDLERS
-  // ====================================================
-  const openAddModuleModal = () => {
-    setEditingModule(null);
-    setModuleFormData({
-      title: '',
-      description: '',
-      order: modules.length + 1,
-    });
-    setShowModuleModal(true);
-  };
-
-  const openEditModuleModal = (mod) => {
-    setEditingModule(mod);
-    setModuleFormData({
-      title: mod.title,
-      description: mod.description || '',
-      order: mod.order,
-    });
-    setShowModuleModal(true);
-  };
-
+  // Handler: Save Module
   const handleSaveModule = async (e) => {
     e.preventDefault();
-    if (!moduleFormData.title.trim()) return;
+    if (!moduleFormData.title.trim()) {
+      setModuleError('Module title is required.');
+      return;
+    }
 
-    setActionLoading(true);
-    setError(null);
-
+    setSavingModule(true);
+    setModuleError(null);
     try {
       if (editingModule) {
         const response = await updateModuleApi(editingModule._id, moduleFormData);
         if (response && response.success) {
           setModules((prev) =>
-            prev.map((m) => (m._id === editingModule._id ? { ...m, ...response.data } : m))
+            prev.map((m) => (m._id === editingModule._id ? response.data : m))
           );
-          setFeedback('Module updated.');
+          setToast({ type: 'success', message: 'Module updated successfully.' });
         }
       } else {
-        const response = await createModuleApi(courseId, moduleFormData);
+        const response = await createModuleApi({
+          ...moduleFormData,
+          course: courseId,
+          order: modules.length + 1,
+        });
         if (response && response.success) {
-          setModules((prev) => [...prev, { ...response.data, resources: [] }]);
-          setFeedback('Module created.');
+          setModules((prev) => [...prev, response.data]);
+          setToast({ type: 'success', message: 'New module added to curriculum.' });
         }
       }
       setShowModuleModal(false);
+      setEditingModule(null);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to save module.');
+      setModuleError(err.response?.data?.message || err.message || 'Failed to save module.');
     } finally {
-      setActionLoading(false);
+      setSavingModule(false);
     }
   };
 
+  // Handler: Delete Module
   const handleDeleteModule = async (moduleId, moduleTitle) => {
-    const confirm = window.confirm(`Delete module "${moduleTitle}" and all its resources?`);
+    const confirm = window.confirm(`Delete module "${moduleTitle}" and all its lessons/quizzes?`);
     if (!confirm) return;
 
-    setActionLoading(true);
     try {
-      await deleteModuleApi(moduleId);
-      setModules((prev) => prev.filter((m) => m._id !== moduleId));
-      setFeedback('Module deleted.');
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete module.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // ====================================================
-  // RESOURCE HANDLERS
-  // ====================================================
-  const openAddResourceModal = (moduleId) => {
-    setTargetModuleId(moduleId);
-    setResourceFormData({
-      title: '',
-      description: '',
-      type: 'pdf',
-      externalUrl: '',
-    });
-    setSelectedFile(null);
-    setShowResourceModal(true);
-  };
-
-  const handleSaveResource = async (e) => {
-    e.preventDefault();
-    if (!resourceFormData.title.trim()) return;
-
-    setActionLoading(true);
-    setError(null);
-
-    try {
-      if (resourceFormData.type === 'link') {
-        const response = await createResourceApi(targetModuleId, {
-          title: resourceFormData.title.trim(),
-          description: resourceFormData.description.trim(),
-          type: 'link',
-          externalUrl: resourceFormData.externalUrl.trim(),
-        });
-
-        if (response && response.success) {
-          setModules((prev) =>
-            prev.map((m) =>
-              m._id === targetModuleId
-                ? { ...m, resources: [...(m.resources || []), response.data] }
-                : m
-            )
-          );
-          setShowResourceModal(false);
-          setFeedback('Link resource added.');
-        }
-      } else {
-        // File Upload
-        if (!selectedFile) {
-          setError('Please choose a file to upload.');
-          setActionLoading(false);
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append('title', resourceFormData.title.trim());
-        formData.append('description', resourceFormData.description.trim());
-        formData.append('type', resourceFormData.type);
-        formData.append('file', selectedFile);
-
-        const response = await createResourceApi(targetModuleId, formData, true);
-        if (response && response.success) {
-          setModules((prev) =>
-            prev.map((m) =>
-              m._id === targetModuleId
-                ? { ...m, resources: [...(m.resources || []), response.data] }
-                : m
-            )
-          );
-          setShowResourceModal(false);
-          setFeedback('Learning resource uploaded successfully.');
-        }
+      const response = await deleteModuleApi(moduleId);
+      if (response && response.success) {
+        setModules((prev) => prev.filter((m) => m._id !== moduleId));
+        setToast({ type: 'success', message: 'Module deleted.' });
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to add resource.');
-    } finally {
-      setActionLoading(false);
+      setToast({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to delete module.',
+      });
     }
   };
 
-  const handleDeleteResource = async (resourceId, moduleId) => {
+  // Handler: Upload Resource
+  const handleSaveResource = async (e) => {
+    e.preventDefault();
+    if (!resourceFormData.title.trim()) {
+      setResourceError('Resource title is required.');
+      return;
+    }
+
+    setUploadingResource(true);
+    setResourceError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('title', resourceFormData.title.trim());
+      formData.append('description', resourceFormData.description.trim());
+      formData.append('type', resourceFormData.type);
+
+      if (resourceFormData.type === 'link') {
+        if (!resourceFormData.externalUrl.trim()) {
+          setResourceError('Please provide a valid external URL.');
+          setUploadingResource(false);
+          return;
+        }
+        formData.append('externalUrl', resourceFormData.externalUrl.trim());
+      } else {
+        if (!selectedFile) {
+          setResourceError('Please select a file to upload.');
+          setUploadingResource(false);
+          return;
+        }
+        formData.append('file', selectedFile);
+      }
+
+      const response = await createResourceApi(targetModuleId, formData);
+      if (response && response.success) {
+        await fetchCourseData();
+        setShowResourceModal(false);
+        setResourceFormData({ title: '', description: '', type: 'pdf', externalUrl: '' });
+        setSelectedFile(null);
+        setToast({ type: 'success', message: 'Resource uploaded successfully.' });
+      }
+    } catch (err) {
+      setResourceError(err.response?.data?.message || err.message || 'Failed to upload resource.');
+    } finally {
+      setUploadingResource(false);
+    }
+  };
+
+  // Handler: Delete Resource
+  const handleDeleteResource = async (moduleId, resourceId) => {
     const confirm = window.confirm('Are you sure you want to delete this resource?');
     if (!confirm) return;
 
     try {
-      await deleteResourceApi(resourceId);
-      setModules((prev) =>
-        prev.map((m) =>
-          m._id === moduleId
-            ? { ...m, resources: m.resources.filter((r) => r._id !== resourceId) }
-            : m
-        )
-      );
-      setFeedback('Resource removed.');
+      const response = await deleteResourceApi(moduleId, resourceId);
+      if (response && response.success) {
+        await fetchCourseData();
+        setToast({ type: 'success', message: 'Resource removed.' });
+      }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete resource.');
-    }
-  };
-
-  // ====================================================
-  // ASSESSMENT & QUIZ HANDLERS
-  // ====================================================
-  const openModuleQuizBuilder = (mod) => {
-    setQuizModalConfig({
-      isOpen: true,
-      type: 'module',
-      moduleId: mod._id,
-      moduleTitle: mod.title,
-      initialAssessment: moduleQuizzes[mod._id] || null,
-    });
-  };
-
-  const openFinalAssessmentBuilder = () => {
-    setQuizModalConfig({
-      isOpen: true,
-      type: 'final',
-      moduleId: null,
-      moduleTitle: '',
-      initialAssessment: finalAssessment,
-    });
-  };
-
-  const handleToggleAssessmentStatus = async (assessmentId) => {
-    try {
-      await toggleAssessmentStatusApi(assessmentId);
-      await fetchCourseData();
-      setFeedback('Assessment publication status updated.');
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to update assessment status.');
+      setToast({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Failed to delete resource.',
+      });
     }
   };
 
   if (loading) {
     return (
-      <div className="py-16 flex justify-center">
-        <Loading message="Loading course manager..." />
+      <div className="py-20 flex justify-center">
+        <Loading message="Loading course workspace and curriculum data..." />
       </div>
     );
   }
 
-  if (!course) {
-    return <ErrorMessage message="Course not found." onRetry={fetchCourseData} />;
+  if (error || !course) {
+    return <ErrorMessage message={error || 'Course not found'} onRetry={fetchCourseData} />;
   }
 
-  const isDraft = course.status === 'draft';
-
-  // Helper to render type icon
-  const renderResourceIcon = (type) => {
-    switch (type) {
-      case 'video':
-        return <Video className="w-4 h-4 text-indigo-600 flex-shrink-0" />;
-      case 'image':
-        return <ImageIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />;
-      case 'pdf':
-        return <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />;
-      case 'text':
-        return <FileCode className="w-4 h-4 text-amber-600 flex-shrink-0" />;
-      case 'link':
-        return <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />;
-      default:
-        return <FileSpreadsheet className="w-4 h-4 text-slate-600 flex-shrink-0" />;
-    }
-  };
+  const isPublished = course.status === 'published';
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Top Breadcrumb Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/trainer/courses"
-            className="p-1.5 rounded hover:bg-slate-100 text-slate-600 transition-colors"
-            title="Back to my courses"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                {course.title}
-              </h1>
-              <span
-                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
-                  isDraft
-                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                }`}
-              >
-                {isDraft ? 'Draft' : 'Published'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Category: <span className="font-semibold text-slate-700">{course.category}</span> &bull; Level:{' '}
-              <span className="font-semibold capitalize text-slate-700">{course.level}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Global Course Actions */}
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setShowLearnersModal(true)}
-            className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded transition-colors inline-flex items-center gap-1.5"
-          >
-            <Users className="w-3.5 h-3.5 text-emerald-600" />
-            <span>View Learners ({course.enrolledCount || 0})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowEditCourseModal(true)}
-            className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 rounded transition-colors inline-flex items-center gap-1.5"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-            <span>Edit Details</span>
-          </button>
-
-          <Button
-            type="button"
-            variant={isDraft ? 'primary' : 'outline'}
-            size="sm"
-            loading={actionLoading}
-            disabled={actionLoading}
-            onClick={handlePublishToggle}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold"
-          >
-            {isDraft ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            <span>{isDraft ? 'Publish Course' : 'Unpublish'}</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      {feedback && (
-        <div className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs px-4 py-3 rounded flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span>{feedback}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFeedback(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
-          >
-            &times;
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
       )}
 
-      {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
+      {/* Top Header Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/trainer/courses"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to My Courses</span>
+          </Link>
 
-      {/* Course Overview Bar */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
-        <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Course Description
-          </h2>
-          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line mt-1">
-            {course.description}
-          </p>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold uppercase border ${
+                isPublished
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+              }`}
+            >
+              {isPublished ? <Globe className="w-3 h-3 text-emerald-600" /> : <Lock className="w-3 h-3 text-amber-600" />}
+              <span>{course.status}</span>
+            </span>
+
+            <span className="text-slate-300">|</span>
+
+            <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+              {course.category}
+            </span>
+
+            <span className="text-xs font-bold text-slate-700 uppercase bg-slate-100 px-2 py-0.5 rounded">
+              {course.level}
+            </span>
+          </div>
         </div>
 
-        {course.prerequisites && (
-          <div className="pt-3 border-t border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Prerequisites
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              {course.prerequisites}
-            </p>
+        {/* Title Row with Inline Editing */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+          <div className="flex-1 min-w-0">
+            <InlineCourseTitleEdit
+              courseId={course._id}
+              initialTitle={course.title}
+              onTitleUpdated={(newTitle) => {
+                setCourse((prev) => ({ ...prev, title: newTitle }));
+              }}
+              onNotify={(n) => setToast(n)}
+            />
+            {course.shortDescription ? (
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{course.shortDescription}</p>
+            ) : (
+              <p className="text-xs text-slate-400 mt-1 italic">No headline set. Click "Edit Course Details" to configure metadata.</p>
+            )}
           </div>
-        )}
 
-        {/* Skills Covered Overview */}
-        <div className="pt-3 border-t border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Skills Covered ({course.skills?.length || 0})</span>
-          </h3>
-          {course.skills && course.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {course.skills.map((skill) => {
-                const sName = skill.name || skill.skill?.name || 'Skill';
-                const sCat = skill.category || skill.skill?.category || 'Technical';
-                const sProf = skill.proficiency || 'beginner';
+          {/* Quick Header Actions */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowEditDetailsModal(true)}
+              className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs inline-flex items-center gap-1.5 transition-colors"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+              <span>Edit Details</span>
+            </button>
 
-                return (
-                  <span
-                    key={skill._id || skill.skill?._id || sName}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs ${
-                      sCat === 'Soft Skill'
-                        ? 'bg-purple-50 text-purple-900 border-purple-200'
-                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                    }`}
-                  >
-                    <span>{sName}</span>
-                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
-                      {sProf}
-                    </span>
-                  </span>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400 italic">
-              No skills mapped yet. Click "Edit Details" above to map skills taught in this course.
-            </p>
-          )}
+            <button
+              type="button"
+              onClick={handleTogglePublish}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 transition-colors ${
+                isPublished
+                  ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+              }`}
+            >
+              {isPublished ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+              <span>{isPublished ? 'Unpublish' : 'Publish Course'}</span>
+            </button>
+
+            <Link
+              to={`/courses/${course._id}`}
+              className="p-2 text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              title="View Public Catalog Preview"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Course Navigation Tabs Strip */}
+        <div className="flex items-center gap-1 pt-4 border-t border-slate-100 overflow-x-auto text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'overview'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Course Overview</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('content')}
+            className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'content'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Curriculum & Content ({modules.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('learners')}
+            className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'learners'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Learners</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('assessments')}
+            className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'assessments'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            <span>Assessments</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('analytics')}
+            className={`px-4 py-2 font-bold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'analytics'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>AI & Analytics</span>
+          </button>
         </div>
       </div>
 
-      {/* Modules & Resources Management Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-              Course Curriculum & Modules ({modules.length})
-            </h2>
-            <p className="text-xs text-slate-500">
-              Structure modules and attach multimedia content (Videos, PDFs, Images, Notes, and Links).
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={openAddModuleModal}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Module</span>
-          </Button>
-        </div>
-
-        {modules.length === 0 ? (
-          /* Empty Modules State */
-          <div className="bg-white border border-slate-200 border-dashed rounded-lg p-10 text-center space-y-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">No modules added yet</p>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                Courses must have at least one module before they can be published to trainees.
+      {/* ====================================================
+          TAB 1: COURSE OVERVIEW
+          ==================================================== */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+          {/* Main Info Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Description Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Course Description & Syllabus
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowEditDetailsModal(true)}
+                  className="text-xs font-semibold text-teal-700 hover:underline inline-flex items-center gap-1"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                {course.description || 'No detailed description provided yet.'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openAddModuleModal}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add First Module</span>
-            </button>
-          </div>
-        ) : (
-          /* Modules List */
-          <div className="space-y-4">
-            {modules.map((mod, index) => (
-              <div
-                key={mod._id}
-                className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4"
-              >
-                {/* Module Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                  <div>
-                    <span className="text-[11px] font-mono font-bold text-emerald-700 block uppercase">
-                      Module {index + 1}
-                    </span>
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                      {mod.title}
-                    </h3>
-                    {mod.description && (
-                      <p className="text-xs text-slate-500 mt-0.5">{mod.description}</p>
-                    )}
-                  </div>
 
-                  {/* Module Action Buttons */}
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => openAddResourceModal(mod._id)}
-                      className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors inline-flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Resource</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEditModuleModal(mod)}
-                      className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                      title="Edit module"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteModule(mod._id, mod.title)}
-                      className="p-1.5 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                      title="Delete module"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Resources List inside Module */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Learning Content ({mod.resources?.length || 0})
-                  </span>
-
-                  {!mod.resources || mod.resources.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic py-1">
-                      No learning resources added yet. Click &quot;Add Resource&quot; to upload media.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      {mod.resources.map((resItem) => {
-                        const isLink = resItem.type === 'link';
-                        const fileUrl = resItem.filePath
-                          ? `http://localhost:5002/uploads/resources/${resItem.filePath.split(/[\\/]/).pop()}`
-                          : '';
-
-                        return (
-                          <div
-                            key={resItem._id}
-                            className="bg-slate-50 border border-slate-200 rounded p-3 flex items-center justify-between gap-3 text-xs hover:border-slate-300 transition-colors"
-                          >
-                            <div
-                              onClick={() => setPreviewResource(resItem)}
-                              className="flex items-center gap-2.5 min-w-0 cursor-pointer group flex-1"
-                            >
-                              {renderResourceIcon(resItem.type)}
-                              <div className="min-w-0">
-                                <p className="font-semibold text-slate-900 group-hover:text-emerald-700 truncate transition-colors">
-                                  {resItem.title}
-                                </p>
-                                <p className="text-[10px] text-slate-400 uppercase font-mono">
-                                  {resItem.type} {resItem.fileName ? `• ${resItem.fileName}` : ''}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewResource(resItem)}
-                                className="px-2 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded text-[11px] font-medium"
-                                title="Inspect resource"
-                              >
-                                {resItem.type === 'video'
-                                  ? 'Watch'
-                                  : resItem.type === 'image'
-                                  ? 'View'
-                                  : resItem.type === 'link'
-                                  ? 'Open'
-                                  : 'Preview'}
-                              </button>
-
-                              {!isLink && fileUrl && (
-                                <a
-                                  href={fileUrl}
-                                  download
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-200"
-                                  title="Download"
-                                >
-                                  <Download className="w-3.5 h-3.5" />
-                                </a>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteResource(resItem._id, mod._id)}
-                                className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                                title="Delete resource"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Module Quiz Section */}
-                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-800">
-                          {moduleQuizzes[mod._id]?.title || 'Module Quiz'}
-                        </span>
-                        {moduleQuizzes[mod._id] ? (
-                          <span
-                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${
-                              moduleQuizzes[mod._id].status === 'published'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : 'bg-amber-50 text-amber-800 border-amber-200'
-                            }`}
-                          >
-                            {moduleQuizzes[mod._id].status}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">No quiz created</span>
-                        )}
-                      </div>
-                      {moduleQuizzes[mod._id] && (
-                        <p className="text-[10px] text-slate-500 font-mono">
-                          {moduleQuizzes[mod._id].questions?.length || 0} Questions •{' '}
-                          {moduleQuizzes[mod._id].questions?.reduce(
-                            (sum, q) => sum + (q.marks || 1),
-                            0
-                          ) || 0}{' '}
-                          Marks • Pass: {moduleQuizzes[mod._id].passingPercentage || 50}%
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {moduleQuizzes[mod._id] ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleAssessmentStatus(moduleQuizzes[mod._id]._id)
-                          }
-                          className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors"
-                        >
-                          {moduleQuizzes[mod._id].status === 'published'
-                            ? 'Unpublish'
-                            : 'Publish'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openModuleQuizBuilder(mod)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors inline-flex items-center gap-1"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          <span>Manage Quiz</span>
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openModuleQuizBuilder(mod)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-white text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-300 transition-colors inline-flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Create Quiz</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+            {/* Learning Outcomes Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Learning Outcomes ({course.learningOutcomes?.length || 0})</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowEditDetailsModal(true)}
+                  className="text-xs font-semibold text-teal-700 hover:underline"
+                >
+                  Manage Outcomes
+                </button>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* Final Course Assessment Card */}
-        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
-                <FileCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-slate-900">
-                    {finalAssessment?.title || 'Final Course Assessment'}
-                  </h3>
-                  {finalAssessment ? (
-                    <span
-                      className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
-                        finalAssessment.status === 'published'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : 'bg-amber-50 text-amber-800 border-amber-200'
-                      }`}
-                    >
-                      {finalAssessment.status}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 italic">Not created</span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Comprehensive evaluation for automatic certificate generation.
+              {!course.learningOutcomes || course.learningOutcomes.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">
+                  No learning outcomes defined. Add measurable outcomes to improve trainee clarity.
                 </p>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  {course.learningOutcomes.map((outcome, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5 text-xs text-slate-800"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium leading-relaxed">{outcome}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {finalAssessment ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAssessmentStatus(finalAssessment._id)}
-                    className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors"
-                  >
-                    {finalAssessment.status === 'published' ? 'Unpublish' : 'Publish'}
-                  </button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={openFinalAssessmentBuilder}
-                    className="px-4 text-xs font-bold inline-flex items-center gap-1.5"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    <span>Manage Assessment</span>
-                  </Button>
-                </>
-              ) : (
-                <Button
+            {/* Mapped Skills & Competencies */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-indigo-600" />
+                  <span>Targeted Platform Skills ({course.skills?.length || 0})</span>
+                </h3>
+                <button
                   type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={openFinalAssessmentBuilder}
-                  className="px-4 text-xs font-bold inline-flex items-center gap-1.5"
+                  onClick={() => setShowEditDetailsModal(true)}
+                  className="text-xs font-semibold text-teal-700 hover:underline"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Create Final Assessment</span>
-                </Button>
+                  Map Skills
+                </button>
+              </div>
+
+              {!course.skills || course.skills.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">
+                  No skills mapped yet. Mapping skills activates automated skill verification badges upon certificate completion.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {course.skills.map((s, idx) => {
+                    const skillObj = s.skill || s;
+                    const name = typeof skillObj === 'object' ? skillObj.name : 'Technical Skill';
+                    const category = typeof skillObj === 'object' ? skillObj.category : 'General';
+                    const proficiency = s.proficiency || course.level || 'beginner';
+
+                    return (
+                      <div
+                        key={idx}
+                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs flex items-center gap-2"
+                      >
+                        <span className="font-bold text-slate-800">{name}</span>
+                        <span className="text-[10px] text-slate-400">({category})</span>
+                        <span
+                          className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded ${
+                            proficiency === 'advanced'
+                              ? 'bg-purple-100 text-purple-800'
+                              : proficiency === 'proficient'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {proficiency}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
 
-          {finalAssessment ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded border border-slate-200 text-xs">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Questions</span>
-                <strong className="text-slate-800 font-bold">
-                  {finalAssessment.questions?.length || 0} Questions
-                </strong>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Marks</span>
-                <strong className="text-slate-800 font-bold">
-                  {finalAssessment.questions?.reduce(
-                    (sum, q) => sum + (q.marks || 1),
-                    0
-                  ) || 0}{' '}
-                  Marks
-                </strong>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Passing Percentage</span>
-                <strong className="text-indigo-700 font-bold">
-                  {finalAssessment.passingPercentage || 60}% required
-                </strong>
+          {/* Sidebar Info Column */}
+          <div className="space-y-6">
+            {/* Quick Metrics */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Course Specifications
+              </h3>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-slate-500">Duration:</span>
+                  <span className="font-bold text-slate-800">{course.estimatedDuration || 'Self-Paced'}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-slate-500">Language:</span>
+                  <span className="font-bold text-slate-800">{course.language || 'English'}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-slate-500">Passing Score:</span>
+                  <span className="font-bold text-slate-800">{course.passingScore || 60}%</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-slate-500">Certificate:</span>
+                  <span className="font-bold text-emerald-700">
+                    {course.certificateEligibility !== false ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Enrollment Acceptance:</span>
+                  <span className="font-bold text-slate-800 uppercase text-[11px]">
+                    {course.enrollmentStatus || 'Open'}
+                  </span>
+                </div>
               </div>
             </div>
-          ) : (
-            <p className="text-xs text-slate-400 italic">
-              No final assessment created yet. Trainees who complete the curriculum must pass the final assessment to be issued an official Certificate of Completion.
-            </p>
-          )}
-        </div>
-      </div>
 
-      {/* ====================================================
-          MODAL 1: EDIT COURSE METADATA
-          ==================================================== */}
-      {showEditCourseModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl space-y-4">
-            <h3 className="text-lg font-bold text-slate-900">Edit Course Details</h3>
-            <form onSubmit={handleUpdateCourse} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={courseFormData.title}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+            {/* AI Assistant Quick Launcher */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <span>AI Pedagogical Assistant</span>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={courseFormData.description}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, description: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Prerequisites <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={courseFormData.prerequisites}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, prerequisites: e.target.value })}
-                  placeholder="e.g. Basic JavaScript, HTML, CSS"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-                  <input
-                    type="text"
-                    required
-                    value={courseFormData.category}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, category: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Level</label>
-                  <select
-                    value={courseFormData.level}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, level: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                  >
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Skills Covered Multi-Select */}
-              <SkillsSelect
-                selectedSkills={courseFormData.skills || []}
-                onChange={(newSkills) => setCourseFormData({ ...courseFormData, skills: newSkills })}
-                label="Skills Covered"
-                helperText="Select active skills from the Skill Library and specify the proficiency level taught."
-                withProficiency={true}
-                disabled={actionLoading}
-              />
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditCourseModal(false)}
-                  className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded"
-                >
-                  Cancel
-                </button>
-                <Button type="submit" variant="primary" size="sm" loading={actionLoading}>
-                  Save Changes
-                </Button>
-              </div>
-            </form>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Run deep diagnostics on quiz drop-offs, difficult questions, and cohort learning friction.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAiModal(true)}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>Launch Course AI Diagnostics</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* ====================================================
-          MODAL 2: ADD / EDIT MODULE
+          TAB 2: CURRICULUM & CONTENT
           ==================================================== */}
+      {activeTab === 'content' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Add Module Action Bar */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                Curriculum Modules ({modules.length})
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Organize learning units, attach reading materials, video lectures, and code files.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingModule(null);
+                setModuleFormData({ title: '', description: '', order: modules.length + 1 });
+                setShowModuleModal(true);
+              }}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Module</span>
+            </button>
+          </div>
+
+          {/* Module List */}
+          {modules.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-xs text-slate-500 shadow-sm space-y-3">
+              <Layers className="w-10 h-10 text-slate-300 mx-auto" />
+              <h4 className="font-bold text-slate-800 text-sm">No curriculum modules added yet</h4>
+              <p className="text-slate-400 max-w-sm mx-auto">
+                Create your first learning module to begin attaching lectures, resources, and quizzes.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingModule(null);
+                  setModuleFormData({ title: '', description: '', order: 1 });
+                  setShowModuleModal(true);
+                }}
+                className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-xs"
+              >
+                Create Module 1
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {modules.map((mod, idx) => (
+                <div
+                  key={mod._id}
+                  className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
+                >
+                  {/* Module Header Bar */}
+                  <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs font-mono shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm">{mod.title}</h4>
+                        {mod.description && (
+                          <p className="text-xs text-slate-500 line-clamp-1">{mod.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Attach Resource */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetModuleId(mod._id);
+                          setResourceFormData({ title: '', description: '', type: 'pdf', externalUrl: '' });
+                          setSelectedFile(null);
+                          setShowResourceModal(true);
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors inline-flex items-center gap-1 shadow-2xs"
+                      >
+                        <Upload className="w-3 h-3 text-slate-500" />
+                        <span>Add Resource</span>
+                      </button>
+
+                      {/* Edit Module */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingModule(mod);
+                          setModuleFormData({
+                            title: mod.title,
+                            description: mod.description || '',
+                            order: mod.order || idx + 1,
+                          });
+                          setShowModuleModal(true);
+                        }}
+                        className="p-1.5 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200 transition-colors"
+                        title="Edit Module"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete Module */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteModule(mod._id, mod.title)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors"
+                        title="Delete Module"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Module Resources List */}
+                  <div className="p-4">
+                    {!mod.resources || mod.resources.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic py-2">
+                        No materials attached to this module yet. Click "Add Resource" to attach PDFs, videos, or links.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {mod.resources.map((res) => (
+                          <div
+                            key={res._id}
+                            className="p-3 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors flex items-start justify-between gap-2 text-xs"
+                          >
+                            <div className="flex items-start gap-2 min-w-0">
+                              <div className="p-1.5 bg-white rounded border border-slate-200 text-teal-700 shrink-0 mt-0.5">
+                                {res.type === 'video' ? (
+                                  <Video className="w-3.5 h-3.5" />
+                                ) : res.type === 'link' ? (
+                                  <Link2 className="w-3.5 h-3.5" />
+                                ) : (
+                                  <FileText className="w-3.5 h-3.5" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block truncate">{res.title}</span>
+                                <span className="text-[10px] text-slate-400 uppercase font-mono">{res.type}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewResource(res)}
+                                className="p-1 text-slate-500 hover:text-slate-900 rounded"
+                                title="Preview"
+                              >
+                                <Play className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteResource(mod._id, res._id)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ====================================================
+          TAB 3: LEARNERS MANAGEMENT
+          ==================================================== */}
+      {activeTab === 'learners' && (
+        <div className="animate-fadeIn">
+          <CourseLearnersView courseId={courseId} courseTitle={course.title} />
+        </div>
+      )}
+
+      {/* ====================================================
+          TAB 4: ASSESSMENTS WORKSPACE
+          ==================================================== */}
+      {activeTab === 'assessments' && (
+        <div className="animate-fadeIn">
+          <CourseAssessmentsView
+            courseId={courseId}
+            courseTitle={course.title}
+            modules={modules}
+            onNotify={(n) => setToast(n)}
+          />
+        </div>
+      )}
+
+      {/* ====================================================
+          TAB 5: AI & ANALYTICS
+          ==================================================== */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-indigo-600" />
+                  <span>Curriculum AI Teaching Diagnostics</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Automated intelligence examining question accuracy, curriculum drop-off points, and skill proficiencies.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAiModal(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Open Diagnostic Inspector</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase">Curriculum Completion Funnel</h4>
+              <p className="text-xs text-slate-600">
+                View learners progressing across modules and identify where students require additional review resources.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/trainer/analytics"
+                  className="text-xs font-bold text-indigo-600 hover:underline"
+                >
+                  View Global Training Analytics &rarr;
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase">Assessment Accuracy Thresholds</h4>
+              <p className="text-xs text-slate-600">
+                Continuous machine evaluation of question difficulty and distractor option quality across attempts.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('assessments')}
+                  className="text-xs font-bold text-teal-700 hover:underline"
+                >
+                  Manage Question Bank &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          MODALS
+          ==================================================== */}
+
+      {/* 1. Edit Course Details Modal */}
+      {showEditDetailsModal && (
+        <EditCourseDetailsModal
+          isOpen={showEditDetailsModal}
+          onClose={() => setShowEditDetailsModal(false)}
+          course={course}
+          onCourseUpdated={(updated) => {
+            setCourse(updated);
+            setToast({ type: 'success', message: 'Course details updated successfully.' });
+          }}
+          onNotify={(n) => setToast(n)}
+        />
+      )}
+
+      {/* 2. Course AI Insights Modal */}
+      {showAiModal && (
+        <TrainerCourseAiInsightsModal
+          isOpen={showAiModal}
+          onClose={() => setShowAiModal(false)}
+          courseId={courseId}
+          courseTitle={course.title}
+        />
+      )}
+
+      {/* 3. Add/Edit Module Modal */}
       {showModuleModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl space-y-4">
-            <h3 className="text-lg font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4 animate-scale-up">
+            <h3 className="text-sm font-bold text-slate-900">
               {editingModule ? 'Edit Module' : 'Add New Module'}
             </h3>
-            <form onSubmit={handleSaveModule} className="space-y-4">
+
+            {moduleError && (
+              <p className="text-xs text-rose-600 font-semibold bg-rose-50 p-2.5 rounded border border-rose-200">
+                {moduleError}
+              </p>
+            )}
+
+            <form onSubmit={handleSaveModule} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Module Title <span className="text-red-500">*</span>
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Module Title</label>
                 <input
                   type="text"
                   required
                   value={moduleFormData.title}
                   onChange={(e) => setModuleFormData({ ...moduleFormData, title: e.target.value })}
-                  placeholder="e.g. Introduction to React Fundamentals"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="e.g., Module 1: Introduction to State & Hooks"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-900"
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Description <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Description</label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={moduleFormData.description}
                   onChange={(e) => setModuleFormData({ ...moduleFormData, description: e.target.value })}
-                  placeholder="Brief synopsis of topics covered in this module..."
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Summary of topics covered in this module..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-900"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Sequence Order</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={moduleFormData.order}
-                  onChange={(e) => setModuleFormData({ ...moduleFormData, order: Number(e.target.value) })}
-                  className="w-24 px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+
+              <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowModuleModal(false)}
-                  className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
                 >
                   Cancel
                 </button>
-                <Button type="submit" variant="primary" size="sm" loading={actionLoading}>
-                  {editingModule ? 'Save Module' : 'Create Module'}
-                </Button>
+                <button
+                  type="submit"
+                  disabled={savingModule}
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg shadow-xs"
+                >
+                  {savingModule ? 'Saving...' : 'Save Module'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ====================================================
-          MODAL 3: ADD LEARNING RESOURCE (EXPANDED TYPES)
-          ==================================================== */}
+      {/* 4. Upload Resource Modal */}
       {showResourceModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900">Add Learning Resource</h3>
-              <button
-                type="button"
-                onClick={() => setShowResourceModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                &times;
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4 animate-scale-up">
+            <h3 className="text-sm font-bold text-slate-900">Add Learning Resource</h3>
 
-            <form onSubmit={handleSaveResource} className="space-y-4">
+            {resourceError && (
+              <p className="text-xs text-rose-600 font-semibold bg-rose-50 p-2.5 rounded border border-rose-200">
+                {resourceError}
+              </p>
+            )}
+
+            <form onSubmit={handleSaveResource} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Resource Title <span className="text-red-500">*</span>
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Resource Title</label>
                 <input
                   type="text"
                   required
                   value={resourceFormData.title}
                   onChange={(e) => setResourceFormData({ ...resourceFormData, title: e.target.value })}
-                  placeholder="e.g. Architecture Overview Lecture"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="e.g., Lecture Slides & Cheatsheet"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-900"
                 />
               </div>
 
-              {/* Resource Type Selector */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Resource Type <span className="text-red-500">*</span>
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Resource Type</label>
                 <select
                   value={resourceFormData.type}
                   onChange={(e) => setResourceFormData({ ...resourceFormData, type: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-900 bg-white"
                 >
                   <option value="pdf">PDF Document</option>
-                  <option value="video">Video (MP4, WEBM, MOV)</option>
-                  <option value="image">Image (PNG, JPG, WEBP)</option>
-                  <option value="text">Text / Notes (TXT, MD)</option>
-                  <option value="document">Document (DOC, DOCX)</option>
-                  <option value="presentation">Presentation (PPT, PPTX)</option>
+                  <option value="video">Video Lecture</option>
                   <option value="link">External Web Link</option>
+                  <option value="code">Code / Project Files</option>
                 </select>
               </div>
 
-              {/* Conditional Input based on Type */}
               {resourceFormData.type === 'link' ? (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    External URL <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block font-bold text-slate-700 mb-1">External URL</label>
                   <input
                     type="url"
                     required
                     value={resourceFormData.externalUrl}
                     onChange={(e) => setResourceFormData({ ...resourceFormData, externalUrl: e.target.value })}
-                    placeholder="https://react.dev/"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-900"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {resourceFormData.type === 'video'
-                      ? 'Select Video File'
-                      : resourceFormData.type === 'image'
-                      ? 'Select Image File'
-                      : resourceFormData.type === 'pdf'
-                      ? 'Select PDF File'
-                      : 'Select File'}{' '}
-                    <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block font-bold text-slate-700 mb-1">File Attachment</label>
                   <input
                     type="file"
                     required
-                    accept={
-                      resourceFormData.type === 'video'
-                        ? 'video/mp4,video/webm,video/quicktime,video/*'
-                        : resourceFormData.type === 'image'
-                        ? 'image/png,image/jpeg,image/jpg,image/webp,image/*'
-                        : resourceFormData.type === 'pdf'
-                        ? '.pdf,application/pdf'
-                        : resourceFormData.type === 'text'
-                        ? '.txt,.md,text/plain'
-                        : '*/*'
-                    }
-                    onChange={(e) => setSelectedFile(e.target.files[0] || null)}
-                    className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                   />
-                  <span className="text-[11px] text-slate-400 block mt-1">
-                    Max file size: 100MB
-                  </span>
                 </div>
               )}
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Description <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={resourceFormData.description}
-                  onChange={(e) => setResourceFormData({ ...resourceFormData, description: e.target.value })}
-                  placeholder="Supplementary guide or study objectives"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowResourceModal(false)}
-                  className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
                 >
                   Cancel
                 </button>
-                <Button type="submit" variant="primary" size="sm" loading={actionLoading}>
-                  {actionLoading ? 'Uploading...' : 'Add Resource'}
-                </Button>
+                <button
+                  type="submit"
+                  disabled={uploadingResource}
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg shadow-xs"
+                >
+                  {uploadingResource ? 'Uploading...' : 'Upload Resource'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ====================================================
-          MODAL 4: RESOURCE VIEWER
-          ==================================================== */}
+      {/* 5. Resource Viewer Modal */}
       {previewResource && (
         <ResourceViewer
-          resource={previewResource}
+          isOpen={Boolean(previewResource)}
           onClose={() => setPreviewResource(null)}
-        />
-      )}
-
-      {/* ====================================================
-          MODAL 5: LEARNERS MODAL
-          ==================================================== */}
-      {showLearnersModal && (
-        <LearnersModal
-          courseId={courseId}
-          onClose={() => setShowLearnersModal(false)}
-        />
-      )}
-
-      {/* ====================================================
-          MODAL 6: QUIZ & ASSESSMENT BUILDER MODAL
-          ==================================================== */}
-      {quizModalConfig.isOpen && (
-        <QuizBuilderModal
-          isOpen={quizModalConfig.isOpen}
-          onClose={() =>
-            setQuizModalConfig({
-              isOpen: false,
-              type: 'module',
-              moduleId: null,
-              moduleTitle: '',
-              initialAssessment: null,
-            })
-          }
-          onSaved={fetchCourseData}
-          type={quizModalConfig.type}
-          moduleId={quizModalConfig.moduleId}
-          courseId={courseId}
-          moduleTitle={quizModalConfig.moduleTitle}
-          courseTitle={course?.title || ''}
-          initialAssessment={quizModalConfig.initialAssessment}
+          resource={previewResource}
         />
       )}
     </div>

@@ -47,6 +47,21 @@ const questionSchema = new mongoose.Schema({
     default: '',
     maxlength: [1000, 'Explanation cannot exceed 1000 characters'],
   },
+  difficulty: {
+    type: String,
+    enum: ['easy', 'medium', 'hard'],
+    default: 'medium',
+  },
+  skill: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Skill',
+    default: null,
+  },
+  topic: {
+    type: String,
+    trim: true,
+    default: '',
+  },
 });
 
 const assessmentSchema = new mongoose.Schema(
@@ -80,6 +95,20 @@ const assessmentSchema = new mongoose.Schema(
       default: '',
       trim: true,
       maxlength: [1000, 'Description cannot exceed 1000 characters'],
+    },
+    timeLimit: {
+      type: Number,
+      default: 0, // 0 = no time limit, or minutes
+      min: 0,
+    },
+    allowedAttempts: {
+      type: Number,
+      default: 3,
+      min: 1,
+    },
+    randomizeQuestions: {
+      type: Boolean,
+      default: false,
     },
     passingPercentage: {
       type: Number,

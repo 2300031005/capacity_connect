@@ -89,6 +89,41 @@ const courseSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    shortDescription: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [300, 'Short description cannot exceed 300 characters'],
+    },
+    learningOutcomes: {
+      type: [String],
+      default: [],
+    },
+    estimatedDuration: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    language: {
+      type: String,
+      trim: true,
+      default: 'English',
+    },
+    passingScore: {
+      type: Number,
+      default: 60,
+      min: [0, 'Passing score must be at least 0'],
+      max: [100, 'Passing score cannot exceed 100'],
+    },
+    certificateEligibility: {
+      type: Boolean,
+      default: true,
+    },
+    enrollmentStatus: {
+      type: String,
+      enum: ['open', 'closed'],
+      default: 'open',
+    },
   },
   {
     timestamps: true,

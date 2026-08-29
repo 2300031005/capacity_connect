@@ -35,110 +35,100 @@ const HomePage = () => {
           SECTION 2 — HERO
           ================================================== */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
           {/* Left Hero Content */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+          <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
             {/* Small badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>AI-Enabled Digital Capacity Building Platform</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Institutional Digital Skilling & Competency Platform</span>
             </div>
 
             {/* Main heading */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-tight">
-              Build Skills. Measure Competency. Grow with Confidence.
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+              Bridge Skill Gaps. <br className="hidden sm:inline" />
+              <span className="text-blue-600 dark:text-blue-400">Verify Real Competency.</span>
             </h1>
 
             {/* Supporting text */}
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Capacity Connect brings learning, assessment, competency tracking and personalized skill development together in one platform.
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+              <strong>Cognisphere</strong> is an intelligent capacity building platform that connects dynamic curriculum delivery, automated evaluation, skill gap diagnostics, and role-based training governance in one unified platform.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
               <Link
                 to="/login"
-                className="px-6 py-3 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors inline-flex items-center gap-2"
+                className="px-6 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition-all inline-flex items-center gap-2"
               >
                 <span>Get Started</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <button
                 type="button"
-                onClick={() => scrollToSection('how-it-works')}
-                className="px-6 py-3 text-sm font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded transition-colors"
+                onClick={() => scrollToSection('about')}
+                className="px-5 py-2.5 text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg shadow-2xs transition-colors"
               >
                 Explore Platform
               </button>
             </div>
           </div>
 
-          {/* Right Hero: Platform-Preview UI Mockup */}
+          {/* Right Hero: Compact Platform-Preview Mockup */}
           <div className="lg:col-span-5">
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm max-w-md mx-auto lg:max-w-none">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm max-w-md mx-auto lg:max-w-none space-y-4">
               {/* Preview Header */}
-              <div className="border-b border-slate-100 pb-3 mb-5 flex items-center justify-between">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Platform Preview
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Competency Intelligence
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono">Trainee View</span>
+                <span className="text-[10px] text-slate-400 font-mono">Live Preview</span>
               </div>
 
-              {/* Learning Progress */}
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-slate-900">Learning Progress</span>
-                  <span className="font-bold text-emerald-700">72%</span>
+              {/* Progress Summary */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-800 dark:text-slate-200">Curriculum Progress</span>
+                  <span className="text-blue-600 dark:text-blue-400">78% Verified</span>
                 </div>
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>React Development</span>
-                  <span>72% Completed</span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-600 rounded-full" style={{ width: '72%' }}></div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                  <div className="h-full bg-gradient-to-r from-blue-600 to-teal-500 rounded-full" style={{ width: '78%' }} />
                 </div>
               </div>
 
-              {/* Competencies */}
-              <div className="space-y-2.5 mb-6">
-                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider block">
-                  Competencies:
+              {/* Verified Competencies */}
+              <div className="space-y-2 pt-1">
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">React & Modern UI</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                    Demonstrated
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">REST API & Backend</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300">
+                    In Progress
+                  </span>
+                </div>
+              </div>
+
+              {/* Recommended Action */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">Next Action: Final Assessment</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                  <span>Start Exam</span>
+                  <ArrowRight className="w-3 h-3" />
                 </span>
-                
-                <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                  <span className="text-slate-700 font-medium">JavaScript</span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    Advanced
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                  <span className="text-slate-700 font-medium">React</span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-                    Intermediate
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs py-1.5">
-                  <span className="text-slate-700 font-medium">Node.js</span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                    Basic
-                  </span>
-                </div>
-              </div>
-
-              {/* Recommended Next */}
-              <div className="pt-4 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Recommended Next:
-                </span>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-900">Advanced React Development</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
               </div>
             </div>
           </div>

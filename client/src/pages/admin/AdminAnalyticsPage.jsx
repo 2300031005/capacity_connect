@@ -30,9 +30,9 @@ import {
   TrendingUp,
   Activity,
   CheckCircle2,
-  ExternalLink,
   GraduationCap,
   UserCheck,
+  Sparkles,
 } from 'lucide-react';
 
 const USER_ROLE_COLORS = ['#3B82F6', '#0D9488', '#8B5CF6'];
@@ -44,6 +44,7 @@ const AdminAnalyticsPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -92,26 +93,26 @@ const AdminAnalyticsPage = () => {
     trainerActivity = [],
   } = analyticsData;
 
-  // Chart 1: Skill Distribution Bar Chart
+  // Skill Distribution Bar Chart Data
   const skillProficiencyChartData = [
     { level: 'Beginner', count: skillsDistribution.beginner || 0, fill: '#10B981' },
     { level: 'Proficient', count: skillsDistribution.proficient || 0, fill: '#3B82F6' },
     { level: 'Advanced', count: skillsDistribution.advanced || 0, fill: '#8B5CF6' },
   ];
 
-  // Chart 2: Popular Skills Data
+  // Popular Skills Data
   const popularSkillsChartData = popularSkills.map((s) => ({
     name: s.name.length > 15 ? s.name.substring(0, 13) + '...' : s.name,
     courses: s.coursesCount,
   }));
 
-  // Chart 3: Assessment Pass vs Fail Pie Chart
+  // Assessment Pass vs Fail Pie Chart Data
   const assessmentPieData = [
     { name: 'Passed Attempts', value: assessmentStatistics.passCount || 0 },
     { name: 'Failed Attempts', value: assessmentStatistics.failCount || 0 },
   ].filter((d) => d.value > 0);
 
-  // Chart 4: Top Courses Data
+  // Top Courses Data
   const topCoursesChartData = topCourses.map((c) => ({
     name: c.title.length > 16 ? c.title.substring(0, 14) + '...' : c.title,
     enrollments: c.enrollmentCount,
@@ -121,427 +122,383 @@ const AdminAnalyticsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Platform Executive Governance</span>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Platform Organizational Intelligence & Telemetry</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-          Platform Analytics & Insights
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          Executive Analytics Dashboard
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-          Comprehensive real-time telemetry across users, course curriculum, learner enrollments, assessment outcomes, and institutional competencies.
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+          Comprehensive real-time telemetry across platform user growth, instructional curriculum delivery, examination outcomes, and institutional competencies.
         </p>
 
         {/* Top Summary Metrics Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5 pt-5 border-t border-slate-100">
-          <div className="bg-slate-900 text-white rounded-lg p-3 shadow-xs">
-            <span className="text-[10px] uppercase font-mono text-slate-300 block font-semibold">Total Users</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+          <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-xl p-3.5 shadow-xs">
+            <span className="text-[10px] uppercase font-mono text-slate-300 dark:text-slate-400 block font-semibold">Total Users</span>
             <strong className="text-xl font-bold">{summary.totalUsers}</strong>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-blue-700 block font-semibold">Trainees</span>
-            <strong className="text-xl font-bold text-blue-900">{summary.totalTrainees}</strong>
+          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 rounded-xl p-3.5">
+            <span className="text-[10px] uppercase font-mono text-blue-700 dark:text-blue-400 block font-semibold">Trainees</span>
+            <strong className="text-xl font-bold text-blue-900 dark:text-blue-200">{summary.totalTrainees}</strong>
           </div>
-          <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-teal-700 block font-semibold">Trainers</span>
-            <strong className="text-xl font-bold text-teal-900">{summary.totalTrainers}</strong>
+          <div className="bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 rounded-xl p-3.5">
+            <span className="text-[10px] uppercase font-mono text-teal-700 dark:text-teal-400 block font-semibold">Trainers</span>
+            <strong className="text-xl font-bold text-teal-900 dark:text-teal-200">{summary.totalTrainers}</strong>
           </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-emerald-700 block font-semibold">Total Courses</span>
-            <strong className="text-xl font-bold text-emerald-900">{summary.totalCourses}</strong>
+          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3.5">
+            <span className="text-[10px] uppercase font-mono text-emerald-700 dark:text-emerald-400 block font-semibold">Courses</span>
+            <strong className="text-xl font-bold text-emerald-900 dark:text-emerald-200">{summary.totalCourses}</strong>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-purple-700 block font-semibold">Enrollments</span>
-            <strong className="text-xl font-bold text-purple-900">{summary.totalEnrollments}</strong>
+          <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 rounded-xl p-3.5">
+            <span className="text-[10px] uppercase font-mono text-purple-700 dark:text-purple-400 block font-semibold">Enrollments</span>
+            <strong className="text-xl font-bold text-purple-900 dark:text-purple-200">{summary.totalEnrollments}</strong>
           </div>
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-            <span className="text-[10px] uppercase font-mono text-indigo-700 block font-semibold">Certificates</span>
-            <strong className="text-xl font-bold text-indigo-900">{summary.totalCertificates}</strong>
+          <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-xl p-3.5">
+            <span className="text-[10px] uppercase font-mono text-indigo-700 dark:text-indigo-400 block font-semibold">Certificates</span>
+            <strong className="text-xl font-bold text-indigo-900 dark:text-indigo-200">{summary.totalCertificates}</strong>
           </div>
         </div>
       </div>
 
+      {/* Domain Navigation Tabs */}
+      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-2 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-x-auto transition-colors">
+        {[
+          { id: 'all', label: 'All Telemetry', icon: Activity },
+          { id: 'activity', label: '1. Platform Activity & Infrastructure', icon: Users },
+          { id: 'outcomes', label: '2. Learning Outcomes & Assessments', icon: FileCheck },
+          { id: 'competency', label: '3. Competency & Skill Intelligence', icon: Target },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${
+                activeTab === tab.id
+                  ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ====================================================
-          VISUALIZATION ROW 1: USER DISTRIBUTION & COURSE STATUS
+          PILLAR 1: PLATFORM ACTIVITY & INFRASTRUCTURE
           ==================================================== */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* User Distribution Donut */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="pb-2 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>User Role Distribution</span>
+      {(activeTab === 'all' || activeTab === 'activity') && (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              Pillar 1: Platform Activity & User Infrastructure
             </h2>
-            <p className="text-[11px] text-slate-400">Breakdown of platform accounts</p>
           </div>
 
-          <div className="h-48 flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie
-                  data={userDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={35}
-                  outerRadius={55}
-                  paddingAngle={4}
-                  dataKey="count"
-                >
-                  {userDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={USER_ROLE_COLORS[index % USER_ROLE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* User Role Distribution */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-blue-600" />
+                  <span>User Distribution</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Platform account breakdown</p>
+              </div>
 
-        {/* Course Status Donut */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="pb-2 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-emerald-600" />
-              <span>Course Catalog Status</span>
-            </h2>
-            <p className="text-[11px] text-slate-400">Published vs Draft catalog</p>
-          </div>
-
-          <div className="h-48 flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie
-                  data={courseStatusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={35}
-                  outerRadius={55}
-                  paddingAngle={4}
-                  dataKey="count"
-                >
-                  {courseStatusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COURSE_STATUS_COLORS[index % COURSE_STATUS_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Assessment Pass / Fail Donut */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <FileCheck className="w-4 h-4 text-purple-600" />
-                <span>Assessment Outcomes & Accuracy</span>
-              </h2>
-              <p className="text-[11px] text-slate-400">Total attempts, pass rate & average score</p>
-            </div>
-            <span className="text-xs font-bold text-emerald-700">
-              {assessmentStatistics.passPercentage}% Pass Rate
-            </span>
-          </div>
-
-          {assessmentStatistics.totalAttempts === 0 ? (
-            <div className="h-48 flex items-center justify-center text-xs text-slate-400">
-              No assessment attempts recorded across the platform yet.
-            </div>
-          ) : (
-            <div className="h-48 flex items-center justify-around">
-              <div className="w-1/2 h-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-44 flex flex-col items-center justify-center">
+                <ResponsiveContainer width="100%" height={140}>
                   <PieChart>
                     <Pie
-                      data={assessmentPieData}
+                      data={userDistribution}
                       cx="50%"
                       cy="50%"
                       innerRadius={35}
                       outerRadius={55}
                       paddingAngle={4}
-                      dataKey="value"
+                      dataKey="count"
                     >
-                      {assessmentPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={ASSESSMENT_COLORS[index % ASSESSMENT_COLORS.length]} />
+                      {userDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={USER_ROLE_COLORS[index % USER_ROLE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
+            </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Attempts</span>
-                  <strong className="text-sm font-bold text-slate-900">{assessmentStatistics.totalAttempts}</strong>
+            {/* Course Status */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Course Status</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Published vs Draft modules</p>
+              </div>
+
+              <div className="h-44 flex flex-col items-center justify-center">
+                <ResponsiveContainer width="100%" height={140}>
+                  <PieChart>
+                    <Pie
+                      data={courseStatusDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={55}
+                      paddingAngle={4}
+                      dataKey="count"
+                    >
+                      {courseStatusDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COURSE_STATUS_COLORS[index % COURSE_STATUS_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Enrollment Growth Trend */}
+            <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Monthly Enrollment Growth</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Platform registration & enrollment trajectory</p>
+              </div>
+
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={enrollmentTrend} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                    <Line type="monotone" dataKey="enrollments" stroke="#6366F1" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          PILLAR 2: LEARNING OUTCOMES & EXAMINATION
+          ==================================================== */}
+      {(activeTab === 'all' || activeTab === 'outcomes') && (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              Pillar 2: Learning Outcomes & Examination Intelligence
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Assessment Outcomes Donut */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">Assessment Pass Rate</h3>
+                  <p className="text-[10px] text-slate-400">Total Attempts: {assessmentStatistics.totalAttempts || 0}</p>
                 </div>
-                <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Average Score</span>
-                  <strong className="text-sm font-bold text-emerald-700">{assessmentStatistics.averageScore}%</strong>
+                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                  {assessmentStatistics.passRate || 0}%
+                </span>
+              </div>
+
+              <div className="h-44 flex flex-col items-center justify-center">
+                {assessmentPieData.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">No quiz attempts recorded yet.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={140}>
+                    <PieChart>
+                      <Pie
+                        data={assessmentPieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {assessmentPieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={ASSESSMENT_COLORS[index % ASSESSMENT_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* Top Performing Courses Bar Chart */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Top Courses by Enrollments & Completions</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">High impact curriculum delivery</p>
+              </div>
+
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topCoursesChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                    <Bar dataKey="enrollments" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Enrollments" />
+                    <Bar dataKey="completions" fill="#10B981" radius={[4, 4, 0, 0]} name="Completions" />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================
+          PILLAR 3: COMPETENCY & SKILL INTELLIGENCE
+          ==================================================== */}
+      {(activeTab === 'all' || activeTab === 'competency') && (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              Pillar 3: Competency & Skill Intelligence
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Skill Proficiency Breakdown */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Verified Skill Proficiency Levels</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Distribution of demonstrated skills across learners</p>
+              </div>
+
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={skillProficiencyChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="level" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {skillProficiencyChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Popular Skills in Curriculum */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>High Demand Skills in Curriculum</span>
+                </h3>
+                <p className="text-[10px] text-slate-400">Skills most frequently embedded across courses</p>
+              </div>
+
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={popularSkillsChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', backgroundColor: '#1e293b', color: '#fff', border: 'none' }} />
+                    <Bar dataKey="courses" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Courses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Competency Overview Table */}
+          {competencyOverview.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden p-5 space-y-3 transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Institutional Competency Attainment Matrix
+                  </h3>
+                  <p className="text-[10px] text-slate-400">Trainee completion rates per capability framework</p>
                 </div>
+                <Link
+                  to="/admin/competencies"
+                  className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  Manage Frameworks &rarr;
+                </Link>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[10px]">
+                      <th className="py-2.5 px-3">Competency Framework</th>
+                      <th className="py-2.5 px-3">Required Skills</th>
+                      <th className="py-2.5 px-3">Demonstrated Trainees</th>
+                      <th className="py-2.5 px-3">In Progress Trainees</th>
+                      <th className="py-2.5 px-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    {competencyOverview.map((c) => (
+                      <tr key={c._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{c.name}</td>
+                        <td className="py-2.5 px-3">{c.skillsCount || 0} Skills</td>
+                        <td className="py-2.5 px-3 font-semibold text-emerald-700 dark:text-emerald-400">
+                          {c.completedTraineesCount || 0} Trainees
+                        </td>
+                        <td className="py-2.5 px-3 text-blue-700 dark:text-blue-400">
+                          {c.inProgressTraineesCount || 0} Trainees
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              c.isActive
+                                ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {c.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </div>
-      </div>
-
-      {/* ====================================================
-          VISUALIZATION ROW 2: TIMELINE TREND & TOP COURSES
-          ==================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Timeline: Enrollments & Completions */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="pb-2 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <span>Platform Learning Trajectory</span>
-            </h2>
-            <p className="text-[11px] text-slate-400">Enrollments and course completions over time</p>
-          </div>
-
-          {enrollmentTrend.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-xs text-slate-400">
-              No historical trend data available yet.
-            </div>
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={enrollmentTrend} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Line
-                    type="monotone"
-                    dataKey="enrollments"
-                    name="Enrollments"
-                    stroke="#3B82F6"
-                    strokeWidth={2.5}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="completions"
-                    name="Completions"
-                    stroke="#10B981"
-                    strokeWidth={2.5}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        {/* Top Courses by Enrollment & Completion */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-teal-600" />
-                <span>Top Performing Courses</span>
-              </h2>
-              <p className="text-[11px] text-slate-400">Most enrolled & completed courses</p>
-            </div>
-            <Link to="/admin/courses" className="text-xs font-semibold text-teal-700 hover:underline">
-              All Courses &rarr;
-            </Link>
-          </div>
-
-          {topCoursesChartData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-xs text-slate-400">
-              No course performance metrics recorded yet.
-            </div>
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topCoursesChartData} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="enrollments" name="Learners" fill="#0D9488" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="completions" name="Completed" fill="#10B981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ====================================================
-          VISUALIZATION ROW 3: SKILLS DISTRIBUTION & POPULAR SKILLS
-          ==================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Verified Skills by Proficiency */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-emerald-600" />
-                <span>Mapped Skill Proficiency Spread</span>
-              </h2>
-              <p className="text-[11px] text-slate-400">Beginner, Proficient, and Advanced offerings</p>
-            </div>
-            <Link to="/admin/skills" className="text-xs font-semibold text-emerald-700 hover:underline">
-              Skill Library &rarr;
-            </Link>
-          </div>
-
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={skillProficiencyChartData} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="level" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                <Tooltip
-                  formatter={(val) => [`${val} Course Mappings`, 'Count']}
-                  contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {skillProficiencyChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Most Frequently Taught Skills */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="pb-2 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-purple-600" />
-              <span>Most Frequently Mapped Skills</span>
-            </h2>
-            <p className="text-[11px] text-slate-400">Skills most integrated into active courses</p>
-          </div>
-
-          {popularSkillsChartData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-xs text-slate-400">
-              No skills mapped to courses yet.
-            </div>
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={popularSkillsChartData} layout="vertical" margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
-                  <Tooltip
-                    formatter={(val) => [`${val} Courses`, 'Mapped in']}
-                    contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                  />
-                  <Bar dataKey="courses" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ====================================================
-          SECTION 4: INSTITUTIONAL COMPETENCIES & TRAINER ACTIVITY
-          ==================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Competencies Framework Summary */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-indigo-600" />
-                <span>Institutional Competency Frameworks ({competencyOverview.length})</span>
-              </h2>
-              <p className="text-[11px] text-slate-400">Job-ready capabilities defined on platform</p>
-            </div>
-            <Link to="/admin/competencies" className="text-xs font-semibold text-indigo-700 hover:underline">
-              Competencies &rarr;
-            </Link>
-          </div>
-
-          {competencyOverview.length === 0 ? (
-            <p className="text-xs text-slate-400 py-8 text-center">No competencies defined yet.</p>
-          ) : (
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-              {competencyOverview.map((c) => (
-                <div key={c._id} className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{c.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 font-semibold">
-                      {c.totalRequiredSkills} Required Skills
-                    </span>
-                  </div>
-                  {c.description && <p className="text-[11px] text-slate-500">{c.description}</p>}
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {c.requiredSkillNames?.slice(0, 4).map((sName, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-600">
-                        {sName}
-                      </span>
-                    ))}
-                    {(c.requiredSkillNames?.length || 0) > 4 && (
-                      <span className="text-[10px] text-slate-400">+{c.requiredSkillNames.length - 4} more</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Trainer Activity Breakdown Table */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="pb-2 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-teal-600" />
-              <span>Trainer Activity & Capacity Metrics</span>
-            </h2>
-            <p className="text-[11px] text-slate-400">Overview of trainer courses and learner enrollments</p>
-          </div>
-
-          {trainerActivity.length === 0 ? (
-            <p className="text-xs text-slate-400 py-8 text-center">No trainer activity recorded yet.</p>
-          ) : (
-            <div className="overflow-x-auto max-h-72 overflow-y-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
-                    <th className="py-2.5 px-3">Trainer</th>
-                    <th className="py-2.5 px-3 text-center">Courses</th>
-                    <th className="py-2.5 px-3 text-center">Enrollments</th>
-                    <th className="py-2.5 px-3 text-center">Completions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {trainerActivity.map((t) => (
-                    <tr key={t.trainerId} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2 px-3 font-semibold text-slate-900">
-                        <div>
-                          <span>{t.name}</span>
-                          <span className="text-[10px] text-slate-400 block font-normal">{t.email}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-3 text-center font-bold">
-                        {t.courseCount}
-                        <span className="text-[10px] text-slate-400 block font-normal">({t.publishedCourseCount} pub)</span>
-                      </td>
-                      <td className="py-2 px-3 text-center font-bold text-blue-700">{t.enrollmentsCount}</td>
-                      <td className="py-2 px-3 text-center font-bold text-emerald-700">{t.completionsCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
