@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -26,13 +26,9 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* Top Header */}
-      <Topbar
-        onMenuClick={() => setSidebarOpen(true)}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={handleToggleCollapse}
-      />
+      <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
       {/* Main Workspace with Collapsible Sidebar */}
       <div className="flex-1 flex w-full">
@@ -45,7 +41,7 @@ const DashboardLayout = () => {
         />
 
         {/* Content Container */}
-        <main className="flex-1 min-w-0 max-w-6xl mx-auto w-full p-4 sm:p-6 lg:p-8 transition-all duration-300">
+        <main className="flex-1 min-w-0 max-w-6xl mx-auto w-full p-4 sm:p-6 lg:p-8 transition-all duration-200">
           <Outlet />
         </main>
       </div>

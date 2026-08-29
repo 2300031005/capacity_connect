@@ -17,11 +17,9 @@ import {
   Download,
   Calendar,
   CheckCircle2,
-  Lightbulb,
-  Star,
   Zap,
-  Clock,
   TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 
 const TraineeDashboardPage = () => {
@@ -62,34 +60,38 @@ const TraineeDashboardPage = () => {
   }, []);
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 mb-2">
-              <GraduationCap className="w-3.5 h-3.5" />
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* ====================================================
+          1. WELCOME HEADER CARD
+          ==================================================== */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-xs transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Role: Trainee</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
               Welcome back, {user?.name || 'Trainee'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Department: {user?.department || 'General Learning Track'}
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Department: <strong className="text-slate-700 dark:text-slate-300">{user?.department || 'Software Engineer'}</strong>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Action CTAs */}
+          <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
             <Link
               to="/trainee/recommendations"
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span>AI Recommendations</span>
             </Link>
+
             <Link
               to="/trainee/courses"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
             >
               <BookOpen className="w-4 h-4" />
               <span>Browse Courses</span>
@@ -98,83 +100,127 @@ const TraineeDashboardPage = () => {
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Learning Progress / Enrolled Courses */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Enrolled Courses</span>
-            <BookOpen className="w-4 h-4 text-blue-600" />
+      {/* ====================================================
+          2. KPI OVERVIEW CARDS (4 CARDS)
+          ==================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Enrolled Courses */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Enrolled Courses
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <BookOpen className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{enrolledCourses.length}</p>
-          <p className="text-[11px] text-slate-400 mt-1">
-            {enrolledCourses.length > 0 ? 'Active learning pathways' : 'No courses enrolled yet'}
-          </p>
+          <div>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white leading-none">
+              {enrolledCourses.length}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              {enrolledCourses.length > 0 ? 'Active learning pathways' : 'No courses enrolled yet'}
+            </p>
+          </div>
         </div>
 
         {/* Certificates Earned */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Certificates Earned</span>
-            <Award className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Certificates Earned
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Award className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-700">{certificates.length}</p>
-          <p className="text-[11px] text-slate-400 mt-1">
-            {certificates.length > 0 ? 'Graduated course credentials' : 'Pass final assessments'}
-          </p>
+          <div>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white leading-none">
+              {certificates.length}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              {certificates.length > 0 ? 'Graduated course credentials' : 'Pass final assessments'}
+            </p>
+          </div>
         </div>
 
-        {/* Skills Track */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Skills & Gaps</span>
-            <Target className="w-4 h-4 text-amber-600" />
+        {/* Skills & Gaps */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Skills & Gaps
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Target className="w-4 h-4" />
+            </div>
           </div>
-          <Link to="/trainee/skills" className="text-sm font-semibold text-slate-700 hover:text-emerald-700">
-            View Skill Passport →
-          </Link>
-          <p className="text-[11px] text-slate-400 mt-2">Verified via passed final exams</p>
+          <div>
+            <Link
+              to="/trainee/skills"
+              className="text-base font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>View Skill Passport</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              Verified via passed final exams
+            </p>
+          </div>
         </div>
 
-        {/* AI Recommendations */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">AI Advisor</span>
-            <Sparkles className="w-4 h-4 text-emerald-600" />
+        {/* AI Advisor */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              AI Advisor
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-sm font-semibold text-slate-700">
-            {recommendations.length > 0 ? `${recommendations.length} Tailored Matches` : 'Active Advisor'}
-          </p>
-          <Link to="/trainee/recommendations" className="text-[11px] text-emerald-700 font-semibold hover:underline mt-2 inline-block">
-            Explore recommendations →
-          </Link>
+          <div>
+            <p className="text-base font-bold text-slate-900 dark:text-white">
+              {recommendations.length > 0 ? `${recommendations.length} Tailored Matches` : 'Active Advisor'}
+            </p>
+            <Link
+              to="/trainee/recommendations"
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline mt-2 inline-flex items-center gap-1"
+            >
+              <span>Explore recommendations</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Recommended for You Section */}
+      {/* ====================================================
+          3. RECOMMENDED FOR YOU SECTION (EQUAL HEIGHT CARDS & TITLE CLAMPING)
+          ==================================================== */}
       {recommendations.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4 transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                  ✨ Recommended for You
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                  Recommended for You
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Personalized based on your skills, learning progress and assessment performance.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Curated learning pathways tailored to your verified competencies and skill gap diagnostics.
               </p>
             </div>
             <Link
               to="/trainee/recommendations"
-              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
             >
-              View All ({recommendations.length}) →
+              <span>View All ({recommendations.length})</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 3 Equal Height Recommendation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
             {recommendations.slice(0, 3).map((item, idx) => {
               const course = item.course;
               const matchScore = item.matchScore || 85;
@@ -182,51 +228,61 @@ const TraineeDashboardPage = () => {
               return (
                 <div
                   key={course?._id || idx}
-                  className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 flex flex-col justify-between space-y-3 hover:border-emerald-300 transition-colors"
+                  className="bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 rounded-xl p-5 flex flex-col justify-between hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">
-                        {course?.category}
+                  <div className="space-y-3">
+                    {/* Category & Match Score Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {course?.category || 'Curriculum'}
                       </span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" />
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
                         <span>{matchScore}% Match</span>
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">
+                    {/* Course Title with Line Clamping and Tooltip so long names never break layout */}
+                    <h3
+                      className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug"
+                      title={course?.title}
+                    >
                       {course?.title}
                     </h3>
 
-                    <div className="bg-emerald-50/50 border border-emerald-100 rounded p-2 text-[11px] text-emerald-900 leading-snug">
+                    {/* Rationale description */}
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg p-2.5 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                       <p className="line-clamp-2">{item.reason}</p>
                     </div>
 
+                    {/* Skills Covered Tags */}
                     {Array.isArray(item.skillAlignment) && item.skillAlignment.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {item.skillAlignment.slice(0, 2).map((sa, sIdx) => (
                           <span
                             key={sIdx}
-                            className="inline-flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] text-slate-700"
+                            className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-700 dark:text-slate-300 font-medium"
                           >
-                            <Target className="w-2.5 h-2.5 text-blue-600" />
-                            <span>{sa.skill}</span>
-                            <span className="text-emerald-700 font-semibold">({sa.targetProficiency})</span>
+                            <Target className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                            <span className="truncate max-w-[90px]">{sa.skill}</span>
+                            <span className="text-teal-700 dark:text-teal-400 font-semibold">({sa.targetProficiency})</span>
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-500 capitalize">Level: {course?.level || 'General'}</span>
+                  {/* Level & CTA Button */}
+                  <div className="pt-4 mt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 capitalize">
+                      Level: {course?.level || 'General'}
+                    </span>
                     <Link
                       to={`/trainee/courses/${course?._id}`}
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+                      className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-1"
                     >
                       <span>View Course</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
@@ -236,83 +292,36 @@ const TraineeDashboardPage = () => {
         </div>
       )}
 
-      {/* Suggested Next Steps Section (AI Learning Sequence) */}
-      {nextSteps.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-violet-600" />
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                  ⚡ AI Suggested Next Steps (Sequential Learning Plan)
-                </h2>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Concrete actionable sequence to advance your verified competencies and career roadmap.
-              </p>
-            </div>
-            <Link
-              to="/trainee/recommendations"
-              className="text-xs font-semibold text-violet-700 hover:text-violet-900 flex items-center gap-1"
-            >
-              <span>AI Hub</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
+      {/* ====================================================
+          4. ENROLLED COURSES (ACTIVE LEARNING PROGRESS)
+          ==================================================== */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4 transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+              My Enrolled Courses ({enrolledCourses.length})
+            </h2>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {nextSteps.map((step, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 shadow-2xs flex flex-col justify-between space-y-3 hover:border-violet-300 transition-colors"
-              >
-                <div className="space-y-2">
-                  <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 text-violet-800 text-xs font-bold">
-                    {step.step || idx + 1}
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">{step.title}</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">{step.description}</p>
-                </div>
-
-                {step.actionUrl && (
-                  <Link
-                    to={step.actionUrl}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900 pt-2 border-t border-slate-200"
-                  >
-                    <span>Take Action</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Enrolled Courses Section */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h2 className="text-base font-bold text-slate-900 tracking-tight">
-            My Enrolled Courses ({enrolledCourses.length})
-          </h2>
           {enrolledCourses.length > 0 && (
             <Link
               to="/trainee/my-courses"
-              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
             >
-              View All
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           )}
         </div>
 
         {enrolledCourses.length === 0 ? (
           <div className="text-center py-8 space-y-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               You haven't enrolled in any courses yet.
             </p>
             <Link
               to="/trainee/courses"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
             >
               <span>Browse Catalog</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -323,25 +332,27 @@ const TraineeDashboardPage = () => {
             {enrolledCourses.slice(0, 4).map((item) => (
               <div
                 key={item._id}
-                className="bg-slate-50 border border-slate-200 rounded p-4 flex flex-col justify-between"
+                className="bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
               >
                 <div>
-                  <span className="text-[10px] font-bold uppercase text-slate-400">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">
                     {item.course?.category}
                   </span>
-                  <h3 className="text-sm font-bold text-slate-900 line-clamp-1 mt-0.5">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mt-0.5" title={item.course?.title}>
                     {item.course?.title}
                   </h3>
                 </div>
 
-                <div className="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">Progress: {item.progress || 0}%</span>
+                <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                    Progress: <strong className="text-blue-600 dark:text-blue-400">{item.progress || 0}%</strong>
+                  </span>
                   <Link
                     to={`/trainee/courses/${item.course?._id}`}
-                    className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                   >
                     <span>Continue</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
@@ -350,12 +361,14 @@ const TraineeDashboardPage = () => {
         )}
       </div>
 
-      {/* Certificates Section */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* ====================================================
+          5. MY EARNED CERTIFICATES SECTION
+          ==================================================== */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4 transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
-            <Award className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">
+            <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               My Earned Certificates ({certificates.length})
             </h2>
           </div>
@@ -363,7 +376,7 @@ const TraineeDashboardPage = () => {
 
         {certificates.length === 0 ? (
           <div className="text-center py-8 text-xs text-slate-400 space-y-1">
-            <p className="font-semibold text-slate-600">No certificates earned yet.</p>
+            <p className="font-semibold text-slate-600 dark:text-slate-300">No certificates earned yet.</p>
             <p>Complete all course modules and pass the final course assessment to graduate and receive your certificate.</p>
           </div>
         ) : (
@@ -371,26 +384,26 @@ const TraineeDashboardPage = () => {
             {certificates.map((cert) => (
               <div
                 key={cert._id}
-                className="bg-emerald-50/40 border border-emerald-200 rounded-lg p-4 flex flex-col justify-between space-y-3"
+                className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-4 flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase">
+                    <span className="text-[10px] font-mono font-bold text-emerald-800 dark:text-emerald-300 uppercase">
                       {cert.certificateId}
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded">
                       Score: {cert.percentage}%
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5 line-clamp-1" title={cert.course?.title}>
                     {cert.course?.title}
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Instructor: {cert.trainer?.name || 'Instructor'}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Instructor: {cert.trainer?.name || 'Faculty'}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-emerald-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between">
                   <span className="text-[10px] text-slate-400">
                     Issued: {new Date(cert.issuedAt).toLocaleDateString()}
                   </span>
@@ -398,7 +411,7 @@ const TraineeDashboardPage = () => {
                     <button
                       type="button"
                       onClick={() => setActiveCertificate(cert)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                     >
                       View
                     </button>
@@ -407,7 +420,7 @@ const TraineeDashboardPage = () => {
                       download
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 text-emerald-800 hover:text-emerald-950 rounded hover:bg-emerald-100 transition-colors"
+                      className="p-1.5 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg transition-colors"
                       title="Download PDF"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -420,7 +433,7 @@ const TraineeDashboardPage = () => {
         )}
       </div>
 
-      {/* Certificate Viewer Modal */}
+      {/* Certificate Modal */}
       {activeCertificate && (
         <CertificateModal
           isOpen={Boolean(activeCertificate)}
