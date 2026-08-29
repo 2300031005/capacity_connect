@@ -17,10 +17,13 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     if (theme === 'dark') {
       root.classList.add('dark');
+      if (body) body.classList.add('dark');
     } else {
       root.classList.remove('dark');
+      if (body) body.classList.remove('dark');
     }
     try {
       localStorage.setItem('cognisphere_theme', theme);

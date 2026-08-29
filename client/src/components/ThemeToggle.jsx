@@ -3,26 +3,34 @@ import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const ThemeToggle = ({ className = '', showLabel = false }) => {
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <button
       type="button"
-      onClick={toggleTheme}
-      className={`inline-flex items-center gap-2 p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${className}`}
-      title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
-      aria-label={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTheme();
+      }}
+      className={`relative inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${
+        isDark
+          ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700 shadow-xs'
+          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-xs'
+      } ${className}`}
+      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
     >
-      {isDark ? (
-        <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-      ) : (
-        <Moon className="w-4 h-4 text-slate-600 shrink-0" />
-      )}
-      {showLabel && (
-        <span className="text-xs font-semibold">
-          {isDark ? 'Light Mode' : 'Dark Mode'}
-        </span>
-      )}
+      <div className="relative flex items-center justify-center">
+        {isDark ? (
+          <Sun className="w-4 h-4 text-amber-400 animate-fadeIn" />
+        ) : (
+          <Moon className="w-4 h-4 text-slate-700 animate-fadeIn" />
+        )}
+      </div>
+      <span className="text-[11px] font-bold">
+        {isDark ? 'Dark' : 'Light'}
+      </span>
     </button>
   );
 };
