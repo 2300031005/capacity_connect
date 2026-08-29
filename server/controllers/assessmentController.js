@@ -449,6 +449,69 @@ const toggleAssessmentStatus = async (req, res, next) => {
 };
 
 /**
+ * @desc    Duplicate an existing assessment
+ * @route   POST /api/assessments/:id/duplicate
+ * @access  Private (Owner Trainer, Admin)
+ */
+const duplicateAssessment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const sourceAssessment = await Assessment.findById(id);
+    if (!sourceAssessment) {
+      return res.status(404).json({ success: false, message: 'Assessment not found' });
+    }
+
+    const course = await Course.findById(sourceAssessment.course);
+    if (req.user.role === 'trainer' && course) {
+      const isOwner =
+        course.trainer.toString() === req.user._id.toString() ||
+        course.trainer.toString() === req.user.id;
+      if (!isOwner) {
+        return res.status(403).json({ success: false, message: 'Access denied.' });
+      }
+    }
+
+    // Clone questions
+    const clonedQuestions = (sourceAssessment.questions || []).map((q) => ({
+      questionText: q.questionText,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      optionD: q.optionD,
+      correctOption: q.correctOption,
+      marks: q.marks || 1,
+      explanation: q.explanation || '',
+      difficulty: q.difficulty || 'medium',
+      skill: q.skill || null,
+      topic: q.topic || '',
+    }));
+
+    const newAssessment = await Assessment.create({
+      course: sourceAssessment.course,
+      module: sourceAssessment.module || null,
+      type: sourceAssessment.type,
+      title: `${sourceAssessment.title} (Copy)`,
+      description: sourceAssessment.description || '',
+      passingPercentage: sourceAssessment.passingPercentage || 60,
+      timeLimit: sourceAssessment.timeLimit || 0,
+      allowedAttempts: sourceAssessment.allowedAttempts || 3,
+      randomizeQuestions: sourceAssessment.randomizeQuestions || false,
+      questions: clonedQuestions,
+      status: 'draft',
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Assessment duplicated successfully',
+      data: newAssessment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Submit attempt for a module quiz or final assessment
  * @route   POST /api/assessments/:id/attempt
  * @access  Private (Enrolled Trainee only)
@@ -1346,6 +1409,7 @@ module.exports = {
   saveFinalAssessment,
   deleteAssessment,
   toggleAssessmentStatus,
+  duplicateAssessment,
   submitAssessmentAttempt,
   getMyAssessmentAttempts,
   getCourseAssessmentResults,

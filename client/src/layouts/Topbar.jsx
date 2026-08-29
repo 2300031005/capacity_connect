@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, LogOut, ExternalLink, User } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
+import { Menu, LogOut, User, ChevronDown } from 'lucide-react';
 
 const Topbar = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const [profileOpen, setProfileOpen] = useState(false);
+  const popoverRef = useRef(null);
+  const buttonRef = useRef(null);
 
   const roleLabelMap = {
     trainee: 'Trainee',
@@ -18,12 +17,54 @@ const Topbar = ({ onMenuClick }) => {
     admin: 'Administrator',
   };
 
+  const handleLogout = () => {
+    setProfileOpen(false);
+    logout();
+    navigate('/login');
+  };
+
+  const handleViewProfile = () => {
+    setProfileOpen(false);
+    navigate(`/${user?.role || 'trainee'}/profile`);
+  };
+
+  // Close popover when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setProfileOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+
+    if (profileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [profileOpen]);
+
   return (
     <header className="bg-white border-b border-[#D7E0E7] sticky top-0 z-30">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Mobile Menu Trigger + Brand */}
+          {/* Left: Brand Logo & Title */}
           <div className="flex items-center gap-3">
+            {/* Mobile Menu Trigger */}
             <button
               type="button"
               onClick={onMenuClick}
@@ -33,7 +74,8 @@ const Topbar = ({ onMenuClick }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link to="/" className="flex items-center gap-2.5">
+            {/* Brand Logo & Title */}
+            <div className="flex items-center gap-3 py-1 select-none">
               <img
                 src="/LOGO-PRAGATI.jpg"
                 alt="PRAGATI Logo"
@@ -42,7 +84,7 @@ const Topbar = ({ onMenuClick }) => {
               <span className="font-bold text-base tracking-tight text-[#0B3D62] hidden sm:inline">
                 PRAGATI
               </span>
-            </Link>
+            </div>
           </div>
 
           {/* Right: User Info, Home Link & Logout */}
@@ -51,11 +93,10 @@ const Topbar = ({ onMenuClick }) => {
               to="/"
               className="text-xs font-medium text-[#526575] hover:text-[#005A8D] hidden md:inline-flex items-center gap-1"
             >
-              <span>Public Portal</span>
-              <ExternalLink className="w-3 h-3" />
+              <span>Public Portal ↗</span>
             </Link>
 
-            <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
             {/* User Profile info link */}
             <Link

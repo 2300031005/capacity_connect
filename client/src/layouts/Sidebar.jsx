@@ -14,10 +14,12 @@ import {
   ShieldCheck,
   UserCheck,
   Sparkles,
-  User
+  User,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => {
   const { user } = useAuth();
   const role = user?.role || 'trainee';
 
@@ -68,18 +70,18 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-xs md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container: Deep Navy Identity in Light and Dark mode */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-white border-r border-[#D7E0E7] transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isCollapsed ? 'md:w-20 w-64' : 'md:w-64 w-64'}`}
       >
-        <div>
+        <div className="flex-1">
           {/* Sidebar Role Badge */}
           <div className="p-4 border-b border-[#D7E0E7]">
             <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-semibold ${currentBadge.color}`}>
@@ -89,34 +91,20 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-3 space-y-1">
+          <nav className="p-2 space-y-1 mt-2">
             {navItems.map((item, idx) => {
               const Icon = item.icon;
-              if (item.comingSoon) {
-                return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between px-3 py-2.5 rounded text-sm text-slate-400 cursor-not-allowed select-none group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 text-slate-400" />
-                      <span>{item.name}</span>
-                    </div>
-                    <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
-                      Soon
-                    </span>
-                  </div>
-                );
-              }
-
               return (
                 <NavLink
                   key={idx}
                   to={item.path}
                   end={item.exact}
                   onClick={onClose}
+                  title={item.name}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${
+                    `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                      isCollapsed ? 'justify-center px-2' : ''
+                    } ${
                       isActive
                         ? 'bg-blue-50 text-[#005A8D] font-semibold'
                         : 'text-[#526575] hover:text-[#172B3A] hover:bg-[#F7F9FB]'

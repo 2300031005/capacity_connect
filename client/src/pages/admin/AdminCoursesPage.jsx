@@ -149,184 +149,207 @@ const AdminCoursesPage = () => {
     }
   };
 
-  const renderResourceIcon = (type) => {
-    switch (type) {
-      case 'video':
-        return <Video className="w-4 h-4 text-indigo-600 flex-shrink-0" />;
-      case 'image':
-        return <ImageIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />;
-      case 'pdf':
-        return <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />;
-      case 'text':
-        return <FileCode className="w-4 h-4 text-amber-600 flex-shrink-0" />;
-      case 'link':
-        return <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />;
-      default:
-        return <FileSpreadsheet className="w-4 h-4 text-slate-600 flex-shrink-0" />;
-    }
-  };
-
   const filteredCourses = courses.filter((c) => {
     const matchesSearch =
-      !searchTerm.trim() ||
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.trainer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = !statusFilter || c.status === statusFilter;
-
+      c.title.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      c.category.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      (c.trainer?.name && c.trainer.name.toLowerCase().includes(searchTerm.toLowerCase().trim()));
+    const matchesStatus = statusFilter === '' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  const getResourceIcon = (type) => {
+    switch (type) {
+      case 'video':
+        return <Video className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />;
+      case 'image':
+        return <ImageIcon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />;
+      case 'link':
+        return <Link2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />;
+      case 'code':
+        return <FileCode className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />;
+      case 'spreadsheet':
+        return <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
+      default:
+        return <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-1">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Platform Governance</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Platform Courses ({courses.length})
-          </h1>
-          <p className="text-xs text-slate-500">
-            Inspect the complete hierarchy: Course &rarr; Modules &rarr; Multimedia Learning Resources.
-          </p>
+      {/* Header Banner */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Curriculum Moderation & Publishing Governance</span>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          Platform Course Administration
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+          Audit structured modules, inspect attached digital assets, moderate publication statuses, and oversee platform-wide learning offerings.
+        </p>
       </div>
 
+      {/* Notifications */}
       {feedback && (
-        <div className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs px-4 py-3 rounded flex items-center justify-between">
+        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs px-4 py-3 rounded-xl flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{feedback}</span>
           </div>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
+            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 font-bold"
           >
             &times;
           </button>
         </div>
       )}
 
-      {error && <ErrorMessage message={error} onRetry={fetchAdminCourses} />}
+      {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+      {/* Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by title, trainer, category..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder="Search platform courses or instructors..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-          </select>
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+          <div className="flex items-center gap-1">
+            {[
+              { label: 'All Courses', value: '' },
+              { label: 'Published', value: 'published' },
+              { label: 'Drafts', value: 'draft' },
+            ].map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setStatusFilter(f.value)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                  statusFilter === f.value
+                    ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Table Content */}
+      {/* Courses Table */}
       {loading ? (
-        <div className="py-16 flex justify-center">
-          <Loading message="Loading platform courses..." />
+        <div className="py-20 flex justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <Loading message="Loading platform course offerings..." />
         </div>
       ) : filteredCourses.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-xs text-slate-500 shadow-sm">
-          No courses found matching criteria.
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 shadow-sm space-y-2">
+          <BookOpen className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+          <p className="font-semibold text-slate-700 dark:text-slate-200">No courses found matching your criteria.</p>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4">Course Title</th>
-                  <th className="py-3 px-4">Trainer</th>
-                  <th className="py-3 px-4">Category / Level</th>
-                  <th className="py-3 px-4">Modules</th>
-                  <th className="py-3 px-4">Enrolled</th>
+                  <th className="py-3 px-4">Category & Level</th>
+                  <th className="py-3 px-4">Instructor</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Enrolled</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredCourses.map((c) => {
-                  const isDraft = c.status === 'draft';
-                  const isBusy = actionLoadingId === c._id;
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                {filteredCourses.map((course) => {
+                  const isActionLoading = actionLoadingId === course._id;
+                  const isDraft = course.status === 'draft';
 
                   return (
-                    <tr key={c._id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900 max-w-xs truncate">
-                        {c.title}
+                    <tr key={course._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white max-w-xs">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span className="truncate">{course.title}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-medium text-slate-800 block">
-                          {c.trainer?.name || 'Unknown'}
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mr-1.5">
+                          {course.category}
                         </span>
-                        <span className="text-[11px] text-slate-400">{c.trainer?.email || ''}</span>
+                        <span className="text-slate-500 dark:text-slate-400 capitalize">{course.level}</span>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="block font-medium">{c.category}</span>
-                        <span className="text-[10px] text-slate-400 capitalize">{c.level}</span>
+                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
+                        {course.trainer?.name || '—'}
                       </td>
-                      <td className="py-3 px-4">{c.moduleCount || 0}</td>
-                      <td className="py-3 px-4">{c.enrolledCount || 0}</td>
                       <td className="py-3 px-4">
                         <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border ${
                             isDraft
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                           }`}
                         >
-                          {c.status}
+                          {isDraft ? (
+                            <>
+                              <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Draft</span>
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                              <span>Published</span>
+                            </>
+                          )}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
-                        {/* View Course Hierarchy Inspector Button */}
+                      <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{course.enrolledCount || 0}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={() => handleOpenInspector(c._id)}
-                          className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
+                          onClick={() => handleOpenInspector(course._id)}
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1"
+                          title="Inspect Curriculum & Content"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>View Course</span>
+                          <span>Inspect</span>
                         </button>
 
                         <button
                           type="button"
-                          disabled={isBusy}
-                          onClick={() => handlePublishToggle(c)}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${
+                          onClick={() => handlePublishToggle(course)}
+                          disabled={isActionLoading}
+                          className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors inline-flex items-center gap-1 ${
                             isDraft
-                              ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50'
-                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                              ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+                              : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                           }`}
                         >
-                          {isDraft ? 'Publish' : 'Unpublish'}
+                          <span>{isDraft ? 'Publish' : 'Unpublish'}</span>
                         </button>
+
                         <button
                           type="button"
-                          disabled={isBusy}
-                          onClick={() => handleDeleteCourse(c)}
-                          className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded"
-                          title="Delete course"
+                          onClick={() => handleDeleteCourse(course)}
+                          disabled={isActionLoading}
+                          className="p-1.5 text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          title="Delete Course"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -341,23 +364,23 @@ const AdminCoursesPage = () => {
       )}
 
       {/* ====================================================
-          ADMIN COURSE → MODULE → RESOURCE INSPECTOR MODAL
+          COURSE STRUCTURE & CURRICULUM INSPECTOR MODAL
           ==================================================== */}
       {inspectCourseId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
-          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Course Structure & Curriculum Inspector
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setInspectCourseId(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-800 rounded hover:bg-slate-200 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -374,48 +397,48 @@ const AdminCoursesPage = () => {
               ) : (
                 <>
                   {/* Course Metadata Card */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                             {inspectCourseData.course.category}
                           </span>
                           <span
                             className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
                               inspectCourseData.course.status === 'draft'
-                                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                             }`}
                           >
                             {inspectCourseData.course.status}
                           </span>
                         </div>
-                        <h2 className="text-xl font-bold text-slate-900">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                           {inspectCourseData.course.title}
                         </h2>
                       </div>
 
-                      <div className="text-xs text-slate-500">
-                        <span>Level: <strong className="capitalize text-slate-700">{inspectCourseData.course.level}</strong></span> &bull;{' '}
-                        <span>Enrolled: <strong className="text-slate-700">{inspectCourseData.course.enrolledCount || 0}</strong></span>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <span>Level: <strong className="capitalize text-slate-700 dark:text-slate-200">{inspectCourseData.course.level}</strong></span> &bull;{' '}
+                        <span>Enrolled: <strong className="text-slate-700 dark:text-slate-200">{inspectCourseData.course.enrolledCount || 0}</strong></span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed border-t border-slate-200/60 pt-2">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
                       {inspectCourseData.course.description}
                     </p>
 
                     {inspectCourseData.course.prerequisites && (
-                      <div className="text-xs text-slate-600 bg-white border border-slate-200 rounded p-2.5">
-                        <span className="font-semibold text-slate-700 block text-[10px] uppercase">Prerequisites:</span>
+                      <div className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[10px] uppercase">Prerequisites:</span>
                         {inspectCourseData.course.prerequisites}
                       </div>
                     )}
 
                     {/* Skills Covered */}
-                    <div className="pt-2 border-t border-slate-200/60">
-                      <span className="font-semibold text-slate-700 block text-[10px] uppercase mb-1">
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[10px] uppercase mb-1">
                         Skills Covered ({inspectCourseData.course.skills?.length || 0}):
                       </span>
                       {inspectCourseData.course.skills && inspectCourseData.course.skills.length > 0 ? (
@@ -430,12 +453,12 @@ const AdminCoursesPage = () => {
                                 key={s._id || s.skill?._id || sName}
                                 className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
                                   sCat === 'Soft Skill'
-                                    ? 'bg-purple-50 text-purple-900 border-purple-200'
-                                    : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                    ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                                    : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                                 }`}
                               >
                                 <span>{sName}</span>
-                                <span className="text-[9px] uppercase font-bold px-1 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
+                                <span className="text-[9px] uppercase font-bold px-1 py-0.2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                   {sProf}
                                 </span>
                               </span>
@@ -447,18 +470,18 @@ const AdminCoursesPage = () => {
                       )}
                     </div>
 
-                    <div className="text-xs text-slate-500 pt-1 flex items-center gap-2">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 pt-1 flex items-center gap-2">
                       <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
                       <span>
-                        Trainer: <strong className="text-slate-800">{inspectCourseData.course.trainer?.name}</strong> ({inspectCourseData.course.trainer?.email})
+                        Trainer: <strong className="text-slate-800 dark:text-slate-200">{inspectCourseData.course.trainer?.name}</strong> ({inspectCourseData.course.trainer?.email})
                       </span>
                     </div>
                   </div>
 
                   {/* Modules & Resources Hierarchy */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                         Modules & Attached Learning Content ({inspectCourseData.modules?.length || 0})
                       </h4>
                     </div>
@@ -473,89 +496,75 @@ const AdminCoursesPage = () => {
                           return (
                             <div
                               key={mod._id}
-                              className="border border-slate-200 rounded-lg overflow-hidden"
+                              className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden"
                             >
                               {/* Module Bar */}
                               <div
                                 onClick={() => setExpandedModuleId(isExpanded ? null : mod._id)}
-                                className="px-4 py-3 bg-white hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors"
+                                className="px-4 py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer flex items-center justify-between transition-colors"
                               >
                                 <div>
-                                  <span className="text-[10px] font-mono font-bold text-emerald-700 block uppercase">
+                                  <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 block uppercase">
                                     Module {idx + 1} (Order: {mod.order})
                                   </span>
-                                  <h5 className="text-sm font-bold text-slate-900">{mod.title}</h5>
+                                  <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mod.title}</h5>
                                   {mod.description && (
-                                    <p className="text-xs text-slate-500 mt-0.5">{mod.description}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{mod.description}</p>
                                   )}
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                  <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
                                     {mod.resources?.length || 0} Resources
                                   </span>
                                   <button
                                     type="button"
-                                    className="p-1 text-slate-400 hover:text-slate-700"
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                   >
-                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4" />
+                                    )}
                                   </button>
                                 </div>
                               </div>
 
-                              {/* Resources Inside Module */}
+                              {/* Expanded Resources */}
                               {isExpanded && (
-                                <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
+                                <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-200 dark:border-slate-800 space-y-2">
                                   {!mod.resources || mod.resources.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic">No resources in this module.</p>
+                                    <p className="text-xs text-slate-400 italic">No resources attached to this module.</p>
                                   ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                      {mod.resources.map((resItem) => {
-                                        const isLink = resItem.type === 'link';
-                                        const fileUrl = resItem.filePath
-                                          ? `http://localhost:5002/uploads/resources/${resItem.filePath.split(/[\\/]/).pop()}`
-                                          : '';
-
+                                    <div className="space-y-1.5">
+                                      {mod.resources.map((res) => {
                                         return (
                                           <div
-                                            key={resItem._id}
-                                            className="bg-white border border-slate-200 rounded p-3 flex items-center justify-between gap-3 text-xs"
+                                            key={res._id}
+                                            className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between text-xs"
                                           >
-                                            <div
-                                              onClick={() => setPreviewResource(resItem)}
-                                              className="flex items-center gap-2.5 min-w-0 cursor-pointer group flex-1"
-                                            >
-                                              {renderResourceIcon(resItem.type)}
-                                              <div className="min-w-0">
-                                                <p className="font-semibold text-slate-900 group-hover:text-emerald-700 truncate transition-colors">
-                                                  {resItem.title}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 uppercase font-mono">
-                                                  {resItem.type}
-                                                </p>
+                                            <div className="flex items-center gap-2.5">
+                                              <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                                                {getResourceIcon(res.type)}
+                                              </div>
+                                              <div>
+                                                <span className="font-semibold text-slate-900 dark:text-white block">
+                                                  {res.title}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 capitalize">
+                                                  Type: {res.type}
+                                                </span>
                                               </div>
                                             </div>
 
-                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                            <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
-                                                onClick={() => setPreviewResource(resItem)}
-                                                className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-medium transition-colors"
+                                                onClick={() => setPreviewResource(res)}
+                                                className="px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded border border-emerald-200 dark:border-emerald-800"
                                               >
-                                                Inspect
+                                                Preview Resource
                                               </button>
-                                              {!isLink && fileUrl && (
-                                                <a
-                                                  href={fileUrl}
-                                                  download
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="p-1 text-slate-500 hover:text-slate-900"
-                                                  title="Download"
-                                                >
-                                                  <Download className="w-3.5 h-3.5" />
-                                                </a>
-                                              )}
                                             </div>
                                           </div>
                                         );
@@ -573,17 +582,7 @@ const AdminCoursesPage = () => {
                 </>
               )}
             </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setInspectCourseId(null)}
-                className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors"
-              >
-                Close Inspector
-              </button>
-            </div>
+            {/* Requirement 9: Clean modal experience without redundant footer "Close Inspector" button */}
           </div>
         </div>
       )}

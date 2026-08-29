@@ -1,0 +1,558 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Users,
+  Search,
+  Filter,
+  ArrowUpDown,
+  ChevronDown,
+  Eye,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Award,
+  GraduationCap,
+  Sparkles,
+  X,
+  RotateCcw,
+  BookOpen,
+} from 'lucide-react';
+import { getTrainerLearnersApi, getTrainerLearnerDetailsApi } from '../services/api';
+import Loading from './Loading';
+import ErrorMessage from './ErrorMessage';
+import LearnerDetailsDrawer from './LearnerDetailsDrawer';
+
+const CourseLearnersView = ({ courseId, courseTitle = 'Course' }) => {
+  const [learners, setLearners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filter & Search states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | Not Started | In Progress | At Risk | Completed
+  const [progressFilter, setProgressFilter] = useState('all'); // all | 0-25 | 25-50 | 50-75 | 75-100
+  const [assessmentFilter, setAssessmentFilter] = useState('all'); // all | passed | failed | none
+  const [sortBy, setSortBy] = useState('progress_desc'); // progress_desc | progress_asc | name_asc | score_desc | activity_desc
+
+  // Drawer / Inspection states
+  const [selectedLearner, setSelectedLearner] = useState(null);
+  const [learnerDetails, setLearnerDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const fetchLearners = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getTrainerLearnersApi(courseId ? { courseId } : {});
+      if (response && response.success) {
+        setLearners(response.data || []);
+      } else {
+        throw new Error(response?.message || 'Failed to fetch learners for this course');
+      }
+    } catch (err) {
+      console.error('Error fetching course learners:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load learners.');
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchLearners();
+  }, [fetchLearners]);
+
+  const handleInspectLearner = async (learnerItem) => {
+    const traineeId = learnerItem.trainee?._id;
+    if (!traineeId) return;
+
+    setSelectedLearner(learnerItem.trainee);
+    setDrawerOpen(true);
+    setDetailsLoading(true);
+    setLearnerDetails(null);
+
+    try {
+      const response = await getTrainerLearnerDetailsApi(traineeId);
+      if (response && response.success) {
+        setLearnerDetails(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching learner details:', err);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setProgressFilter('all');
+    setAssessmentFilter('all');
+    setSortBy('progress_desc');
+  };
+
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    statusFilter !== 'all' ||
+    progressFilter !== 'all' ||
+    assessmentFilter !== 'all' ||
+    sortBy !== 'progress_desc';
+
+  // Filtered and sorted dataset
+  const processedLearners = useMemo(() => {
+    let list = [...learners];
+
+    // 1. Search Query
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      list = list.filter((l) => {
+        const name = l.trainee?.name?.toLowerCase() || '';
+        const email = l.trainee?.email?.toLowerCase() || '';
+        const dept = l.trainee?.department?.toLowerCase() || '';
+        return name.includes(q) || email.includes(q) || dept.includes(q);
+      });
+    }
+
+    // 2. Status Filter
+    if (statusFilter !== 'all') {
+      list = list.filter((l) => l.status === statusFilter);
+    }
+
+    // 3. Progress Filter
+    if (progressFilter !== 'all') {
+      list = list.filter((l) => {
+        const p = l.courseProgress !== undefined ? l.courseProgress : l.averageProgress || 0;
+        if (progressFilter === '0-25') return p <= 25;
+        if (progressFilter === '25-50') return p > 25 && p <= 50;
+        if (progressFilter === '50-75') return p > 50 && p <= 75;
+        if (progressFilter === '75-100') return p > 75;
+        return true;
+      });
+    }
+
+    // 4. Assessment Performance Filter
+    if (assessmentFilter !== 'all') {
+      list = list.filter((l) => {
+        const score = l.averageScore;
+        const failed = l.failedAttemptsCount > 0;
+        if (assessmentFilter === 'passed') return score !== null && score >= 60;
+        if (assessmentFilter === 'failed') return failed || (score !== null && score < 60);
+        if (assessmentFilter === 'none') return score === null;
+        return true;
+      });
+    }
+
+    // 5. Sorting
+    list.sort((a, b) => {
+      const progA = a.courseProgress !== undefined ? a.courseProgress : a.averageProgress || 0;
+      const progB = b.courseProgress !== undefined ? b.courseProgress : b.averageProgress || 0;
+      const nameA = a.trainee?.name || '';
+      const nameB = b.trainee?.name || '';
+      const scoreA = a.averageScore || -1;
+      const scoreB = b.averageScore || -1;
+      const dateA = new Date(a.lastActivity || a.enrolledAt || 0).getTime();
+      const dateB = new Date(b.lastActivity || b.enrolledAt || 0).getTime();
+
+      switch (sortBy) {
+        case 'progress_desc':
+          return progB - progA;
+        case 'progress_asc':
+          return progA - progB;
+        case 'name_asc':
+          return nameA.localeCompare(nameB);
+        case 'score_desc':
+          return scoreB - scoreA;
+        case 'activity_desc':
+          return dateB - dateA;
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [learners, searchTerm, statusFilter, progressFilter, assessmentFilter, sortBy]);
+
+  // Helper for Status Badge styling
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'At Risk':
+        return 'bg-rose-100 text-rose-800 border-rose-300';
+      case 'In Progress':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Not Started':
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-300';
+    }
+  };
+
+  // Helper for Skill Level styling
+  const getSkillBadge = (level) => {
+    switch (level) {
+      case 'Advanced':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'Proficient':
+        return 'bg-teal-100 text-teal-800 border-teal-300';
+      case 'Beginner':
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
+  // Render a clean textual/graphical progress bar
+  const renderProgressBar = (progress) => {
+    const p = Math.max(0, Math.min(100, Number(progress) || 0));
+    return (
+      <div className="flex items-center gap-2 min-w-[120px]">
+        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              p === 100 ? 'bg-emerald-500' : p < 25 ? 'bg-amber-500' : 'bg-teal-600'
+            }`}
+            style={{ width: `${p}%` }}
+          />
+        </div>
+        <span className="font-mono font-bold text-xs text-slate-800 w-9 text-right">{p}%</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Search & Filter Toolbar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search learners by name, email, department..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 bg-white"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filters Row */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* Status Filter */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Statuses</option>
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="At Risk">At Risk ⚠️</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Progress Filter */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Progress:</span>
+              <select
+                value={progressFilter}
+                onChange={(e) => setProgressFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Progress</option>
+                <option value="0-25">0% - 25%</option>
+                <option value="25-50">25% - 50%</option>
+                <option value="50-75">50% - 75%</option>
+                <option value="75-100">75% - 100%</option>
+              </select>
+            </div>
+
+            {/* Assessment Filter */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Score:</span>
+              <select
+                value={assessmentFilter}
+                onChange={(e) => setAssessmentFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Scores</option>
+                <option value="passed">Passing (≥60%)</option>
+                <option value="failed">Failing / At Risk (&lt;60%)</option>
+                <option value="none">No Attempts Yet</option>
+              </select>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1">
+              <ArrowUpDown className="w-3 h-3 text-slate-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                <option value="progress_desc">Highest Progress</option>
+                <option value="progress_asc">Lowest Progress</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="score_desc">Highest Score</option>
+                <option value="activity_desc">Recent Activity</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="px-2 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1 border border-slate-200 transition-colors"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Stats Pill Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+          <span>
+            Showing <strong>{processedLearners.length}</strong> of <strong>{learners.length}</strong> enrolled learners
+          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[10px]">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              {learners.filter((l) => l.status === 'Completed').length} Completed
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 text-rose-800 font-semibold border border-rose-200 text-[10px]">
+              <AlertTriangle className="w-3 h-3 text-rose-600" />
+              {learners.filter((l) => l.status === 'At Risk').length} At Risk
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content: Table & Mobile Cards */}
+      {loading ? (
+        <div className="py-20 flex justify-center bg-white border border-slate-200 rounded-xl shadow-sm">
+          <Loading message="Loading course learner roster..." />
+        </div>
+      ) : error ? (
+        <ErrorMessage message={error} onRetry={fetchLearners} />
+      ) : processedLearners.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-xs text-slate-500 shadow-sm space-y-3">
+          <Users className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800">No matching learners found</h3>
+          <p className="text-slate-400 max-w-sm mx-auto">
+            {hasActiveFilters
+              ? 'Try modifying or resetting your search filters to view enrolled learners.'
+              : 'There are currently no learners enrolled in this course.'}
+          </p>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-semibold shadow-xs"
+            >
+              Clear All Filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          {/* Desktop Table View */}
+          <div className="overflow-x-auto hidden md:block">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-4">Learner Name & Email</th>
+                  <th className="py-3 px-4">Enrollment Date</th>
+                  <th className="py-3 px-4">Course Progress</th>
+                  <th className="py-3 px-4 text-center">Assessment Score</th>
+                  <th className="py-3 px-4 text-center">Skill Level</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4">Last Activity</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {processedLearners.map((item) => {
+                  const t = item.trainee || {};
+                  const progress = item.courseProgress !== undefined ? item.courseProgress : item.averageProgress || 0;
+                  const enrolledDate = item.enrolledAt ? new Date(item.enrolledAt).toLocaleDateString() : 'N/A';
+                  const lastAct = item.lastActivity ? new Date(item.lastActivity).toLocaleDateString() : 'N/A';
+
+                  return (
+                    <tr
+                      key={t._id}
+                      onClick={() => handleInspectLearner(item)}
+                      className="hover:bg-slate-50/90 transition-colors cursor-pointer group"
+                    >
+                      {/* Name & Identifier */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200">
+                            {t.name
+                              ?.split(' ')
+                              .map((n) => n[0])
+                              .join('')
+                              .toUpperCase()
+                              .slice(0, 2) || 'TL'}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-900 block group-hover:text-emerald-700 transition-colors">
+                              {t.name}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono block">
+                              {t.email}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Enrollment Date */}
+                      <td className="py-3.5 px-4 text-slate-600 font-medium whitespace-nowrap">
+                        {enrolledDate}
+                      </td>
+
+                      {/* Course Progress */}
+                      <td className="py-3.5 px-4">
+                        {renderProgressBar(progress)}
+                      </td>
+
+                      {/* Assessment Score */}
+                      <td className="py-3.5 px-4 text-center">
+                        {item.averageScore !== null && item.averageScore !== undefined ? (
+                          <span
+                            className={`font-bold font-mono text-xs px-2 py-0.5 rounded border ${
+                              item.averageScore >= 60
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : 'bg-rose-50 text-rose-800 border-rose-200'
+                            }`}
+                          >
+                            {item.averageScore}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">--</span>
+                        )}
+                      </td>
+
+                      {/* Current Skill Level */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getSkillBadge(
+                            item.currentSkillLevel
+                          )}`}
+                        >
+                          {item.currentSkillLevel || 'Beginner'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getStatusBadge(
+                            item.status
+                          )}`}
+                        >
+                          {item.status || 'In Progress'}
+                        </span>
+                      </td>
+
+                      {/* Last Activity */}
+                      <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
+                        {lastAct}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => handleInspectLearner(item)}
+                          className="px-2.5 py-1 text-xs font-semibold text-teal-700 hover:text-teal-900 border border-teal-300 rounded hover:bg-teal-50 transition-colors inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Inspect</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {processedLearners.map((item) => {
+              const t = item.trainee || {};
+              const progress = item.courseProgress !== undefined ? item.courseProgress : item.averageProgress || 0;
+
+              return (
+                <div
+                  key={t._id}
+                  onClick={() => handleInspectLearner(item)}
+                  className="p-4 space-y-3 hover:bg-slate-50 cursor-pointer"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{t.name}</h4>
+                      <p className="text-slate-400 font-mono text-xs">{t.email}</p>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getStatusBadge(
+                        item.status
+                      )}`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Progress</span>
+                    {renderProgressBar(progress)}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                    <span className="text-slate-500">
+                      Score: <strong>{item.averageScore !== null ? `${item.averageScore}%` : '--'}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      className="text-teal-700 font-semibold inline-flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Details</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Slide-over Drawer for Detailed Learner Inspection */}
+      <LearnerDetailsDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        learner={selectedLearner}
+        details={learnerDetails}
+        loading={detailsLoading}
+        courseId={courseId}
+      />
+    </div>
+  );
+};
+
+export default CourseLearnersView;
