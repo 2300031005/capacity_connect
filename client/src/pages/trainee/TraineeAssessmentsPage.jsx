@@ -150,34 +150,34 @@ const TraineeAssessmentsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-xs">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 sm:p-8 shadow-xs">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mb-2">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span>Centralized Knowledge Evaluation</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
               My Assessments & Quizzes
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
               Track, attempt, and review all module mini-quizzes and final graduation assessments across your enrolled courses, with AI diagnostic mastery insights.
             </p>
           </div>
 
           {/* Quick Metrics */}
-          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-lg flex-shrink-0">
-            <div className="text-center px-3 border-r border-slate-200">
-              <span className="block text-base font-bold text-slate-900">{availableList.length}</span>
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Available</span>
+          <div className="flex items-center gap-3 bg-[var(--surface-muted)] border border-[var(--border)] p-3 rounded-xl flex-shrink-0">
+            <div className="text-center px-3 border-r border-[var(--border)]">
+              <span className="block text-base font-bold text-[var(--text-primary)]">{availableList.length}</span>
+              <span className="text-[10px] uppercase font-semibold text-[var(--text-muted)]">Available</span>
             </div>
-            <div className="text-center px-3 border-r border-slate-200">
-              <span className="block text-base font-bold text-emerald-700">{totalCompleted}</span>
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Completed</span>
+            <div className="text-center px-3 border-r border-[var(--border)]">
+              <span className="block text-base font-bold text-emerald-700 dark:text-emerald-400">{totalCompleted}</span>
+              <span className="text-[10px] uppercase font-semibold text-[var(--text-muted)]">Completed</span>
             </div>
             <div className="text-center px-2">
-              <span className="block text-base font-bold text-indigo-700">{avgScore}%</span>
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Avg Score</span>
+              <span className="block text-base font-bold text-[var(--primary)]">{avgScore}%</span>
+              <span className="text-[10px] uppercase font-semibold text-[var(--text-muted)]">Avg Score</span>
             </div>
           </div>
         </div>
@@ -185,12 +185,12 @@ const TraineeAssessmentsPage = () => {
 
       {/* Notification Banner */}
       {notification && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-lg text-xs font-semibold flex items-center justify-between animate-fadeIn">
+        <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 px-4 py-3 rounded-lg text-xs font-semibold flex items-center justify-between animate-fadeIn">
           <span>{notification}</span>
           <button
             type="button"
             onClick={() => setNotification(null)}
-            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold"
+            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -200,14 +200,14 @@ const TraineeAssessmentsPage = () => {
       {error && <ErrorMessage message={error} onRetry={fetchFeed} />}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 flex-wrap">
+      <div className="flex items-center gap-2 border-b border-[var(--border)] pb-2 flex-wrap">
         <button
           type="button"
           onClick={() => handleTabChange('available')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 cursor-pointer ${
             activeTab === 'available'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+              ? 'bg-[var(--primary)] text-white shadow-sm'
+              : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
           }`}
         >
           <Clock className="w-3.5 h-3.5" />
@@ -217,10 +217,10 @@ const TraineeAssessmentsPage = () => {
         <button
           type="button"
           onClick={() => handleTabChange('completed')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 cursor-pointer ${
             activeTab === 'completed'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+              ? 'bg-[var(--primary)] text-white shadow-sm'
+              : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
           }`}
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -230,10 +230,10 @@ const TraineeAssessmentsPage = () => {
         <button
           type="button"
           onClick={() => handleTabChange('insights')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 cursor-pointer ${
             activeTab === 'insights'
               ? 'bg-amber-700 text-white shadow-sm'
-              : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+              : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-800'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -245,19 +245,19 @@ const TraineeAssessmentsPage = () => {
       {activeTab === 'insights' ? (
         /* ASSESSMENT INSIGHTS TAB */
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-amber-50/60 border border-amber-200 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--surface-muted)] border border-[var(--border)] rounded-xl p-4">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-amber-600" />
+              <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>AI Assessment Diagnostics & Mastery Trajectory</span>
               </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Detailed evaluation of question responses, recurring weak points, and recommended review areas.
               </p>
             </div>
             <Link
               to="/trainee/recommendations"
-              className="text-xs font-bold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1 shrink-0"
+              className="text-xs font-bold text-[var(--primary)] hover:underline inline-flex items-center gap-1 shrink-0"
             >
               <span>View AI Recommendations Hub</span>
               <ArrowRight className="w-3 h-3" />
@@ -265,16 +265,16 @@ const TraineeAssessmentsPage = () => {
           </div>
 
           {loadingInsights ? (
-            <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-xs">
+            <div className="py-16 flex justify-center bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xs">
               <Loading message="Analyzing assessment performance & calculating diagnostics..." />
             </div>
           ) : assessmentInsights.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-3 shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mx-auto">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">No assessment insights yet</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">No assessment insights yet</h3>
+              <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
                 Attempt module quizzes and course graduation exams to generate automated diagnostic insights and mastery feedback.
               </p>
             </div>
@@ -283,36 +283,36 @@ const TraineeAssessmentsPage = () => {
               {assessmentInsights.map((insight, idx) => (
                 <div
                   key={idx}
-                  className="bg-white border border-amber-100 hover:border-amber-300 rounded-xl p-5 shadow-sm space-y-3 flex flex-col justify-between transition-all"
+                  className="bg-[var(--surface)] border border-[var(--border)] hover:border-amber-400 rounded-xl p-5 shadow-xs space-y-3 flex flex-col justify-between transition-all"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                         insight.status === 'positive' || insight.status === 'mastered'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200'
                           : insight.status === 'warning' || insight.status === 'needs_review'
-                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200'
+                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200'
                       }`}>
                         {insight.status || 'Diagnostic'}
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2">
                       <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                       <span>{insight.title || `Assessment Insight ${idx + 1}`}</span>
                     </h3>
 
-                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--surface-muted)] border border-[var(--border)] rounded-lg p-3">
                       {insight.description || insight.insight}
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-3 border-t border-[var(--border)] flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => handleTabChange('completed')}
-                      className="text-xs font-bold text-amber-800 hover:text-amber-900 inline-flex items-center gap-1"
+                      className="text-xs font-bold text-[var(--primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
                       <span>Review Completed Attempts</span>
                       <ArrowRight className="w-3 h-3" />
@@ -330,17 +330,17 @@ const TraineeAssessmentsPage = () => {
             <Loading message="Loading available assessments..." />
           </div>
         ) : availableList.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[var(--surface-muted)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
               <FileCheck className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">No pending assessments</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-base font-bold text-[var(--text-primary)]">No pending assessments</h3>
+            <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
               You are up to date! All available module quizzes and final assessments have been attempted or no courses are currently enrolled.
             </p>
             <Link
               to="/trainee/courses"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 pt-2"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline pt-2"
             >
               <span>Explore Course Catalog</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -355,12 +355,12 @@ const TraineeAssessmentsPage = () => {
               return (
                 <div
                   key={item._id}
-                  className={`bg-white border rounded-lg p-5 shadow-xs flex flex-col justify-between transition-all ${
+                  className={`bg-[var(--surface)] border rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all ${
                     isLocked
-                      ? 'border-slate-200 opacity-80'
+                      ? 'border-[var(--border)] opacity-80'
                       : isFinal
-                      ? 'border-indigo-200 hover:border-indigo-300'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400'
+                      : 'border-[var(--border)] hover:border-blue-400'
                   }`}
                 >
                   <div className="space-y-3">
@@ -463,12 +463,12 @@ const TraineeAssessmentsPage = () => {
             <Loading message="Loading completed attempts..." />
           </div>
         ) : completedList.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-[var(--surface-muted)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">No completed attempts yet</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-base font-bold text-[var(--text-primary)]">No completed attempts yet</h3>
+            <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
               You have not submitted any quizzes yet. Switch to the Available tab to start taking quizzes!
             </p>
           </div>
@@ -482,15 +482,15 @@ const TraineeAssessmentsPage = () => {
               return (
                 <div
                   key={item._id}
-                  className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors"
+                  className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
                           isFinal
-                            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                            : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                         }`}
                       >
                         {isFinal ? 'Final Assessment' : 'Module Quiz'}
@@ -499,18 +499,18 @@ const TraineeAssessmentsPage = () => {
                       <span
                         className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
                           passed
-                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                            : 'bg-rose-100 text-rose-900 border-rose-300'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-300'
+                            : 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border-rose-300'
                         }`}
                       >
                         {passed ? (
                           <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                            <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                             <span>PASSED</span>
                           </>
                         ) : (
                           <>
-                            <XCircle className="w-3 h-3 text-rose-700" />
+                            <XCircle className="w-3 h-3 text-rose-700 dark:text-rose-400" />
                             <span>FAILED</span>
                           </>
                         )}
@@ -518,37 +518,37 @@ const TraineeAssessmentsPage = () => {
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
                         {item.title}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                        Course: <strong className="text-slate-700">{item.courseTitle}</strong>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 font-medium">
+                        Course: <strong className="text-[var(--text-primary)]">{item.courseTitle}</strong>
                       </p>
                     </div>
 
                     {/* Result Breakdown Card */}
-                    <div className="bg-slate-50 border border-slate-200 rounded p-3 flex items-center justify-between text-xs">
+                    <div className="bg-[var(--surface-muted)] border border-[var(--border)] rounded-lg p-3 flex items-center justify-between text-xs">
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                        <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase block">
                           Score Achieved
                         </span>
-                        <strong className="text-sm font-bold text-slate-900">
+                        <strong className="text-sm font-bold text-[var(--text-primary)]">
                           {attempt?.score} / {attempt?.totalMarks} ({attempt?.percentage}%)
                         </strong>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase block">
+                        <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase block">
                           Required Pass
                         </span>
-                        <span className="font-bold text-slate-700">{item.passThreshold}%</span>
+                        <span className="font-bold text-[var(--text-secondary)]">{item.passThreshold}%</span>
                       </div>
                     </div>
 
                     {/* Certificate Badge if Final Assessment Passed */}
                     {item.certificate && (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded p-2.5 text-[11px] text-emerald-900 flex items-center justify-between">
+                      <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-lg p-2.5 text-[11px] text-emerald-900 dark:text-emerald-300 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Award className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                           <span>
                             {passed ? 'Certificate Earned:' : 'Certificate Earned (Prior Pass):'}{' '}
                             <strong className="font-mono font-bold">{item.certificate.certificateId}</strong>

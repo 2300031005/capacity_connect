@@ -41,41 +41,12 @@ const MainLayout = () => {
   const userDashboard = user?.role ? roleDashboardMap[user.role] : '/login';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#172B3A] selection:bg-blue-100 selection:text-[#0B3D62] font-sans">
-      {/* SECTION 1 — TOP GOVERNMENT MASTHEAD (Utility Bar - Height 48-52px, IN Badge, larger font) */}
-      <div className="w-full bg-[#EA580C] text-white h-12 sm:h-[50px] px-4 sm:px-6 lg:px-8 border-b border-[#d97706]/40 flex items-center justify-between text-[13px] font-bold tracking-wide shadow-xs shrink-0">
-        <div className="flex items-center gap-2.5">
-          {/* National Emblem of India */}
-          <img
-            src="/emblem-india.png"
-            alt="Emblem of India"
-            className="h-7 sm:h-8 w-auto object-contain select-none"
-          />
-          <span className="tracking-wider text-xs sm:text-[13px] font-bold uppercase">GOVERNMENT OF INDIA</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <a href="#main-content" className="text-xs sm:text-[13px] font-bold hover:underline focus:outline-2 focus:outline-white focus:outline-offset-2">
-            {t('skipToMain')}
-          </a>
-          <span className="text-white/40">|</span>
-          <div className="flex items-center gap-1.5">
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-transparent border-none text-white focus:outline-none cursor-pointer font-bold text-xs sm:text-[13px]"
-            >
-              <option value="en" className="text-slate-900">English</option>
-              <option value="hi" className="text-slate-900">हिन्दी</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 2 — MAIN NAVIGATION HEADER (Height 64-70px, larger brand logo and title) */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs h-16 sm:h-[70px] flex items-center shrink-0">
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-full">
-            {/* Logo / Brand (Increased sizing) */}
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors selection:bg-teal-100 dark:selection:bg-teal-900">
+      {/* Top Navigation */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo / Brand */}
             <Link to="/" className="flex items-center gap-3">
               <img
                 src="/LOGO-PRAGATI.jpg"

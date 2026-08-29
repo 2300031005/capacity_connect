@@ -444,25 +444,25 @@ const CourseDetailsPage = () => {
       {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
       {/* Course Hero Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm space-y-5">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 sm:p-8 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                 {course.category}
               </span>
-              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[var(--surface-muted)] text-[var(--text-secondary)] border border-[var(--border)]">
                 {course.level}
               </span>
               {isEnrolled && (
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   <span>Enrolled</span>
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
               {course.title}
             </h1>
 
@@ -474,49 +474,31 @@ const CourseDetailsPage = () => {
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                     <span>{reviewsData.averageRating}</span>
                   </div>
-                  <span className="text-slate-400">&bull;</span>
-                  <span className="text-slate-600 font-medium">
+                  <span className="text-[var(--text-muted)]">&bull;</span>
+                  <span className="text-[var(--text-secondary)] font-medium">
                     {reviewsData.totalReviews} {reviewsData.totalReviews === 1 ? 'review' : 'reviews'}
                   </span>
                 </>
               ) : (
-                <span className="text-slate-400 italic">No reviews yet</span>
+                <span className="text-[var(--text-muted)] italic">No reviews yet</span>
               )}
             </div>
           </div>
 
-          {/* Enrollment Button */}
-          <div className="flex-shrink-0 self-start sm:self-auto">
+          {/* Action CTA */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {isEnrolled ? (
-              <div className="flex flex-col items-end gap-1.5">
-                <Link
-                  to="/trainee/my-courses"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-2"
-                >
-                  <Award className="w-4 h-4" />
-                  <span>In My Courses</span>
-                </Link>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-emerald-600 h-full transition-all duration-300"
-                      style={{ width: `${enrollment?.progress || 0}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-600">
-                    {enrollment?.progress || 0}%
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[var(--text-muted)]">
+                  Progress: <strong className="text-[var(--primary)]">{enrollment?.progress || 0}%</strong>
+                </span>
               </div>
             ) : (
               <Button
-                type="button"
                 variant="primary"
-                size="md"
-                loading={enrollLoading}
-                disabled={enrollLoading}
                 onClick={handleEnroll}
-                className="px-6 py-2.5 text-xs font-semibold"
+                loading={enrollLoading}
+                className="px-6 py-2.5 shadow-sm text-xs font-bold"
               >
                 <span>Enroll in Course</span>
               </Button>
@@ -525,17 +507,17 @@ const CourseDetailsPage = () => {
         </div>
 
         {/* Description */}
-        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line border-t border-slate-100 pt-4">
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-line border-t border-[var(--border)] pt-4">
           {course.description}
         </p>
 
         {/* Prerequisites (if provided) */}
         {course.prerequisites && (
-          <div className="bg-slate-50 border border-slate-200 rounded p-4 text-xs space-y-1">
-            <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px] block">
+          <div className="bg-[var(--surface-muted)] border border-[var(--border)] rounded-lg p-4 text-xs space-y-1">
+            <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[10px] block">
               Prerequisites
             </span>
-            <p className="text-slate-600 leading-relaxed">
+            <p className="text-[var(--text-secondary)] leading-relaxed">
               {course.prerequisites}
             </p>
           </div>
@@ -544,7 +526,7 @@ const CourseDetailsPage = () => {
         {/* Skills Covered */}
         {course.skills && course.skills.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
               Skills Covered
             </span>
             <div className="flex flex-wrap gap-2">
@@ -558,13 +540,13 @@ const CourseDetailsPage = () => {
                     key={skill._id || skill.skill?._id || sName}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border shadow-2xs ${
                       sCat === 'Soft Skill'
-                        ? 'bg-purple-50 text-purple-900 border-purple-200'
-                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                        ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                        : 'bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                     }`}
                   >
-                    <Tag className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                    <Tag className="w-3 h-3 text-[var(--primary)] flex-shrink-0" />
                     <span>{sName}</span>
-                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-700">
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)]">
                       {sProf}
                     </span>
                   </span>
@@ -575,95 +557,40 @@ const CourseDetailsPage = () => {
         )}
 
         {/* Instructor & Metadata strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs text-slate-500">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
           <div className="flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-slate-400" />
+            <GraduationCap className="w-4 h-4 text-[var(--text-muted)]" />
             <div>
-              <span className="block text-[10px] text-slate-400 uppercase font-semibold">Instructor</span>
-              <strong className="text-slate-800">{course.trainer?.name || 'Instructor'}</strong>
+              <span className="block text-[10px] text-[var(--text-muted)] uppercase font-semibold">Instructor</span>
+              <strong className="text-[var(--text-primary)]">{course.trainer?.name || 'Instructor'}</strong>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-slate-400" />
+            <Layers className="w-4 h-4 text-[var(--text-muted)]" />
             <div>
-              <span className="block text-[10px] text-slate-400 uppercase font-semibold">Curriculum</span>
-              <strong className="text-slate-800">{modules.length} Modules</strong>
+              <span className="block text-[10px] text-[var(--text-muted)] uppercase font-semibold">Curriculum</span>
+              <strong className="text-[var(--text-primary)]">{modules.length} Modules</strong>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-slate-400" />
+            <Users className="w-4 h-4 text-[var(--text-muted)]" />
             <div>
-              <span className="block text-[10px] text-slate-400 uppercase font-semibold">Community</span>
-              <strong className="text-slate-800">{course.enrolledCount || 0} Learners</strong>
+              <span className="block text-[10px] text-[var(--text-muted)] uppercase font-semibold">Community</span>
+              <strong className="text-[var(--text-primary)]">{course.enrolledCount || 0} Learners</strong>
             </div>
           </div>
         </div>
-
-        {/* AI Learning Advisor - Contextual Recommendation Rationale (Phase 7.3) */}
-        {user?.role === 'trainee' && (
-          <div className="pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={fetchCourseRationale}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded text-xs font-semibold transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{showRationale ? 'Hide AI Recommendation Rationale' : '✨ Why is this course recommended for you?'}</span>
-            </button>
-
-            {showRationale && (
-              <div className="mt-3 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-blue-50/60 border border-emerald-200 rounded-lg p-4 space-y-2 animate-in fade-in duration-200 text-xs">
-                {loadingRationale && (
-                  <div className="flex items-center gap-2 text-emerald-800 py-2">
-                    <Sparkles className="w-4 h-4 animate-spin text-emerald-600" />
-                    <span>Analyzing your learning history against this course...</span>
-                  </div>
-                )}
-
-                {!loadingRationale && courseRationale && (
-                  <div className="space-y-2 text-slate-800">
-                    <div className="flex items-center gap-2 text-emerald-900 font-bold">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>{courseRationale.fitHeadline}</span>
-                    </div>
-                    <p className="text-slate-700 leading-relaxed">
-                      {courseRationale.whyRecommended}
-                    </p>
-                    {Array.isArray(courseRationale.keyLearningOutcomes) && courseRationale.keyLearningOutcomes.length > 0 && (
-                      <div className="pt-1">
-                        <span className="font-bold text-[10px] uppercase text-slate-400 block mb-1">Key Outcomes for Your Profile:</span>
-                        <ul className="space-y-1">
-                          {courseRationale.keyLearningOutcomes.map((out, oIdx) => (
-                            <li key={oIdx} className="flex items-start gap-1.5 text-[11px] text-slate-600">
-                              <span className="text-emerald-600 font-bold">&bull;</span>
-                              <span>{out}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {courseRationale.competencyRelevance && (
-                      <p className="text-[11px] text-slate-500 italic pt-1">
-                        Institutional Milestone: {courseRationale.competencyRelevance}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200 bg-white px-3 pt-2 rounded-t-lg shadow-sm">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] bg-[var(--surface)] px-3 pt-2 rounded-t-xl shadow-xs">
         <button
           type="button"
           onClick={() => setActiveTab('curriculum')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'curriculum'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 rounded-t'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary-soft)] rounded-t'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -673,10 +600,10 @@ const CourseDetailsPage = () => {
         <button
           type="button"
           onClick={() => setActiveTab('reviews')}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'reviews'
-              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 rounded-t'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary-soft)] rounded-t'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
           <Star className="w-4 h-4" />
@@ -687,10 +614,10 @@ const CourseDetailsPage = () => {
           <button
             type="button"
             onClick={() => setActiveTab('discussion')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
               activeTab === 'discussion'
-                ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40 rounded-t'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary-soft)] rounded-t'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -705,7 +632,7 @@ const CourseDetailsPage = () => {
       {activeTab === 'curriculum' && (
         <div className="space-y-4">
           {modules.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-xs text-slate-400 shadow-sm">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-8 text-center text-xs text-[var(--text-muted)] shadow-xs">
               No modules have been published for this course yet.
             </div>
           ) : (
@@ -716,27 +643,27 @@ const CourseDetailsPage = () => {
                 return (
                   <div
                     key={mod._id}
-                    className={`bg-white border rounded-lg p-5 shadow-sm space-y-3 transition-all ${
-                      isModuleCompleted ? 'border-emerald-300 bg-emerald-50/10' : 'border-slate-200'
+                    className={`bg-[var(--surface)] border rounded-xl p-5 shadow-xs space-y-3 transition-all ${
+                      isModuleCompleted ? 'border-emerald-300 dark:border-emerald-800 bg-[var(--surface)]' : 'border-[var(--border)]'
                     }`}
                   >
                     {/* Module Heading */}
-                    <div className="flex items-start justify-between gap-3 pb-2 border-b border-slate-100">
+                    <div className="flex items-start justify-between gap-3 pb-2 border-b border-[var(--border)]">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase">
+                          <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">
                             Module {idx + 1}
                           </span>
                           {isEnrolled && isModuleCompleted && (
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
-                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                               <span>Completed</span>
                             </span>
                           )}
                         </div>
-                        <h3 className="text-base font-bold text-slate-900">{mod.title}</h3>
+                        <h3 className="text-base font-bold text-[var(--text-primary)]">{mod.title}</h3>
                         {mod.description && (
-                          <p className="text-xs text-slate-500 mt-0.5">{mod.description}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">{mod.description}</p>
                         )}
                       </div>
 

@@ -9,8 +9,6 @@ import {
   ArrowRight,
   GraduationCap,
   Calendar,
-  Layers,
-  Sparkles
 } from 'lucide-react';
 
 const MyCoursesPage = () => {
@@ -43,18 +41,18 @@ const MyCoursesPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
             My Enrolled Courses
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
             Access your active courses, learning materials, and track your ongoing progress.
           </p>
         </div>
         <Link
           to="/trainee/courses"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-xs font-semibold transition-colors self-start sm:self-auto shadow-xs"
         >
           <BookOpen className="w-4 h-4" />
           <span>Browse Course Catalog</span>
@@ -69,21 +67,21 @@ const MyCoursesPage = () => {
         </div>
       ) : enrollments.length === 0 ? (
         /* Empty State */
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-[var(--surface-muted)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
             <Award className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-[var(--text-primary)]">
               You haven't enrolled in any courses yet
             </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-[var(--text-muted)] mt-1 max-w-sm mx-auto">
               Explore the catalog to discover curated topics and begin building job-ready competencies.
             </p>
           </div>
           <Link
             to="/trainee/courses"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
           >
             <span>Browse Courses</span>
             <ArrowRight className="w-4 h-4" />
@@ -99,36 +97,36 @@ const MyCoursesPage = () => {
             return (
               <div
                 key={item._id}
-                className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors"
+                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors"
               >
                 <div className="space-y-3">
                   {/* Top Badges */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                       {course.category}
                     </span>
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {item.status || 'Active'}
                     </span>
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight line-clamp-2">
+                  <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight line-clamp-2">
                     {course.title}
                   </h3>
-                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
                     {course.description}
                   </p>
 
                   {/* Instructor & Enrolled Date */}
-                  <div className="space-y-1 pt-2 text-xs text-slate-500">
+                  <div className="space-y-1 pt-2 text-xs text-[var(--text-muted)]">
                     <div className="flex items-center gap-2">
-                      <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
+                      <GraduationCap className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                       <span>
-                        Trainer: <strong className="text-slate-700">{course.trainer?.name || 'Instructor'}</strong>
+                        Trainer: <strong className="text-[var(--text-primary)]">{course.trainer?.name || 'Instructor'}</strong>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>
                         Enrolled on {new Date(item.enrolledAt).toLocaleDateString()}
@@ -139,12 +137,12 @@ const MyCoursesPage = () => {
                   {/* Progress Bar */}
                   <div className="pt-2">
                     <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-slate-600">Course Progress</span>
-                      <span className="text-emerald-700">{item.progress || 0}%</span>
+                      <span className="text-[var(--text-secondary)]">Course Progress</span>
+                      <span className="text-[var(--primary)]">{item.progress || 0}%</span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-[var(--surface-muted)] rounded-full overflow-hidden border border-[var(--border)]">
                       <div
-                        className="h-full bg-emerald-600 rounded-full"
+                        className="h-full bg-[var(--primary)] rounded-full"
                         style={{ width: `${item.progress || 0}%` }}
                       ></div>
                     </div>
@@ -152,13 +150,13 @@ const MyCoursesPage = () => {
                 </div>
 
                 {/* Continue Learning CTA */}
-                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs text-slate-400 capitalize">
+                <div className="pt-4 mt-4 border-t border-[var(--border)] flex items-center justify-between">
+                  <span className="text-xs text-[var(--text-muted)] capitalize">
                     Level: {course.level}
                   </span>
                   <Link
                     to={`/trainee/courses/${course._id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-md text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                   >
                     <span>Continue Learning</span>
                     <ArrowRight className="w-3.5 h-3.5" />
