@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -45,8 +46,9 @@ import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
+    <LanguageProvider>
+      <AuthProvider>
+        <Routes>
         {/* Public Portal Layout */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
@@ -114,7 +116,8 @@ function App() {
           <Route path="analytics" element={<AdminAnalyticsPage />} />
         </Route>
       </Routes>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Menu, X, ArrowRight, LayoutDashboard, LogOut, User } from 'lucide-react';
 
 const MainLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -39,89 +41,118 @@ const MainLayout = () => {
   const userDashboard = user?.role ? roleDashboardMap[user.role] : '/login';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-teal-100 selection:text-teal-900">
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo / Brand */}
+    <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#172B3A] selection:bg-blue-100 selection:text-[#0B3D62] font-sans">
+      {/* SECTION 1 — TOP GOVERNMENT MASTHEAD (Utility Bar - Height 48-52px, IN Badge, larger font) */}
+      <div className="w-full bg-[#EA580C] text-white h-12 sm:h-[50px] px-4 sm:px-6 lg:px-8 border-b border-[#d97706]/40 flex items-center justify-between text-[13px] font-bold tracking-wide shadow-xs shrink-0">
+        <div className="flex items-center gap-2.5">
+          {/* National Emblem of India */}
+          <img
+            src="/emblem-india.png"
+            alt="Emblem of India"
+            className="h-7 sm:h-8 w-auto object-contain select-none"
+          />
+          <span className="tracking-wider text-xs sm:text-[13px] font-bold uppercase">GOVERNMENT OF INDIA</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="#main-content" className="text-xs sm:text-[13px] font-bold hover:underline focus:outline-2 focus:outline-white focus:outline-offset-2">
+            {t('skipToMain')}
+          </a>
+          <span className="text-white/40">|</span>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-transparent border-none text-white focus:outline-none cursor-pointer font-bold text-xs sm:text-[13px]"
+            >
+              <option value="en" className="text-slate-900">English</option>
+              <option value="hi" className="text-slate-900">हिन्दी</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2 — MAIN NAVIGATION HEADER (Height 64-70px, larger brand logo and title) */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs h-16 sm:h-[70px] flex items-center shrink-0">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-full">
+            {/* Logo / Brand (Increased sizing) */}
             <Link to="/" className="flex items-center gap-3">
               <img
-                src="/logo.svg"
-                alt="Capacity Connect Logo"
-                className="w-8 h-8 object-contain"
+                src="/LOGO-PRAGATI.jpg"
+                alt="Pragati Logo"
+                className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
               />
               <div>
-                <span className="font-bold text-base tracking-tight text-slate-900 block leading-tight">
-                  CAPACITY CONNECT
+                <span className="font-extrabold text-base sm:text-lg tracking-wider text-[#0B3D62] block leading-tight">
+                  {t('brandTitle')}
                 </span>
-                <span className="text-[10px] text-slate-500 font-medium tracking-normal block">
-                  Digital Capacity Building & Learning Platform
+                <span className="text-[10px] text-slate-400 font-bold tracking-widest block uppercase leading-none mt-0.5">
+                  {t('platformSubtitle')}
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation Links (Ordered by page sequence) */}
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+            {/* Desktop Navigation Links (Increased text to 13px) */}
+            <nav className="hidden md:flex items-center gap-6 text-[13px] font-bold uppercase tracking-wider text-slate-600">
               <button
                 type="button"
                 onClick={() => handleNavClick('home')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                Home
+                {t('home')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('about')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                About
+                {t('about')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('how-it-works')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                How It Works
+                {t('howItWorks')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('features')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                Features
+                {t('features')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('ai')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                AI
+                {t('aiEcosystem')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('roles')}
-                className="hover:text-slate-900 transition-colors text-left"
+                className="hover:text-[#005A8D] transition-colors text-left"
               >
-                Roles
+                {t('roles')}
               </button>
             </nav>
 
-            {/* Desktop Right Side CTA / Authenticated User Header */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Desktop Right Side CTA / Authenticated User */}
+            <div className="hidden md:flex items-center gap-4">
               {isAuthenticated && user ? (
                 <div className="flex items-center gap-3">
                   <Link
                     to={userDashboard}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-bold bg-[#005A8D] hover:bg-[#0B3D62] text-white rounded-md transition-colors shadow-xs"
                   >
-                    <LayoutDashboard className="w-3.5 h-3.5" />
-                    <span>Dashboard</span>
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>{t('workspace')}</span>
                   </Link>
 
-                  <div className="flex items-center gap-2 pl-2 border-l border-slate-200 text-xs">
-                    <span className="font-bold text-slate-900">{user.name}</span>
-                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold uppercase text-slate-600">
+                  <div className="flex items-center gap-2.5 pl-2.5 border-l border-slate-200 text-xs">
+                    <span className="font-extrabold text-[#172B3A]">{user.name}</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-bold uppercase text-[#005A8D] border border-blue-100">
                       {user.role}
                     </span>
                   </div>
@@ -129,25 +160,25 @@ const MainLayout = () => {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="p-1.5 text-slate-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
                     title="Logout session"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4.5 h-4.5" />
                   </button>
                 </div>
               ) : (
                 <>
                   <Link
                     to="/login"
-                    className="px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                    className="px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-slate-700 hover:text-[#005A8D] transition-colors"
                   >
-                    Login
+                    {t('login')}
                   </Link>
                   <Link
                     to="/register"
-                    className="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                    className="px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider bg-[#005A8D] hover:bg-[#0B3D62] text-white rounded-md transition-all shadow-xs hover:shadow-sm"
                   >
-                    Get Started
+                    {t('getStarted')} &rarr;
                   </Link>
                 </>
               )}
@@ -158,10 +189,10 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+                className="p-2 rounded text-slate-600 hover:text-slate-950 hover:bg-slate-100 focus:outline-none"
                 aria-label="Toggle Navigation Menu"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
           </div>
@@ -169,50 +200,50 @@ const MainLayout = () => {
 
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 shadow-lg">
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 shadow-lg absolute top-16 left-0 right-0 z-50">
             <button
               type="button"
               onClick={() => handleNavClick('home')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              Home
+              {t('home')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('about')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              About
+              {t('about')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('how-it-works')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              How It Works
+              {t('howItWorks')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('features')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              Features
+              {t('features')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('ai')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              AI
+              {t('aiEcosystem')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('roles')}
-              className="block w-full text-left py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
             >
-              Roles
+              {t('roles')}
             </button>
-            
+
             <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
               {isAuthenticated && user ? (
                 <>
@@ -225,9 +256,9 @@ const MainLayout = () => {
                   <Link
                     to={userDashboard}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2 text-sm font-semibold bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#005A8D] text-white rounded hover:bg-[#0B3D62]"
                   >
-                    Enter Dashboard
+                    {t('workspace')}
                   </Link>
                   <button
                     type="button"
@@ -235,7 +266,7 @@ const MainLayout = () => {
                       setMobileMenuOpen(false);
                       handleLogout();
                     }}
-                    className="w-full text-center py-2 text-sm font-medium text-red-700 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider text-rose-600 border border-rose-200 rounded hover:bg-rose-50"
                   >
                     Logout
                   </button>
@@ -245,16 +276,16 @@ const MainLayout = () => {
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded hover:bg-slate-50 transition-colors"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider text-slate-700 border border-slate-300 rounded hover:bg-slate-50"
                   >
-                    Login
+                    {t('login')}
                   </Link>
                   <Link
                     to="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2 text-sm font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#005A8D] text-white rounded hover:bg-[#0B3D62]"
                   >
-                    Get Started
+                    {t('getStarted')}
                   </Link>
                 </>
               )}
@@ -264,84 +295,84 @@ const MainLayout = () => {
       </header>
 
       {/* Main Page Content */}
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-12 text-slate-600">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-slate-100">
-            {/* Brand in Footer */}
-            <div className="flex items-center gap-3">
-              <img
-                src="/logo.svg"
-                alt="Capacity Connect Logo"
-                className="w-8 h-8 object-contain"
-              />
-              <div>
-                <span className="font-bold text-base text-slate-900 tracking-tight block">
-                  CAPACITY CONNECT
-                </span>
-                <span className="text-xs text-slate-500">
-                  Digital Capacity Building & Learning Platform
+      {/* SECTION 9 — FOOTER (More spacious typography and columns) */}
+      <footer className="border-t border-slate-200 bg-white py-16 text-[#526575]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 pb-10 border-b border-slate-100">
+            {/* Brand column */}
+            <div className="md:col-span-1 space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/LOGO-PRAGATI.jpg"
+                  alt="Pragati Logo"
+                  className="w-10 h-10 object-contain shrink-0"
+                />
+                <span className="font-extrabold text-lg sm:text-xl tracking-wider text-[#0B3D62] block leading-tight">
+                  {t('brandTitle')}
                 </span>
               </div>
+              <p className="text-[13px] text-[#526575] leading-relaxed">
+                Empowering organizations through verifiable upskilling, standardized skill taxonomies, and AI-enabled competency tracking.
+              </p>
             </div>
 
-            {/* Footer Navigation Links */}
-            <nav className="flex flex-wrap items-center gap-6 text-sm font-medium text-slate-600">
-              <button
-                type="button"
-                onClick={() => handleNavClick('about')}
-                className="hover:text-slate-900 transition-colors"
-              >
-                About
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNavClick('how-it-works')}
-                className="hover:text-slate-900 transition-colors"
-              >
-                How It Works
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNavClick('features')}
-                className="hover:text-slate-900 transition-colors"
-              >
-                Features
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNavClick('ai')}
-                className="hover:text-slate-900 transition-colors"
-              >
-                AI
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNavClick('roles')}
-                className="hover:text-slate-900 transition-colors"
-              >
-                Roles
-              </button>
-              {isAuthenticated ? (
-                <Link to={userDashboard} className="hover:text-slate-900 transition-colors font-semibold">
-                  Dashboard
-                </Link>
-              ) : (
-                <Link to="/login" className="hover:text-slate-900 transition-colors">
-                  Login
-                </Link>
-              )}
-            </nav>
+            {/* Quick links */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">{t('features')}</h4>
+              <ul className="space-y-3 text-[13px]">
+                <li>
+                  <button type="button" onClick={() => handleNavClick('about')} className="hover:text-[#005A8D] transition-colors">About Us</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('how-it-works')} className="hover:text-[#005A8D] transition-colors">Methodology</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('features')} className="hover:text-[#005A8D] transition-colors">Platform Capabilities</button>
+                </li>
+              </ul>
+            </div>
+
+            {/* AI Layer */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">AI Intelligence</h4>
+              <ul className="space-y-3 text-[13px]">
+                <li>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">AI Learning Advisor</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">Contextual Q&A Chat</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">Trainer Insights</button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Roles */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">Stakeholders</h4>
+              <ul className="space-y-3 text-[13px]">
+                <li>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Trainee space</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Trainer center</button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Administrator panel</button>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Copyright */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-            <p>&copy; 2026 Capacity Connect</p>
-            <p>Learn &bull; Assess &bull; Measure &bull; Improve</p>
+          {/* Copyright & bottom text */}
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-[13px] text-slate-400">
+            <p className="font-semibold text-[#526575]">{t('copyrightText')}</p>
+            <p className="font-bold text-[#005A8D] tracking-widest uppercase">Learn &bull; Assess &bull; Measure &bull; Improve</p>
           </div>
         </div>
       </footer>
