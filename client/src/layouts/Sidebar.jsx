@@ -16,7 +16,7 @@ import {
   Sparkles,
   User,
   ArrowLeft,
-  ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => {
@@ -79,7 +79,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
       <aside
         className={`fixed inset-y-0 left-0 z-50 bg-slate-900 border-r border-slate-800 transform transition-all duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto overflow-x-hidden text-slate-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${isCollapsed ? 'md:w-18 w-64' : 'w-64'}`}
+        } ${isCollapsed ? 'md:w-20 w-64' : 'md:w-64 w-64'}`}
       >
         <div className="flex-1">
           {/* Sidebar Role Badge */}
@@ -88,7 +88,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
               className={`flex items-center gap-2.5 py-2 rounded-lg border text-xs font-semibold ${currentBadge.color} ${
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               }`}
-              title={isCollapsed ? currentBadge.label : undefined}
+              title={currentBadge.label}
             >
               <RoleIcon className="w-4 h-4 shrink-0 text-blue-400" />
               {!isCollapsed && <span className="truncate tracking-wide">{currentBadge.label}</span>}
@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
                   to={item.path}
                   end={item.exact}
                   onClick={onClose}
-                  title={isCollapsed ? item.name : undefined}
+                  title={item.name}
                   className={({ isActive }) =>
                     `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                       isCollapsed ? 'justify-center px-2' : ''
@@ -118,7 +118,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
                 >
                   <Icon
                     className={`w-4 h-4 shrink-0 transition-colors group-hover:text-blue-400 ${
-                      // Active state icon emphasis
                       window.location.pathname === item.path ? 'text-blue-400' : 'text-slate-400'
                     }`}
                   />
@@ -135,18 +134,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => 
             <button
               type="button"
               onClick={onToggleCollapse}
-              className={`flex items-center gap-2 w-full p-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700/80 ${
+              className={`flex items-center gap-2.5 w-full p-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700/80 cursor-pointer ${
                 isCollapsed ? 'justify-center' : 'justify-start'
               }`}
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
               {isCollapsed ? (
-                <ChevronRight className="w-4 h-4 text-blue-400" />
+                <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
               ) : (
                 <>
-                  <ArrowLeft className="w-4 h-4 text-slate-400" />
-                  <span>Collapse Sidebar</span>
+                  <ArrowLeft className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">Collapse Sidebar</span>
                 </>
               )}
             </button>
