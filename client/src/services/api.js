@@ -529,6 +529,33 @@ export const refreshCourseAiTeachingInsightsApi = async (courseId) => {
 };
 
 // ==========================================
+// User Profile Hub APIs
+// ==========================================
+export const getProfileApi = async () => {
+  const response = await api.get('/profile');
+  return response.data;
+};
+
+export const updateProfileApi = async (profileData) => {
+  const response = await api.put('/profile', profileData);
+  return response.data;
+};
+
+export const uploadProfilePhotoApi = async (formData) => {
+  const response = await api.post('/profile/photo', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const deleteProfilePhotoApi = async () => {
+  const response = await api.delete('/profile/photo');
+  return response.data;
+};
+
+// ==========================================
 // Health Check API
 // ==========================================
 export const checkHealth = async () => {

@@ -103,6 +103,16 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
+  // Update authenticated user in state & localStorage without full reload
+  const updateUserContext = useCallback((updatedUser) => {
+    if (!updatedUser) return;
+    setUser((prev) => {
+      const merged = { ...(prev || {}), ...updatedUser };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
   const value = {
     user,
     token,
@@ -112,6 +122,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     deactivationNotice,
     restoreSession,
+    updateUserContext,
     isAuthenticated: Boolean(token && user),
   };
 

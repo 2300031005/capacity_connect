@@ -20,6 +20,7 @@ const competencyRoutes = require('./routes/competencyRoutes');
 const traineeSkillRoutes = require('./routes/traineeSkillRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 const { seedSkills } = require('./utils/skillSeeder');
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
@@ -56,6 +57,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Register API Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api', userRoutes);
 app.use('/api', trainerLearnerRoutes);
 app.use('/api/courses', courseRoutes);

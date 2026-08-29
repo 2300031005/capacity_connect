@@ -13,7 +13,8 @@ import {
   GraduationCap,
   ShieldCheck,
   UserCheck,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -29,6 +30,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { name: 'My Skills', path: '/trainee/skills', icon: Target },
       { name: 'My Competencies', path: '/trainee/competencies', icon: Layers },
       { name: 'Analytics', path: '/trainee/analytics', icon: BarChart3 },
+      { name: 'Profile', path: '/trainee/profile', icon: User },
     ],
     trainer: [
       { name: 'Dashboard', path: '/trainer/dashboard', icon: LayoutDashboard, exact: true },
@@ -36,6 +38,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { name: 'Learners', path: '/trainer/learners', icon: Users },
       { name: 'Assessments', path: '/trainer/assessments', icon: FileCheck },
       { name: 'Analytics', path: '/trainer/analytics', icon: BarChart3 },
+      { name: 'Profile', path: '/trainer/profile', icon: User },
     ],
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, exact: true },
@@ -45,6 +48,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { name: 'Skills', path: '/admin/skills', icon: Target },
       { name: 'Competencies', path: '/admin/competencies', icon: Layers },
       { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
+      { name: 'Profile', path: '/admin/profile', icon: User },
     ],
   };
 

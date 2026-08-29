@@ -57,20 +57,38 @@ const Topbar = ({ onMenuClick }) => {
 
             <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
 
-            {/* User Profile info */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs">
-                {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+            {/* User Profile info link */}
+            <Link
+              to={`/${user?.role || 'trainee'}/profile`}
+              className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors group"
+              title="View my profile"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-700 font-bold text-xs shrink-0 group-hover:border-slate-400 transition-colors">
+                {user?.photo ? (
+                  <img
+                    src={user.photo}
+                    alt={user.name || 'User'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : user?.name ? (
+                  user.name.charAt(0).toUpperCase()
+                ) : (
+                  <User className="w-4 h-4" />
+                )}
               </div>
               <div className="hidden sm:block text-left">
-                <span className="text-xs font-bold text-slate-900 block leading-tight">
+                <span className="text-xs font-bold text-slate-900 block leading-tight group-hover:text-blue-600 transition-colors">
                   {user?.name || 'User'}
                 </span>
                 <span className="text-[11px] text-slate-500 capitalize">
                   {roleLabelMap[user?.role] || user?.role || 'Trainee'}
                 </span>
               </div>
-            </div>
+            </Link>
 
             {/* Logout Button */}
             <button

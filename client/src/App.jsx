@@ -13,6 +13,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 // Trainee Workspace Pages
 import TraineeDashboardPage from './pages/TraineeDashboardPage';
+import TraineeProfilePage from './pages/trainee/TraineeProfilePage';
 import CourseCatalogPage from './pages/trainee/CourseCatalogPage';
 import CourseDetailsPage from './pages/trainee/CourseDetailsPage';
 import MyCoursesPage from './pages/trainee/MyCoursesPage';
@@ -24,6 +25,7 @@ import TraineeRecommendationsPage from './pages/trainee/TraineeRecommendationsPa
 
 // Trainer Workspace Pages
 import TrainerDashboardPage from './pages/TrainerDashboardPage';
+import TrainerProfilePage from './pages/trainer/TrainerProfilePage';
 import TrainerCoursesPage from './pages/trainer/TrainerCoursesPage';
 import CreateCoursePage from './pages/trainer/CreateCoursePage';
 import ManageCoursePage from './pages/trainer/ManageCoursePage';
@@ -33,6 +35,7 @@ import TrainerAnalyticsPage from './pages/trainer/TrainerAnalyticsPage';
 
 // Admin Workspace Pages
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminTrainersPage from './pages/admin/AdminTrainersPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
@@ -62,6 +65,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TraineeDashboardPage />} />
+          <Route path="profile" element={<TraineeProfilePage />} />
           <Route path="recommendations" element={<TraineeRecommendationsPage />} />
           <Route path="courses" element={<CourseCatalogPage />} />
           <Route path="courses/:id" element={<CourseDetailsPage />} />
@@ -82,6 +86,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<TrainerDashboardPage />} />
+          <Route path="profile" element={<TrainerProfilePage />} />
           <Route path="courses" element={<TrainerCoursesPage />} />
           <Route path="courses/create" element={<CreateCoursePage />} />
           <Route path="courses/:id/manage" element={<ManageCoursePage />} />
@@ -100,6 +105,7 @@ function App() {
           }
         >
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="profile" element={<AdminProfilePage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="trainers" element={<AdminTrainersPage />} />
           <Route path="courses" element={<AdminCoursesPage />} />
