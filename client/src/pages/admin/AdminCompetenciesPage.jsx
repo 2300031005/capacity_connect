@@ -120,10 +120,8 @@ const AdminCompetenciesPage = () => {
       } else {
         const response = await createCompetencyApi(formData);
         if (response && response.success) {
-          setCompetencies((prev) =>
-            [...prev, response.data].sort((a, b) => a.name.localeCompare(b.name))
-          );
-          setFeedback(`Competency "${response.data.name}" created successfully.`);
+          setCompetencies((prev) => [...prev, response.data].sort((a, b) => a.name.localeCompare(b.name)));
+          setFeedback(`Competency "${response.data.name}" registered successfully.`);
           setShowModal(false);
         }
       }
@@ -142,9 +140,7 @@ const AdminCompetenciesPage = () => {
         setCompetencies((prev) =>
           prev.map((c) => (c._id === comp._id ? response.data : c))
         );
-        setFeedback(
-          `Competency "${comp.name}" is now ${response.data.isActive ? 'Active' : 'Deactivated'}.`
-        );
+        setFeedback(`Competency "${comp.name}" is now ${response.data.isActive ? 'Active' : 'Deactivated'}.`);
       }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to toggle status.');
@@ -153,23 +149,19 @@ const AdminCompetenciesPage = () => {
 
   const handleDeleteCompetency = async (comp) => {
     const confirm = window.confirm(
-      `Are you sure you want to delete competency "${comp.name}"?`
+      `Are you sure you want to permanently delete competency "${comp.name}"? If users have achieved progress, deactivation is recommended instead.`
     );
     if (!confirm) return;
 
-    setError(null);
     try {
-      const response = await deleteCompetencyApi(comp._id);
-      if (response && response.success) {
-        setCompetencies((prev) => prev.filter((c) => c._id !== comp._id));
-        setFeedback(`Competency "${comp.name}" deleted.`);
-      }
+      await deleteCompetencyApi(comp._id);
+      setFeedback(`Competency "${comp.name}" deleted.`);
+      setCompetencies((prev) => prev.filter((c) => c._id !== comp._id));
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to delete competency.');
     }
   };
 
-  // Filter competencies
   const filteredCompetencies = competencies.filter((comp) => {
     const matchesSearch =
       comp.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
@@ -185,43 +177,42 @@ const AdminCompetenciesPage = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Organizational Competency Framework</span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 mb-2">
+            <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>Capability Domains & Multi-Skill Frameworks</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Competency Management
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Competency Architecture & Mapping
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Define multi-skill competencies and define the required technical and professional skills needed for proficiency.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            Group individual technical and soft skills into overarching capability domains for dynamic trainee progress tracking and organizational capability intelligence.
           </p>
         </div>
 
         <Button
-          type="button"
           variant="primary"
           size="md"
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 text-xs font-semibold self-start sm:self-auto"
+          className="inline-flex items-center gap-2 text-xs font-semibold self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Competency</span>
+          <span>Add New Competency</span>
         </Button>
       </div>
 
       {/* Notifications */}
       {feedback && (
-        <div className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs px-4 py-3 rounded-lg flex items-center justify-between shadow-2xs">
+        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs px-4 py-3 rounded-xl flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{feedback}</span>
           </div>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
+            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 font-bold"
           >
             &times;
           </button>
@@ -231,7 +222,7 @@ const AdminCompetenciesPage = () => {
       {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -240,128 +231,155 @@ const AdminCompetenciesPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search competencies by title or description..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-auto px-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-700 font-medium"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
-        </select>
+        {/* Status Filter */}
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          {[
+            { label: 'All Frameworks', value: 'all' },
+            { label: 'Active', value: 'active' },
+            { label: 'Inactive', value: 'inactive' },
+          ].map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setStatusFilter(f.value)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                statusFilter === f.value
+                  ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Competencies List */}
+      {/* Competencies Grid */}
       {loading ? (
-        <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-lg shadow-sm">
-          <Loading message="Loading competencies framework..." />
+        <div className="py-20 flex justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <Loading message="Loading platform competency architecture..." />
         </div>
       ) : filteredCompetencies.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-xs text-slate-500 shadow-sm space-y-2">
-          <Layers className="w-8 h-8 text-slate-300 mx-auto" />
-          <p className="font-semibold text-slate-700">No competencies found.</p>
-          <p className="text-slate-400">Add a competency to establish multi-skill learning pathways.</p>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 shadow-sm space-y-2">
+          <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+          <p className="font-semibold text-slate-700 dark:text-slate-200">No competency frameworks found matching your filter.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredCompetencies.map((comp) => (
             <div
               key={comp._id}
-              className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 hover:border-slate-300 transition-colors flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-4 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
             >
-              <div className="space-y-2.5">
-                <div className="flex items-start justify-between gap-3">
+              <div className="space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800">
                       <Award className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">{comp.name}</h3>
-                      <span className="text-[11px] text-slate-400">
-                        {comp.skills?.length || 0} Required Skills
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{comp.name}</h3>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        {comp.skills?.length || 0} Required Skills Mapped
                       </span>
                     </div>
                   </div>
 
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border flex-shrink-0 ${
+                    className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border shrink-0 ${
                       comp.isActive
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    {comp.isActive ? 'Active' : 'Inactive'}
+                    {comp.isActive ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-3 h-3 text-slate-400" />
+                        <span>Inactive</span>
+                      </>
+                    )}
                   </span>
                 </div>
 
                 {comp.description && (
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {comp.description}
                   </p>
                 )}
 
-                {/* Required Skills Badges */}
-                <div className="space-y-1 pt-1 border-t border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Required Skills:
+                {/* Skills tags */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block mb-1.5">
+                    Standardized Skill Dependencies:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {comp.skills && comp.skills.length > 0 ? (
-                      comp.skills.map((skill) => (
-                        <span
-                          key={skill._id || skill}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
-                            skill.category === 'Soft Skill'
-                              ? 'bg-purple-50 text-purple-800 border-purple-200'
-                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          }`}
-                        >
-                          <Tag className="w-2.5 h-2.5" />
-                          <span>{skill.name || skill}</span>
-                        </span>
-                      ))
+                      comp.skills.map((s) => {
+                        const sName = s.name || s;
+                        const sCat = s.category || 'Technical';
+                        return (
+                          <span
+                            key={s._id || sName}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
+                              sCat === 'Soft Skill'
+                                ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                                : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            }`}
+                          >
+                            <Tag className="w-2.5 h-2.5 opacity-60" />
+                            <span>{sName}</span>
+                          </span>
+                        );
+                      })
                     ) : (
-                      <span className="text-xs text-slate-400 italic">No skills assigned</span>
+                      <span className="text-slate-400 italic text-xs">No skills associated</span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => openEditModal(comp)}
-                  className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
+                  <Edit2 className="w-3 h-3" />
                   <span>Edit</span>
                 </button>
 
+                {/* Requirement 10: Clear dedicated push button */}
                 <button
                   type="button"
                   onClick={() => handleToggleStatus(comp)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors inline-flex items-center gap-1 ${
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors inline-flex items-center gap-1 ${
                     comp.isActive
-                      ? 'border-amber-300 text-amber-800 hover:bg-amber-50'
-                      : 'border-emerald-300 text-emerald-800 hover:bg-emerald-50'
+                      ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                      : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
                   }`}
                 >
-                  <Power className="w-3.5 h-3.5" />
-                  <span>{comp.isActive ? 'Deactivate' : 'Activate'}</span>
+                  <Power className="w-3 h-3" />
+                  <span>{comp.isActive ? 'Deactivate' : 'Reactivate'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDeleteCompetency(comp)}
-                  className="p-1.5 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                   title="Delete Competency"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -370,23 +388,23 @@ const AdminCompetenciesPage = () => {
       )}
 
       {/* ====================================================
-          MODAL: ADD / EDIT COMPETENCY
+          MODAL: ADD / EDIT COMPETENCY WITH DEDICATED PUSH BUTTON
           ==================================================== */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 flex-shrink-0">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 shrink-0">
               <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-bold text-slate-900">
-                  {editingCompetency ? 'Edit Competency' : 'Add New Competency'}
+                <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {editingCompetency ? 'Edit Competency Framework' : 'Add New Competency Framework'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded"
+                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -397,7 +415,7 @@ const AdminCompetenciesPage = () => {
               {error && <ErrorMessage message={error} />}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Competency Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -406,13 +424,13 @@ const AdminCompetenciesPage = () => {
                   maxLength={120}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Full Stack Development, Data Engineering, Agile Leadership"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900"
+                  placeholder="e.g. Full Stack Development, Meteorological Data Analysis, Agile Leadership"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Description <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <textarea
@@ -420,8 +438,8 @@ const AdminCompetenciesPage = () => {
                   maxLength={500}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what proficiency in this competency demonstrates..."
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700"
+                  placeholder="Describe what proficiency in this capability domain signifies..."
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
@@ -429,29 +447,52 @@ const AdminCompetenciesPage = () => {
               <SkillsSelect
                 selectedSkills={formData.skills}
                 onChange={(skills) => setFormData({ ...formData, skills })}
-                label="Required Skills *"
+                label="Required Standardized Skills *"
                 helperText="Select all standardized skills that a trainee must develop to satisfy this competency."
                 withProficiency={false}
               />
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="compIsActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                />
-                <label htmlFor="compIsActive" className="text-xs font-medium text-slate-700 cursor-pointer">
-                  Active (available in platform competency views)
+              {/* Requirement 10: Dedicated Push Button instead of generic checkbox */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Competency Availability Status
                 </label>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                        formData.isActive
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {formData.isActive ? 'Active Status' : 'Deactivated'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {formData.isActive ? 'Visible in Trainee Competency matrix' : 'Hidden from Trainee dashboards'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-colors inline-flex items-center gap-1.5 shadow-2xs ${
+                      formData.isActive
+                        ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                        : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <Power className="w-3 h-3" />
+                    <span>{formData.isActive ? 'Deactivate' : 'Reactivate'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancel
                 </button>

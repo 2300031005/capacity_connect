@@ -13,7 +13,6 @@ import {
   Target,
   Plus,
   Search,
-  Filter,
   Edit2,
   Trash2,
   CheckCircle2,
@@ -22,6 +21,7 @@ import {
   Power,
   X,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 
 const AdminSkillsPage = () => {
@@ -151,56 +151,50 @@ const AdminSkillsPage = () => {
     );
     if (!confirm) return;
 
-    setError(null);
     try {
-      const response = await deleteSkillApi(skill._id);
-      if (response && response.success) {
-        setSkills((prev) => prev.filter((s) => s._id !== skill._id));
-        setFeedback(`Skill "${skill.name}" deleted.`);
-      }
+      await deleteSkillApi(skill._id);
+      setFeedback(`Skill "${skill.name}" deleted.`);
+      setSkills((prev) => prev.filter((s) => s._id !== skill._id));
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to delete skill.');
     }
   };
 
-  // Filter skills
-  const filteredSkills = skills.filter((skill) => {
+  const filteredSkills = skills.filter((s) => {
     const matchesSearch =
-      skill.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
-      (skill.description && skill.description.toLowerCase().includes(searchTerm.toLowerCase().trim()));
-    const matchesCategory =
-      categoryFilter === 'All' || skill.category === categoryFilter;
+      s.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      (s.description && s.description.toLowerCase().includes(searchTerm.toLowerCase().trim()));
+    const matchesCat = categoryFilter === 'All' || s.category === categoryFilter;
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'active' && skill.isActive) ||
-      (statusFilter === 'inactive' && !skill.isActive);
+      (statusFilter === 'active' && s.isActive) ||
+      (statusFilter === 'inactive' && !s.isActive);
 
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCat && matchesStatus;
   });
 
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Master Taxonomy Library</span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-2">
+            <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Master Taxonomy & Skill Catalog</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Skill Management
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Institutional Skill Library
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Maintain the standardized catalog of technical and professional skills available for course mapping and competency tracking.
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            Maintain the standardized taxonomy of technical, domain-specific, and behavioral skills mapped across platform courses and competency frameworks.
           </p>
         </div>
 
         <Button
-          type="button"
           variant="primary"
           size="md"
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 text-xs font-semibold self-start sm:self-auto"
+          className="inline-flex items-center gap-2 text-xs font-semibold self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Skill</span>
@@ -209,15 +203,15 @@ const AdminSkillsPage = () => {
 
       {/* Notifications */}
       {feedback && (
-        <div className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs px-4 py-3 rounded-lg flex items-center justify-between shadow-2xs">
+        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-xs px-4 py-3 rounded-xl flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{feedback}</span>
           </div>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
+            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 font-bold"
           >
             &times;
           </button>
@@ -227,7 +221,7 @@ const AdminSkillsPage = () => {
       {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm transition-colors">
         {/* Search Input */}
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -236,7 +230,7 @@ const AdminSkillsPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search skills by name or keyword..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
@@ -248,10 +242,10 @@ const AdminSkillsPage = () => {
                 key={cat}
                 type="button"
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
                   categoryFilter === cat
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {cat}
@@ -262,7 +256,7 @@ const AdminSkillsPage = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-700 font-medium"
+            className="px-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium"
           >
             <option value="all">All Status</option>
             <option value="active">Active Only</option>
@@ -273,21 +267,21 @@ const AdminSkillsPage = () => {
 
       {/* Skills Table */}
       {loading ? (
-        <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div className="py-20 flex justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
           <Loading message="Loading skill library..." />
         </div>
       ) : filteredSkills.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-xs text-slate-500 shadow-sm space-y-2">
-          <Target className="w-8 h-8 text-slate-300 mx-auto" />
-          <p className="font-semibold text-slate-700">No skills found matching your filters.</p>
-          <p className="text-slate-400">Try adjusting your search criteria or add a new skill.</p>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 shadow-sm space-y-2">
+          <Target className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+          <p className="font-semibold text-slate-700 dark:text-slate-200">No skills found matching your filters.</p>
+          <p className="text-slate-400 dark:text-slate-500">Try adjusting your search criteria or add a new skill.</p>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4">Skill Name</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Description</th>
@@ -295,12 +289,12 @@ const AdminSkillsPage = () => {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {filteredSkills.map((skill) => (
-                  <tr key={skill._id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-900">
+                  <tr key={skill._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
                       <div className="flex items-center gap-2">
-                        <Tag className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                        <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>{skill.name}</span>
                       </div>
                     </td>
@@ -308,10 +302,10 @@ const AdminSkillsPage = () => {
                       <span
                         className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold border ${
                           skill.category === 'Soft Skill'
-                            ? 'bg-purple-50 text-purple-800 border-purple-200'
+                            ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800'
                             : skill.category === 'Technical'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-amber-50 text-amber-900 border-amber-200'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-800'
                         }`}
                       >
                         {skill.category === 'Other' && skill.customCategory
@@ -319,20 +313,20 @@ const AdminSkillsPage = () => {
                           : skill.category}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-500 max-w-md">
-                      {skill.description || <span className="italic text-slate-300">No description</span>}
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 max-w-md">
+                      {skill.description || <span className="italic text-slate-300 dark:text-slate-600">No description</span>}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border ${
                           skill.isActive
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         {skill.isActive ? (
                           <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             <span>Active</span>
                           </>
                         ) : (
@@ -347,31 +341,32 @@ const AdminSkillsPage = () => {
                       <button
                         type="button"
                         onClick={() => openEditModal(skill)}
-                        className="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
+                        className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
                         title="Edit Skill"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Edit</span>
                       </button>
 
+                      {/* Requirement 10: Clear dedicated status toggle push button */}
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(skill)}
-                        className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 ${
                           skill.isActive
-                            ? 'border-amber-300 text-amber-800 hover:bg-amber-50'
-                            : 'border-emerald-300 text-emerald-800 hover:bg-emerald-50'
+                            ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                            : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
                         }`}
                         title={skill.isActive ? 'Deactivate Skill' : 'Activate Skill'}
                       >
                         <Power className="w-3 h-3" />
-                        <span>{skill.isActive ? 'Deactivate' : 'Activate'}</span>
+                        <span>{skill.isActive ? 'Deactivate' : 'Reactivate'}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteSkill(skill)}
-                        className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-slate-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                         title="Delete Skill"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -386,23 +381,23 @@ const AdminSkillsPage = () => {
       )}
 
       {/* ====================================================
-          MODAL: ADD / EDIT SKILL
+          MODAL: ADD / EDIT SKILL WITH DEDICATED PUSH BUTTON
           ==================================================== */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">
+                <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {editingSkill ? 'Edit Skill' : 'Add New Skill'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded"
+                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -413,7 +408,7 @@ const AdminSkillsPage = () => {
               {error && <ErrorMessage message={error} />}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Skill Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -422,19 +417,19 @@ const AdminSkillsPage = () => {
                   maxLength={100}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. React, Docker, Critical Thinking"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900"
+                  placeholder="e.g. React, Docker, Meteorological Modeling"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium text-slate-800"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 >
                   <option value="Technical">Technical</option>
                   <option value="Soft Skill">Soft Skill</option>
@@ -444,7 +439,7 @@ const AdminSkillsPage = () => {
 
               {formData.category === 'Other' && (
                 <div className="animate-fadeIn space-y-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Specify Category / Domain <span className="text-slate-400 font-normal">(Optional)</span>
                   </label>
                   <input
@@ -452,17 +447,14 @@ const AdminSkillsPage = () => {
                     maxLength={100}
                     value={formData.customCategory || ''}
                     onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
-                    placeholder="e.g. Domain Specific, Methodologies, Regulatory, Tools"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900"
+                    placeholder="e.g. Domain Specific, Regulatory, Tools"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   />
-                  <p className="text-[11px] text-slate-400">
-                    Optionally specify the custom category or domain for this skill.
-                  </p>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Description <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <textarea
@@ -471,28 +463,51 @@ const AdminSkillsPage = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief synopsis of what this skill encompasses..."
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                />
-                <label htmlFor="isActive" className="text-xs font-medium text-slate-700 cursor-pointer">
-                  Active (available for courses and competencies)
+              {/* Requirement 10: Dedicated Push Button instead of generic checkbox */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Library Availability Status
                 </label>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                        formData.isActive
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {formData.isActive ? 'Active Status' : 'Deactivated'}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {formData.isActive ? 'Available for new courses' : 'Hidden from curriculum builder'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-colors inline-flex items-center gap-1.5 shadow-2xs ${
+                      formData.isActive
+                        ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                        : 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100'
+                    }`}
+                  >
+                    <Power className="w-3 h-3" />
+                    <span>{formData.isActive ? 'Deactivate' : 'Reactivate'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancel
                 </button>
