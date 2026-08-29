@@ -102,8 +102,8 @@ html[data-theme='dark'] {
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--background);
-  color: var(--text-primary);
+  background-color: #F7F9FB;
+  color: #172B3A;
   transition: background-color 0.2s ease, color 0.2s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -115,21 +115,8 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #2563EB;
+  outline: 2px solid #005A8D;
   outline-offset: 2px;
-}
-
-.dark button:focus-visible,
-.dark a:focus-visible,
-.dark input:focus-visible,
-.dark select:focus-visible,
-.dark textarea:focus-visible,
-html[data-theme='dark'] button:focus-visible,
-html[data-theme='dark'] a:focus-visible,
-html[data-theme='dark'] input:focus-visible,
-html[data-theme='dark'] select:focus-visible,
-html[data-theme='dark'] textarea:focus-visible {
-  outline-color: #60A5FA;
 }
 
 /* Custom subtle scrollbar */
@@ -147,16 +134,6 @@ html[data-theme='dark'] textarea:focus-visible {
   border-radius: 9999px;
 }
 
-.dark ::-webkit-scrollbar-thumb,
-html[data-theme='dark'] ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
-
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover,
-html[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
 }

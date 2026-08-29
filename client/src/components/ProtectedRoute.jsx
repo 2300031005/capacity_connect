@@ -44,7 +44,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             <button
               type="button"
               onClick={() => restoreSession()}
-              className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+              className="w-full sm:w-auto px-4 py-2 bg-[#005A8D] hover:bg-[#0B3D62] text-white rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors shadow-sm"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Check Reactivation</span>
