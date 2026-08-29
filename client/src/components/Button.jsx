@@ -15,9 +15,9 @@ const Button = ({
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed rounded';
 
   const variants = {
-    primary: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500',
-    secondary: 'bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-700',
-    outline: 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 focus:ring-slate-400',
+    primary: 'bg-[#005A8D] text-white hover:bg-[#0B3D62] focus:ring-[#005A8D]',
+    secondary: 'bg-white text-[#172B3A] border border-[#D7E0E7] hover:bg-[#F7F9FB] focus:ring-[#005A8D]',
+    outline: 'border border-[#005A8D] text-[#005A8D] bg-white hover:bg-blue-50 focus:ring-[#005A8D]',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
   };
 

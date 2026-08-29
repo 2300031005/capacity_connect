@@ -19,7 +19,7 @@ const Topbar = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <header className="bg-white border-b border-[#D7E0E7] sticky top-0 z-30">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Mobile Menu Trigger + Brand */}
@@ -27,7 +27,7 @@ const Topbar = ({ onMenuClick }) => {
             <button
               type="button"
               onClick={onMenuClick}
-              className="p-2 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 md:hidden"
+              className="p-2 rounded text-[#526575] hover:text-[#172B3A] hover:bg-[#F7F9FB] md:hidden"
               aria-label="Open sidebar menu"
             >
               <Menu className="w-5 h-5" />
@@ -35,12 +35,12 @@ const Topbar = ({ onMenuClick }) => {
 
             <Link to="/" className="flex items-center gap-2.5">
               <img
-                src="/logo.svg"
-                alt="Capacity Connect Logo"
-                className="w-8 h-8 object-contain"
+                src="/LOGO-PRAGATI.jpg"
+                alt="PRAGATI Logo"
+                className="w-8 h-8 object-contain rounded"
               />
-              <span className="font-bold text-base tracking-tight text-slate-900 hidden sm:inline">
-                CAPACITY CONNECT
+              <span className="font-bold text-base tracking-tight text-[#0B3D62] hidden sm:inline">
+                PRAGATI
               </span>
             </Link>
           </div>
@@ -49,7 +49,7 @@ const Topbar = ({ onMenuClick }) => {
           <div className="flex items-center gap-4">
             <Link
               to="/"
-              className="text-xs font-medium text-slate-500 hover:text-slate-900 hidden md:inline-flex items-center gap-1"
+              className="text-xs font-medium text-[#526575] hover:text-[#005A8D] hidden md:inline-flex items-center gap-1"
             >
               <span>Public Portal</span>
               <ExternalLink className="w-3 h-3" />
@@ -60,10 +60,10 @@ const Topbar = ({ onMenuClick }) => {
             {/* User Profile info link */}
             <Link
               to={`/${user?.role || 'trainee'}/profile`}
-              className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-100 transition-colors group"
+              className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-[#F7F9FB] transition-colors group"
               title="View my profile"
             >
-              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-700 font-bold text-xs shrink-0 group-hover:border-slate-400 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-[#F7F9FB] border border-[#D7E0E7] overflow-hidden flex items-center justify-center text-[#172B3A] font-bold text-xs shrink-0 group-hover:border-[#005A8D] transition-colors">
                 {user?.photo ? (
                   <img
                     src={user.photo}
@@ -81,10 +81,10 @@ const Topbar = ({ onMenuClick }) => {
                 )}
               </div>
               <div className="hidden sm:block text-left">
-                <span className="text-xs font-bold text-slate-900 block leading-tight group-hover:text-blue-600 transition-colors">
+                <span className="text-xs font-bold text-[#172B3A] block leading-tight group-hover:text-[#005A8D] transition-colors">
                   {user?.name || 'User'}
                 </span>
-                <span className="text-[11px] text-slate-500 capitalize">
+                <span className="text-[11px] text-[#526575] capitalize">
                   {roleLabelMap[user?.role] || user?.role || 'Trainee'}
                 </span>
               </div>
@@ -94,7 +94,7 @@ const Topbar = ({ onMenuClick }) => {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-slate-700 hover:text-red-700 hover:bg-red-50 border border-slate-200 hover:border-red-200 transition-colors ml-2"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold text-[#526575] hover:text-red-700 hover:bg-red-50 border border-[#D7E0E7] hover:border-red-200 transition-colors ml-2"
               title="Logout session"
             >
               <LogOut className="w-3.5 h-3.5" />

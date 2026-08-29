@@ -55,9 +55,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navItems = roleNavItems[role] || roleNavItems.trainee;
 
   const roleBadgeInfo = {
-    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-teal-50 text-teal-700 border-teal-200' },
-    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    trainee: { label: 'Trainee Space', icon: GraduationCap, color: 'bg-blue-50 text-[#005A8D] border-[#D7E0E7]' },
+    trainer: { label: 'Trainer Hub', icon: UserCheck, color: 'bg-[#F7F9FB] text-[#526575] border-[#D7E0E7]' },
+    admin: { label: 'Administrator', icon: ShieldCheck, color: 'bg-[#F7F9FB] text-[#16834B] border-[#D7E0E7]' },
   };
 
   const currentBadge = roleBadgeInfo[role] || roleBadgeInfo.trainee;
@@ -75,13 +75,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 min-w-[16rem] bg-white border-r border-[#D7E0E7] transform transition-transform duration-200 ease-in-out md:translate-x-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-0 flex flex-col justify-between shrink-0 overflow-y-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div>
           {/* Sidebar Role Badge */}
-          <div className="p-4 border-b border-slate-100">
+          <div className="p-4 border-b border-[#D7E0E7]">
             <div className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-semibold ${currentBadge.color}`}>
               <RoleIcon className="w-4 h-4" />
               <span>{currentBadge.label}</span>
@@ -118,12 +118,14 @@ const Sidebar = ({ isOpen, onClose }) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-slate-900 text-white'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        ? 'bg-blue-50 text-[#005A8D] font-semibold'
+                        : 'text-[#526575] hover:text-[#172B3A] hover:bg-[#F7F9FB]'
                     }`
                   }
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${ 
+                    /* Icon inherits parent color from NavLink className above */ '' 
+                  }`} />
                   <span>{item.name}</span>
                 </NavLink>
               );
@@ -132,9 +134,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Sidebar Footer Info */}
-        <div className="p-4 border-t border-slate-100 text-xs text-slate-400">
-          <p className="font-semibold text-slate-700">Capacity Connect</p>
-          <p className="text-[11px] text-slate-400">Digital Capacity Building Platform</p>
+        <div className="p-4 border-t border-[#D7E0E7] text-xs">
+          <p className="font-semibold text-[#0B3D62]">PRAGATI</p>
+          <p className="text-[11px] text-[#526575]">Digital Capacity Building Platform</p>
         </div>
       </aside>
     </>
