@@ -7,6 +7,7 @@ const {
   saveFinalAssessment,
   deleteAssessment,
   toggleAssessmentStatus,
+  duplicateAssessment,
   submitAssessmentAttempt,
   getMyAssessmentAttempts,
   getCourseAssessmentResults,
@@ -64,6 +65,12 @@ router.put(
   protect,
   authorizeRoles('trainer', 'admin'),
   toggleAssessmentStatus
+);
+router.post(
+  '/assessments/:id/duplicate',
+  protect,
+  authorizeRoles('trainer', 'admin'),
+  duplicateAssessment
 );
 
 // Trainee Attempt & Results Routes

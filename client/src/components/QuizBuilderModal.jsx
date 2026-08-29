@@ -37,6 +37,9 @@ const QuizBuilderModal = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [passingPercentage, setPassingPercentage] = useState(60);
+  const [timeLimit, setTimeLimit] = useState(30);
+  const [allowedAttempts, setAllowedAttempts] = useState(3);
+  const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [status, setStatus] = useState('draft');
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,6 +49,7 @@ const QuizBuilderModal = ({
   useEffect(() => {
     if (initialAssessment) {
       setTitle(initialAssessment.title || '');
+      setDescription(initialAssessment.description || '');
       setPassingPercentage(
         initialAssessment.passingPercentage !== undefined
           ? initialAssessment.passingPercentage
@@ -53,6 +57,9 @@ const QuizBuilderModal = ({
           ? 60
           : 50
       );
+      setTimeLimit(initialAssessment.timeLimit !== undefined ? initialAssessment.timeLimit : 30);
+      setAllowedAttempts(initialAssessment.allowedAttempts !== undefined ? initialAssessment.allowedAttempts : 3);
+      setRandomizeQuestions(Boolean(initialAssessment.randomizeQuestions));
       setStatus(initialAssessment.status || 'draft');
       setQuestions(
         initialAssessment.questions && initialAssessment.questions.length > 0
@@ -66,6 +73,8 @@ const QuizBuilderModal = ({
               correctOption: (q.correctOption || 'A').toUpperCase(),
               marks: q.marks || 1,
               explanation: q.explanation || '',
+              difficulty: q.difficulty || 'medium',
+              topic: q.topic || '',
             }))
           : [createNewQuestion(1)]
       );
@@ -73,6 +82,9 @@ const QuizBuilderModal = ({
       setTitle(isFinal ? `${courseTitle} — Final Assessment` : `${moduleTitle} Quiz`);
       setDescription('');
       setPassingPercentage(isFinal ? 60 : 50);
+      setTimeLimit(30);
+      setAllowedAttempts(3);
+      setRandomizeQuestions(false);
       setStatus('draft');
       setQuestions([createNewQuestion(1)]);
     }
@@ -89,6 +101,8 @@ const QuizBuilderModal = ({
       correctOption: 'A',
       marks: 1,
       explanation: '',
+      difficulty: 'medium',
+      topic: '',
     };
   }
 
@@ -157,6 +171,9 @@ const QuizBuilderModal = ({
         description: description.trim(),
         status: submitStatus,
         passingPercentage: parseInt(passingPercentage, 10) || (isFinal ? 60 : 50),
+        timeLimit: Math.max(0, parseInt(timeLimit, 10) || 0),
+        allowedAttempts: Math.max(1, parseInt(allowedAttempts, 10) || 3),
+        randomizeQuestions: Boolean(randomizeQuestions),
         questions: questions.map((q) => ({
           questionText: q.questionText.trim(),
           optionA: q.optionA.trim(),
@@ -165,6 +182,9 @@ const QuizBuilderModal = ({
           optionD: q.optionD.trim(),
           correctOption: q.correctOption,
           marks: Math.max(1, parseInt(q.marks, 10) || 1),
+          explanation: q.explanation ? q.explanation.trim() : '',
+          difficulty: q.difficulty || 'medium',
+          topic: q.topic ? q.topic.trim() : '',
         })),
       };
 
@@ -291,118 +311,78 @@ const QuizBuilderModal = ({
               />
             </div>
 
-            {/* Passing Percentage Threshold Configurable by Trainer */}
-            <div
-              className={`rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border ${
-                isFinal
-                  ? 'bg-indigo-50/60 border-indigo-200'
-                  : 'bg-emerald-50/60 border-emerald-200'
-              }`}
-            >
-              <div>
-                <span
-                  className={`text-xs font-bold flex items-center gap-1.5 ${
-                    isFinal ? 'text-indigo-900' : 'text-emerald-900'
-                  }`}
-                >
-                  <Percent
-                    className={`w-4 h-4 ${
-                      isFinal ? 'text-indigo-600' : 'text-emerald-600'
-                    }`}
-                  />
-                  {isFinal
-                    ? 'Final Certification Passing Threshold'
-                    : 'Module Quiz Passing Threshold'}
-                </span>
-                <p
-                  className={`text-[11px] mt-0.5 ${
-                    isFinal ? 'text-indigo-700' : 'text-emerald-700'
-                  }`}
-                >
-                  {isFinal
-                    ? 'Trainees scoring at or above this percentage will graduate and be issued an official Certificate of Completion.'
-                    : 'Trainees scoring at or above this percentage will receive a passing grade on this module.'}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPassingPercentage((prev) =>
-                      Math.max(0, Math.min(100, (parseInt(prev, 10) || 0) - 5))
-                    )
-                  }
-                  className={`w-7 h-7 rounded border flex items-center justify-center transition-colors ${
-                    isFinal
-                      ? 'border-indigo-300 bg-white text-indigo-700 hover:bg-indigo-100'
-                      : 'border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                  title="Decrease by 5%"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-
-                <div className="relative flex items-center">
+            {/* Assessment Parameters: Passing %, Time Limit, Attempts, Randomize */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Passing Percentage */}
+              <div
+                className={`rounded-xl p-3 border ${
+                  isFinal ? 'bg-indigo-50/70 border-indigo-200' : 'bg-emerald-50/70 border-emerald-200'
+                }`}
+              >
+                <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-1">
+                  Pass Threshold (%)
+                </label>
+                <div className="flex items-center gap-1">
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={passingPercentage}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        setPassingPercentage('');
-                        return;
-                      }
-                      const num = parseInt(val, 10);
-                      if (!isNaN(num)) {
-                        setPassingPercentage(Math.max(0, Math.min(100, num)));
-                      }
-                    }}
-                    onBlur={() => {
-                      if (
-                        passingPercentage === '' ||
-                        isNaN(parseInt(passingPercentage, 10))
-                      ) {
-                        setPassingPercentage(isFinal ? 60 : 50);
-                      } else {
-                        setPassingPercentage(
-                          Math.max(0, Math.min(100, parseInt(passingPercentage, 10)))
-                        );
-                      }
-                    }}
-                    className={`w-18 px-2 py-1.5 text-xs font-bold border rounded-md bg-white text-center focus:outline-none focus:ring-2 ${
-                      isFinal
-                        ? 'border-indigo-300 focus:ring-indigo-500 text-indigo-900'
-                        : 'border-emerald-300 focus:ring-emerald-500 text-emerald-900'
-                    }`}
+                    onChange={(e) => setPassingPercentage(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs font-bold font-mono border border-slate-300 rounded-lg bg-white text-slate-900"
                   />
-                  <span
-                    className={`ml-1.5 text-xs font-bold ${
-                      isFinal ? 'text-indigo-900' : 'text-emerald-900'
-                    }`}
-                  >
-                    %
-                  </span>
+                  <span className="text-xs font-bold text-slate-600">%</span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPassingPercentage((prev) =>
-                      Math.max(0, Math.min(100, (parseInt(prev, 10) || 0) + 5))
-                    )
-                  }
-                  className={`w-7 h-7 rounded border flex items-center justify-center transition-colors ${
-                    isFinal
-                      ? 'border-indigo-300 bg-white text-indigo-700 hover:bg-indigo-100'
-                      : 'border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                  title="Increase by 5%"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
               </div>
+
+              {/* Time Limit */}
+              <div className="rounded-xl p-3 border border-slate-200 bg-slate-50">
+                <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-1">
+                  Time Limit (Mins)
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="300"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs font-bold font-mono border border-slate-300 rounded-lg bg-white text-slate-900"
+                  />
+                  <span className="text-[11px] text-slate-500 font-semibold">mins</span>
+                </div>
+              </div>
+
+              {/* Max Attempts */}
+              <div className="rounded-xl p-3 border border-slate-200 bg-slate-50">
+                <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-1">
+                  Allowed Attempts
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={allowedAttempts}
+                  onChange={(e) => setAllowedAttempts(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs font-bold font-mono border border-slate-300 rounded-lg bg-white text-slate-900"
+                />
+              </div>
+            </div>
+
+            {/* Randomize Toggle */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-800">Randomize Questions Order</span>
+                <p className="text-[11px] text-slate-400">Shuffle question sequence for each trainee attempt.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={randomizeQuestions}
+                  onChange={(e) => setRandomizeQuestions(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                />
+              </label>
             </div>
           </div>
 
@@ -432,14 +412,39 @@ const QuizBuilderModal = ({
               {questions.map((q, idx) => (
                 <div
                   key={idx}
-                  className="bg-slate-50/70 border border-slate-200 rounded-lg p-4 space-y-3 relative group hover:border-slate-300 transition-colors"
+                  className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 space-y-3 relative group hover:border-slate-300 transition-colors"
                 >
                   {/* Question Header */}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
-                      Q{idx + 1}
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        Q{idx + 1}
+                      </span>
+                      {/* Difficulty Select */}
+                      <select
+                        value={q.difficulty || 'medium'}
+                        onChange={(e) => handleQuestionChange(idx, 'difficulty', e.target.value)}
+                        className="px-2 py-0.5 text-[10px] font-bold uppercase rounded border bg-white border-slate-300 text-slate-700"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+
                     <div className="flex items-center gap-3">
+                      {/* Topic Tag */}
+                      <div className="flex items-center gap-1 text-[11px] text-slate-600">
+                        <span>Topic:</span>
+                        <input
+                          type="text"
+                          value={q.topic || ''}
+                          onChange={(e) => handleQuestionChange(idx, 'topic', e.target.value)}
+                          placeholder="e.g. Async Await"
+                          className="w-28 px-2 py-0.5 text-xs font-medium border border-slate-300 rounded bg-white"
+                        />
+                      </div>
+
                       <div className="flex items-center gap-1 text-[11px] text-slate-600">
                         <span>Marks:</span>
                         <input
@@ -450,9 +455,10 @@ const QuizBuilderModal = ({
                           onChange={(e) =>
                             handleQuestionChange(idx, 'marks', parseInt(e.target.value, 10) || 1)
                           }
-                          className="w-14 px-2 py-0.5 text-xs font-semibold text-center border border-slate-300 rounded bg-white"
+                          className="w-12 px-2 py-0.5 text-xs font-bold text-center border border-slate-300 rounded bg-white"
                         />
                       </div>
+
                       <button
                         type="button"
                         onClick={() => handleRemoveQuestion(idx)}
