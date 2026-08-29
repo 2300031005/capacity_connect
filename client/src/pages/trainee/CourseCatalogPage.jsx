@@ -111,24 +111,24 @@ const CourseCatalogPage = () => {
   return (
     <div className="space-y-8">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 shadow-sm">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 sm:p-8 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Curated Learning Directory</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] tracking-tight">
               Explore Courses & Competencies
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
               Discover structured learning pathways created by verified trainers, or explore personalized AI-recommended courses tailored to your skills and career targets.
             </p>
           </div>
 
           <Link
             to="/trainee/recommendations"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded text-xs font-semibold transition-colors self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--surface-muted)] text-[var(--primary)] border border-[var(--border)] hover:bg-[var(--border)] rounded-lg text-xs font-semibold transition-colors self-start sm:self-auto"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>AI Learning Advisor →</span>
@@ -137,14 +137,14 @@ const CourseCatalogPage = () => {
       </div>
 
       {/* Navigation View Tabs */}
-      <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] pb-3">
         <button
           type="button"
           onClick={() => handleTabChange('all')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'all'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-[var(--primary)] text-white shadow-sm'
+              : 'bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
           }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
@@ -153,13 +153,13 @@ const CourseCatalogPage = () => {
         <button
           type="button"
           onClick={() => handleTabChange('recommended')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer ${
             activeTab === 'recommended'
-              ? 'bg-emerald-700 text-white shadow-sm'
-              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+              ? 'bg-teal-700 text-white shadow-sm'
+              : 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 hover:bg-teal-100 border border-teal-200 dark:border-teal-800'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
           <span>✨ AI Recommended for You ({recommendations.length})</span>
         </button>
       </div>
@@ -167,19 +167,19 @@ const CourseCatalogPage = () => {
       {/* Recommended Courses Dedicated View */}
       {activeTab === 'recommended' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-emerald-50/60 border border-emerald-200 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--surface-muted)] border border-[var(--border)] rounded-xl p-4">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 <span>Personalized AI Course Recommendations</span>
               </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Evaluated against your completed coursework, verified skill proficiencies, and institutional competency targets.
               </p>
             </div>
             <Link
               to="/trainee/recommendations"
-              className="text-xs font-bold text-emerald-800 hover:text-emerald-900 inline-flex items-center gap-1 shrink-0"
+              className="text-xs font-bold text-[var(--primary)] hover:underline inline-flex items-center gap-1 shrink-0"
             >
               <span>View Career Roadmap</span>
               <ArrowRight className="w-3 h-3" />
@@ -187,16 +187,16 @@ const CourseCatalogPage = () => {
           </div>
 
           {loadingRecommendations ? (
-            <div className="py-16 flex justify-center bg-white border border-slate-200 rounded-xl shadow-xs">
+            <div className="py-16 flex justify-center bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xs">
               <Loading message="Synthesizing personalized AI course recommendations..." />
             </div>
           ) : recommendations.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center mx-auto">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">No course recommendations yet</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">No course recommendations yet</h3>
+              <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
                 Enroll in courses and complete assessments to generate personalized AI recommendations tailored to your learning trajectory.
               </p>
             </div>
@@ -204,15 +204,15 @@ const CourseCatalogPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendations.map((rec, idx) => {
                 const priorityStyles = {
-                  high: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-                  medium: 'bg-blue-100 text-blue-800 border-blue-300',
-                  low: 'bg-slate-100 text-slate-700 border-slate-300',
+                  high: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300',
+                  medium: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300',
+                  low: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300',
                 };
 
                 return (
                   <div
                     key={rec.course?._id || idx}
-                    className="bg-white border border-emerald-100 hover:border-emerald-300 rounded-xl p-6 shadow-sm flex flex-col justify-between space-y-4 transition-all"
+                    className="bg-[var(--surface)] border border-[var(--border)] hover:border-blue-400 rounded-xl p-6 shadow-sm flex flex-col justify-between space-y-4 transition-all"
                   >
                     <div className="space-y-3">
                       {/* Match Score & Priority */}
@@ -315,34 +315,34 @@ const CourseCatalogPage = () => {
           {/* Main Catalog Header & Filters */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+              <h2 className="text-base font-bold text-[var(--text-primary)] tracking-tight">
                 Explore All Courses ({courses.length})
               </h2>
             </div>
 
             {/* Search & Filters Bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-lg shadow-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-[var(--surface)] p-3 border border-[var(--border)] rounded-xl shadow-xs">
               {/* Search */}
               <div className="relative w-full md:w-80">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by title, subject, or keyword..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-[var(--border)] rounded-md bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Filters */}
               <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
+                <Filter className="w-3.5 h-3.5 text-[var(--text-muted)] hidden sm:inline" />
 
                 {/* Level Filter */}
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
-                  className="text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  className="text-xs border border-[var(--border)] rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[var(--surface)] text-[var(--text-primary)] cursor-pointer"
                 >
                   <option value="">All Levels</option>
                   <option value="beginner">Beginner</option>
@@ -355,7 +355,7 @@ const CourseCatalogPage = () => {
                   <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="text-xs border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    className="text-xs border border-[var(--border)] rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[var(--surface)] text-[var(--text-primary)] cursor-pointer"
                   >
                     <option value="">All Categories</option>
                     {uniqueCategories.map((cat) => (
@@ -374,7 +374,7 @@ const CourseCatalogPage = () => {
                       setLevelFilter('');
                       setCategoryFilter('');
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-900 underline px-2 py-1"
+                    className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] underline px-2 py-1 cursor-pointer"
                   >
                     Reset
                   </button>
@@ -392,12 +392,12 @@ const CourseCatalogPage = () => {
             </div>
           ) : courses.length === 0 ? (
             /* Empty State */
-            <div className="bg-white border border-slate-200 rounded-lg p-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-[var(--surface-muted)] flex items-center justify-center mx-auto text-[var(--text-muted)]">
                 <BookOpen className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">No courses found</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">No courses found</h3>
+              <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
                 {searchTerm || levelFilter || categoryFilter
                   ? 'Try adjusting your search terms or filters.'
                   : 'There are currently no published courses available in the catalog.'}
@@ -407,15 +407,15 @@ const CourseCatalogPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((course) => {
                 const levelStyles = {
-                  beginner: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                  intermediate: 'bg-blue-50 text-blue-800 border-blue-200',
-                  advanced: 'bg-purple-50 text-purple-800 border-purple-200',
+                  beginner: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                  intermediate: 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                  advanced: 'bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800',
                 };
 
                 return (
                   <div
                     key={course._id}
-                    className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-colors"
+                    className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors"
                   >
                     <div className="space-y-3">
                       {/* Category & Level Badges */}

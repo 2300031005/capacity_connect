@@ -247,6 +247,11 @@ Please generate the structured JSON explanation.`;
   }
 };
 
+const stripNumericSuffix = (str) => {
+  if (!str || typeof str !== 'string') return str || '';
+  return str.replace(/\b\d{6,}\b/g, '').replace(/\s+\d{6,}$/g, '').replace(/\s{2,}/g, ' ').trim();
+};
+
 /**
  * Deterministic fallback recommendation hub generator (Phases 7.2 & 7.3)
  * Synthesizes:
@@ -258,7 +263,7 @@ Please generate the structured JSON explanation.`;
 const generateFallbackRecommendations = ({ traineeContext, candidateCourses }) => {
   const verifiedSkillsMap = new Map();
   (traineeContext.verifiedSkills || []).forEach((s) => {
-    const sName = (s.name || s).toLowerCase();
+    const sName = stripNumericSuffix(s.name || s).toLowerCase();
     verifiedSkillsMap.set(sName, s.highestProficiency || 'proficient');
   });
 
@@ -267,7 +272,7 @@ const generateFallbackRecommendations = ({ traineeContext, candidateCourses }) =
   (traineeContext.competencies || []).forEach((comp) => {
     if (comp.status !== 'Demonstrated' && comp.status !== 'Completed') {
       (comp.missingSkills || []).forEach((ms) => {
-        const msLower = ms.toLowerCase();
+        const msLower = stripNumericSuffix(ms).toLowerCase();
         missingCompetencySkills.add(msLower);
         missingSkillToComp.set(msLower, comp.name);
       });
@@ -282,12 +287,14 @@ const generateFallbackRecommendations = ({ traineeContext, candidateCourses }) =
 
     const courseSkills = course.skills || [];
     courseSkills.forEach((cs) => {
-      const sName = (cs.name || cs.skill?.name || '').toLowerCase();
+      const rawSkill = cs.name || cs.skill?.name || '';
+      const cleanSkill = stripNumericSuffix(rawSkill) || 'Technical Skill';
+      const sName = cleanSkill.toLowerCase();
       const targetProf = cs.proficiency || 'proficient';
       const currentProf = verifiedSkillsMap.get(sName) || 'Not Acquired';
 
       alignments.push({
-        skill: cs.name || cs.skill?.name || 'Technical Skill',
+        skill: cleanSkill,
         currentProficiency: currentProf,
         targetProficiency: targetProf.charAt(0).toUpperCase() + targetProf.slice(1),
       });
@@ -304,15 +311,16 @@ const generateFallbackRecommendations = ({ traineeContext, candidateCourses }) =
 
     if (course.averageRating >= 4.5) score += 5;
     const matchScore = Math.min(98, Math.max(75, Math.round(score)));
-    const primarySkill = courseSkills[0]?.name || courseSkills[0]?.skill?.name || course.category || 'this domain';
+    const primarySkill = courseSkills[0]?.name || courseSkills[0]?.skill?.name || course.category || 'software engineering';
+    const cleanPrimarySkill = stripNumericSuffix(primarySkill) || 'technical';
 
     return {
       courseId: course._id.toString(),
       matchScore,
-      reason: `Expands your capabilities in ${primarySkill} and advances your institutional competency profile.`,
+      reason: `Build practical ${cleanPrimarySkill} capabilities and strengthen your domain architecture skills.`,
       skillAlignment: alignments.length > 0 ? alignments : [
         {
-          skill: course.category || 'Core Skill',
+          skill: stripNumericSuffix(course.category) || 'Core Skill',
           currentProficiency: 'Exploring',
           targetProficiency: course.level ? course.level.charAt(0).toUpperCase() + course.level.slice(1) : 'Proficient',
         },

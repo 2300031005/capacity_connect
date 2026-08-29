@@ -40,9 +40,9 @@ const MainLayout = () => {
   const userDashboard = user?.role ? roleDashboardMap[user.role] : '/login';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors selection:bg-teal-100 dark:selection:bg-teal-900">
+    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--text-primary)] transition-colors">
       {/* Top Navigation */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 transition-colors">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-40 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo / Brand */}

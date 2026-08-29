@@ -321,6 +321,11 @@ const getCourseRecommendations = async (req, res, next) => {
       candidateMap.set(c._id.toString(), c);
     });
 
+    const stripNumericSuffix = (str) => {
+      if (!str || typeof str !== 'string') return str || '';
+      return str.replace(/\b\d{6,}\b/g, '').replace(/\s+\d{6,}$/g, '').replace(/\s{2,}/g, ' ').trim();
+    };
+
     const enrichedRecommendations = (aiResult.recommendations || [])
       .map((rec) => {
         const courseDoc = candidateMap.get(String(rec.courseId));
@@ -330,24 +335,29 @@ const getCourseRecommendations = async (req, res, next) => {
           courseId: courseDoc._id,
           course: {
             _id: courseDoc._id,
-            title: courseDoc.title,
-            description: courseDoc.description,
+            title: stripNumericSuffix(courseDoc.title),
+            description: stripNumericSuffix(courseDoc.description),
             thumbnail: courseDoc.thumbnail,
-            category: courseDoc.category,
+            category: stripNumericSuffix(courseDoc.category),
             level: courseDoc.level,
             trainer: courseDoc.trainer,
             averageRating: courseDoc.averageRating || 0,
             skills: (courseDoc.skills || []).map((s) => ({
               _id: s.skill?._id || s._id,
-              name: s.skill?.name || s.name || 'Skill',
-              category: s.skill?.category || s.category || 'Technical',
+              name: stripNumericSuffix(s.skill?.name || s.name || 'Skill'),
+              category: stripNumericSuffix(s.skill?.category || s.category || 'Technical'),
               proficiency: s.proficiency || 'proficient',
             })),
           },
           matchScore: rec.matchScore || 85,
-          reason: rec.reason || `Directly aligns with your current learning goals and builds proficiency.`,
-          skillAlignment: Array.isArray(rec.skillAlignment) ? rec.skillAlignment : [],
-          learningBenefit: rec.learningBenefit || `Helps bridge competency gaps and advance verified skills.`,
+          reason: stripNumericSuffix(rec.reason) || `Directly aligns with your current learning goals and builds proficiency.`,
+          skillAlignment: Array.isArray(rec.skillAlignment)
+            ? rec.skillAlignment.map((sa) => ({
+                ...sa,
+                skill: stripNumericSuffix(typeof sa === 'string' ? sa : sa.skill || sa.name),
+              }))
+            : [],
+          learningBenefit: stripNumericSuffix(rec.learningBenefit) || `Helps bridge competency gaps and advance verified skills.`,
           priority: rec.priority || 'medium',
         };
       })

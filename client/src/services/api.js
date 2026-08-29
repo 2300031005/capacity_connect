@@ -25,17 +25,42 @@ api.interceptors.request.use(
 );
 
 /**
- * Clean course titles of unwanted trailing numeric timestamp/ID suffixes
+ * Clean course titles and user-facing copy of unwanted numeric timestamp/ID suffixes
  * (e.g. "Phase 5 Full Stack Mastery 1788023320543" -> "Phase 5 Full Stack Mastery")
- * while preserving legitimate course numbers (e.g. "Python 101", "CS 50", "Phase 5").
+ * while preserving legitimate short numbers (e.g. "Python 101", "CS 50", "Phase 5").
  */
 export const cleanCourseTitle = (str) => {
   if (!str || typeof str !== 'string') return str || '';
-  return str.replace(/\s+\d{6,}$/, '').trim();
+  return str
+    .replace(/\b\d{6,}\b/g, '')
+    .replace(/\s+\d{6,}$/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 };
 
+export const cleanUserFacingText = cleanCourseTitle;
+
+const ID_KEYS = new Set([
+  '_id',
+  'id',
+  'courseId',
+  'userId',
+  'traineeId',
+  'trainerId',
+  'token',
+  'certificateId',
+  'assessmentId',
+  'quizId',
+  'questionId',
+  'actionUrl',
+  'url',
+  'thumbnail',
+  'photo',
+  'avatar',
+]);
+
 /**
- * Recursively sanitizes course titles in API payloads
+ * Recursively sanitizes user-facing text in API payloads
  */
 const sanitizeCourseTitlesInData = (data) => {
   if (!data || typeof data !== 'object') return data;
@@ -46,11 +71,7 @@ const sanitizeCourseTitlesInData = (data) => {
   for (const key of Object.keys(result)) {
     const val = result[key];
     if (typeof val === 'string') {
-      if (
-        key === 'title' ||
-        key === 'courseTitle' ||
-        (key === 'name' && (result.category || result.enrolledCount !== undefined || result.trainer !== undefined || result.skills !== undefined))
-      ) {
+      if (!ID_KEYS.has(key)) {
         result[key] = cleanCourseTitle(val);
       }
     } else if (typeof val === 'object' && val !== null) {

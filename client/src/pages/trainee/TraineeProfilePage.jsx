@@ -473,13 +473,13 @@ const TraineeProfilePage = () => {
       )}
 
       {/* 1. STRONG PROFILE HEADER */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-blue-50/80 via-slate-50/40 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
+      <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-xs p-6 sm:p-8 relative overflow-hidden transition-colors">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50/50 via-slate-50/20 to-transparent dark:from-blue-900/10 dark:via-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 relative z-10">
           {/* Avatar with upload overlay */}
           <div className="relative group shrink-0">
-            <div className="w-24 h-24 sm:w-28 sm:end sm:h-28 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-white text-3xl font-bold">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-700 border-4 border-[var(--surface)] shadow-md overflow-hidden flex items-center justify-center text-white text-3xl font-bold">
               {user.photo ? (
                 <img
                   src={user.photo}
@@ -501,7 +501,7 @@ const TraineeProfilePage = () => {
                 setPhotoFile(null);
                 setIsPhotoModalOpen(true);
               }}
-              className="absolute bottom-0 right-0 p-2 bg-slate-900 text-white rounded-xl shadow-md hover:bg-blue-600 transition-colors"
+              className="absolute bottom-0 right-0 p-2 bg-[var(--surface-muted)] text-[var(--text-primary)] border border-[var(--border)] rounded-xl shadow-md hover:bg-[var(--primary)] hover:text-white transition-colors cursor-pointer"
               title="Change profile photo"
             >
               <Camera className="w-4 h-4" />
@@ -511,50 +511,50 @@ const TraineeProfilePage = () => {
           {/* User Bio & Identity Info */}
           <div className="flex-1 space-y-2 min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
                 {user.name || 'Trainee Name'}
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 uppercase tracking-wide">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-[var(--primary)] border border-blue-200 dark:border-blue-800 uppercase tracking-wide">
                 Trainee
               </span>
             </div>
 
             {user.bio ? (
-              <p className="text-sm text-slate-600 line-clamp-2 max-w-3xl">
+              <p className="text-sm text-[var(--text-secondary)] line-clamp-2 max-w-3xl">
                 {user.bio}
               </p>
             ) : (
-              <p className="text-sm text-slate-400 italic">
+              <p className="text-sm text-[var(--text-muted)] italic">
                 No bio added yet. Tell others about your learning background and ambitions.
               </p>
             )}
 
             {/* Career Goal Pill */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-semibold">
-                <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-semibold">
+                <Compass className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 <span>
-                  Career Goal: <strong className="text-indigo-900">{user.careerGoal || 'Full Stack Developer'}</strong>
+                  Career Goal: <strong className="text-teal-900 dark:text-teal-100">{user.careerGoal || 'Full Stack Developer'}</strong>
                 </span>
               </div>
 
               {user.location && (
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                  <MapPin className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                   <span>{user.location}</span>
                 </div>
               )}
 
               {user.email && (
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                  <Mail className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                   <span>{user.email}</span>
                 </div>
               )}
 
               {user.phone && (
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                  <Phone className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                   <span>{user.phone}</span>
                 </div>
               )}
@@ -566,7 +566,7 @@ const TraineeProfilePage = () => {
             <button
               type="button"
               onClick={() => setIsEditProfileOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-xs transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white shadow-xs transition-colors cursor-pointer"
             >
               <Pencil className="w-3.5 h-3.5" />
               <span>Edit Profile</span>
@@ -574,7 +574,7 @@ const TraineeProfilePage = () => {
             <button
               type="button"
               onClick={() => setIsCareerGoalModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] transition-colors cursor-pointer"
             >
               <Compass className="w-3.5 h-3.5" />
               <span>Edit Goal</span>
@@ -584,7 +584,7 @@ const TraineeProfilePage = () => {
       </div>
 
       {/* 2. NAVIGATION TABS */}
-      <div className="border-b border-slate-200">
+      <div className="border-b border-[var(--border)]">
         <nav className="flex space-x-2 sm:space-x-8 overflow-x-auto pb-px">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart2 },
@@ -600,10 +600,10 @@ const TraineeProfilePage = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-2 sm:px-1 border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+                    ? 'border-[var(--primary)] text-[var(--primary)]'
+                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -621,39 +621,39 @@ const TraineeProfilePage = () => {
         <div className="space-y-6">
           {/* Achievement Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">Courses Completed</span>
-              <span className="text-2xl font-extrabold text-slate-900 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">Courses Completed</span>
+              <span className="text-2xl font-extrabold text-[var(--text-primary)] mt-1 block">
                 {overview.coursesCompleted ?? 0}
               </span>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">In Progress</span>
-              <span className="text-2xl font-extrabold text-blue-600 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">In Progress</span>
+              <span className="text-2xl font-extrabold text-[var(--primary)] mt-1 block">
                 {overview.coursesInProgress ?? 0}
               </span>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">Certificates</span>
-              <span className="text-2xl font-extrabold text-emerald-600 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">Certificates</span>
+              <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 block">
                 {overview.certificatesEarned ?? 0}
               </span>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">Verified Skills</span>
-              <span className="text-2xl font-extrabold text-indigo-600 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">Verified Skills</span>
+              <span className="text-2xl font-extrabold text-teal-600 dark:text-teal-400 mt-1 block">
                 {overview.verifiedSkillsCount ?? 0}
               </span>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">Competencies</span>
-              <span className="text-2xl font-extrabold text-purple-600 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">Competencies</span>
+              <span className="text-2xl font-extrabold text-[var(--primary)] mt-1 block">
                 {overview.competenciesDemonstrated ?? 0}
               </span>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block">Overall Progress</span>
-              <span className="text-2xl font-extrabold text-slate-900 mt-1 block">
+            <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs">
+              <span className="text-xs text-[var(--text-muted)] font-medium block">Overall Progress</span>
+              <span className="text-2xl font-extrabold text-[var(--text-primary)] mt-1 block">
                 {overview.overallProgress ?? 0}%
               </span>
             </div>
@@ -664,20 +664,20 @@ const TraineeProfilePage = () => {
             {/* Left Column: About / Learning Snapshot */}
             <div className="lg:col-span-6 space-y-6">
               {/* Learning Snapshot Card */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-xs p-6">
+                <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[var(--primary)]">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-slate-900">Learning Snapshot</h2>
-                      <p className="text-xs text-slate-500">Summary of academic performance & completion</p>
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">Learning Snapshot</h2>
+                      <p className="text-xs text-[var(--text-muted)]">Summary of academic performance & completion</p>
                     </div>
                   </div>
                   <Link
                     to="/trainee/analytics"
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1"
                   >
                     <span>Full Analytics</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -685,35 +685,35 @@ const TraineeProfilePage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4">
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-xs text-slate-500 block">Active Courses</span>
-                    <span className="text-lg font-bold text-slate-900 mt-0.5 block">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]">
+                    <span className="text-xs text-[var(--text-muted)] block">Active Courses</span>
+                    <span className="text-lg font-bold text-[var(--text-primary)] mt-0.5 block">
                       {learningSnapshot.activeCourses || 0}
                     </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-xs text-slate-500 block">Completed Courses</span>
-                    <span className="text-lg font-bold text-slate-900 mt-0.5 block">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]">
+                    <span className="text-xs text-[var(--text-muted)] block">Completed Courses</span>
+                    <span className="text-lg font-bold text-[var(--text-primary)] mt-0.5 block">
                       {learningSnapshot.completedCourses || 0}
                     </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-xs text-slate-500 block">Avg Assessment</span>
-                    <span className="text-lg font-bold text-emerald-600 mt-0.5 block">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)]">
+                    <span className="text-xs text-[var(--text-muted)] block">Avg Assessment</span>
+                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                       {learningSnapshot.averageAssessment || 0}%
                     </span>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-4 pt-4 border-t border-slate-100 space-y-1.5">
-                  <div className="flex justify-between text-xs font-medium text-slate-600">
+                <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-1.5">
+                  <div className="flex justify-between text-xs font-medium text-[var(--text-secondary)]">
                     <span>Degree of Completion</span>
-                    <span className="font-bold text-slate-900">{learningSnapshot.overallProgress || 0}%</span>
+                    <span className="font-bold text-[var(--text-primary)]">{learningSnapshot.overallProgress || 0}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-[var(--surface-muted)] rounded-full h-2 overflow-hidden border border-[var(--border)]">
                     <div
-                      className="bg-linear-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500"
+                      className="bg-[var(--primary)] h-2 rounded-full transition-all duration-500"
                       style={{ width: `${learningSnapshot.overallProgress || 0}%` }}
                     />
                   </div>
@@ -721,20 +721,20 @@ const TraineeProfilePage = () => {
               </div>
 
               {/* Verified Skills Summary Card */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-xs p-6">
+                <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                    <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
                       <Target className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-slate-900">Verified Skills</h2>
-                      <p className="text-xs text-slate-500">System-verified competencies</p>
+                      <h2 className="text-base font-bold text-[var(--text-primary)]">Verified Skills</h2>
+                      <p className="text-xs text-[var(--text-muted)]">System-verified competencies</p>
                     </div>
                   </div>
                   <Link
                     to="/trainee/skills"
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1"
                   >
                     <span>View All Skills</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -747,7 +747,7 @@ const TraineeProfilePage = () => {
                       {verifiedSkills.slice(0, 8).map((sk) => (
                         <div
                           key={sk._id}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 font-medium hover:bg-slate-100 transition-colors"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] text-xs text-[var(--text-primary)] font-medium hover:border-blue-400 transition-colors"
                         >
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{sk.name}</span>
