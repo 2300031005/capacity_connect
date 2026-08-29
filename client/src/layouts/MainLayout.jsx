@@ -41,7 +41,7 @@ const MainLayout = () => {
   const userDashboard = user?.role ? roleDashboardMap[user.role] : '/login';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#172B3A] selection:bg-blue-100 selection:text-[#0B3D62] font-sans">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 selection:bg-[#dcfce7] selection:text-emerald-950 font-sans">
       {/* SECTION 1 — TOP GOVERNMENT MASTHEAD (Utility Bar - Height 48-52px, IN Badge, larger font) */}
       <div className="w-full bg-[#EA580C] text-white h-12 sm:h-[50px] px-4 sm:px-6 lg:px-8 border-b border-[#d97706]/40 flex items-center justify-between text-[13px] font-bold tracking-wide shadow-xs shrink-0">
         <div className="flex items-center gap-2.5">
@@ -83,7 +83,7 @@ const MainLayout = () => {
                 className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
               />
               <div>
-                <span className="font-extrabold text-base sm:text-lg tracking-wider text-[#0B3D62] block leading-tight">
+                <span className="font-extrabold text-base sm:text-lg tracking-wider text-slate-950 block leading-tight">
                   {t('brandTitle')}
                 </span>
                 <span className="text-[10px] text-slate-400 font-bold tracking-widest block uppercase leading-none mt-0.5">
@@ -97,42 +97,42 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => handleNavClick('home')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('home')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('about')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('about')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('how-it-works')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('howItWorks')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('features')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('features')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('ai')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('aiEcosystem')}
               </button>
               <button
                 type="button"
                 onClick={() => handleNavClick('roles')}
-                className="hover:text-[#005A8D] transition-colors text-left"
+                className="hover:text-[#613AF5] transition-colors text-left"
               >
                 {t('roles')}
               </button>
@@ -144,15 +144,15 @@ const MainLayout = () => {
                 <div className="flex items-center gap-3">
                   <Link
                     to={userDashboard}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-bold bg-[#005A8D] hover:bg-[#0B3D62] text-white rounded-md transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-bold bg-[#613AF5] hover:bg-[#4c2cd4] text-white rounded-md transition-colors shadow-xs"
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     <span>{t('workspace')}</span>
                   </Link>
 
                   <div className="flex items-center gap-2.5 pl-2.5 border-l border-slate-200 text-xs">
-                    <span className="font-extrabold text-[#172B3A]">{user.name}</span>
-                    <span className="px-2 py-0.5 rounded bg-blue-50 text-[10px] font-bold uppercase text-[#005A8D] border border-blue-100">
+                    <span className="font-extrabold text-slate-900">{user.name}</span>
+                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-[10px] font-bold uppercase text-indigo-700 border border-indigo-100">
                       {user.role}
                     </span>
                   </div>
@@ -170,13 +170,13 @@ const MainLayout = () => {
                 <>
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-slate-700 hover:text-[#005A8D] transition-colors"
+                    className="px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-slate-700 hover:text-[#613AF5] transition-colors"
                   >
                     {t('login')}
                   </Link>
                   <Link
                     to="/register"
-                    className="px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider bg-[#005A8D] hover:bg-[#0B3D62] text-white rounded-md transition-all shadow-xs hover:shadow-sm"
+                    className="px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider bg-[#613AF5] hover:bg-[#4c2cd4] text-white rounded-md transition-all shadow-xs hover:shadow-sm"
                   >
                     {t('getStarted')} &rarr;
                   </Link>
@@ -185,7 +185,7 @@ const MainLayout = () => {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="flex md:hidden items-center gap-1">
+            <div className="flex md:hidden items-center">
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -204,42 +204,42 @@ const MainLayout = () => {
             <button
               type="button"
               onClick={() => handleNavClick('home')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('home')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('about')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('about')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('how-it-works')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('howItWorks')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('features')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('features')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('ai')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('aiEcosystem')}
             </button>
             <button
               type="button"
               onClick={() => handleNavClick('roles')}
-              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#005A8D]"
+              className="block w-full text-left py-2.5 text-sm font-semibold text-slate-700 hover:text-[#613AF5]"
             >
               {t('roles')}
             </button>
@@ -256,7 +256,7 @@ const MainLayout = () => {
                   <Link
                     to={userDashboard}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#005A8D] text-white rounded hover:bg-[#0B3D62]"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#613AF5] text-white rounded hover:bg-[#4c2cd4]"
                   >
                     {t('workspace')}
                   </Link>
@@ -283,7 +283,7 @@ const MainLayout = () => {
                   <Link
                     to="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#005A8D] text-white rounded hover:bg-[#0B3D62]"
+                    className="w-full text-center py-3 text-xs font-bold uppercase tracking-wider bg-[#613AF5] text-white rounded hover:bg-[#4c2cd4]"
                   >
                     {t('getStarted')}
                   </Link>
@@ -300,7 +300,7 @@ const MainLayout = () => {
       </main>
 
       {/* SECTION 9 — FOOTER (More spacious typography and columns) */}
-      <footer className="border-t border-slate-200 bg-white py-16 text-[#526575]">
+      <footer className="border-t border-slate-200 bg-white py-16 text-slate-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 pb-10 border-b border-slate-100">
             {/* Brand column */}
@@ -311,59 +311,59 @@ const MainLayout = () => {
                   alt="Pragati Logo"
                   className="w-10 h-10 object-contain shrink-0"
                 />
-                <span className="font-extrabold text-lg sm:text-xl tracking-wider text-[#0B3D62] block leading-tight">
+                <span className="font-extrabold text-lg sm:text-xl tracking-wider text-slate-900 block leading-tight">
                   {t('brandTitle')}
                 </span>
               </div>
-              <p className="text-[13px] text-[#526575] leading-relaxed">
+              <p className="text-[13px] text-slate-500 leading-relaxed">
                 Empowering organizations through verifiable upskilling, standardized skill taxonomies, and AI-enabled competency tracking.
               </p>
             </div>
 
             {/* Quick links */}
             <div className="space-y-4">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">{t('features')}</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t('features')}</h4>
               <ul className="space-y-3 text-[13px]">
                 <li>
-                  <button type="button" onClick={() => handleNavClick('about')} className="hover:text-[#005A8D] transition-colors">About Us</button>
+                  <button type="button" onClick={() => handleNavClick('about')} className="hover:text-[#613AF5] transition-colors">About Us</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('how-it-works')} className="hover:text-[#005A8D] transition-colors">Methodology</button>
+                  <button type="button" onClick={() => handleNavClick('how-it-works')} className="hover:text-[#613AF5] transition-colors">Methodology</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('features')} className="hover:text-[#005A8D] transition-colors">Platform Capabilities</button>
+                  <button type="button" onClick={() => handleNavClick('features')} className="hover:text-[#613AF5] transition-colors">Platform Capabilities</button>
                 </li>
               </ul>
             </div>
 
             {/* AI Layer */}
             <div className="space-y-4">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">AI Intelligence</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">AI Intelligence</h4>
               <ul className="space-y-3 text-[13px]">
                 <li>
-                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">AI Learning Advisor</button>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#613AF5] transition-colors">AI Learning Advisor</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">Contextual Q&A Chat</button>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#613AF5] transition-colors">Contextual Q&A Chat</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#005A8D] transition-colors">Trainer Insights</button>
+                  <button type="button" onClick={() => handleNavClick('ai')} className="hover:text-[#613AF5] transition-colors">Trainer Insights</button>
                 </li>
               </ul>
             </div>
 
             {/* Roles */}
             <div className="space-y-4">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-[#0B3D62]">Stakeholders</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">Stakeholders</h4>
               <ul className="space-y-3 text-[13px]">
                 <li>
-                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Trainee space</button>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#613AF5] transition-colors">Trainee space</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Trainer center</button>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#613AF5] transition-colors">Trainer center</button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#005A8D] transition-colors">Administrator panel</button>
+                  <button type="button" onClick={() => handleNavClick('roles')} className="hover:text-[#613AF5] transition-colors">Administrator panel</button>
                 </li>
               </ul>
             </div>
@@ -371,8 +371,8 @@ const MainLayout = () => {
 
           {/* Copyright & bottom text */}
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-[13px] text-slate-400">
-            <p className="font-semibold text-[#526575]">{t('copyrightText')}</p>
-            <p className="font-bold text-[#005A8D] tracking-widest uppercase">Learn &bull; Assess &bull; Measure &bull; Improve</p>
+            <p className="font-semibold text-slate-500">{t('copyrightText')}</p>
+            <p className="font-bold text-[#613AF5] tracking-widest uppercase">Learn &bull; Assess &bull; Measure &bull; Improve</p>
           </div>
         </div>
       </footer>
