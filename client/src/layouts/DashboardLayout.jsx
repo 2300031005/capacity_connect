@@ -26,7 +26,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--text-primary)] transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#F5F7FA] dark:bg-[#0B1120] text-slate-900 dark:text-[#F8FAFC] transition-colors">
       {/* Top Header */}
       <Topbar onMenuClick={() => setSidebarOpen(true)} />
 

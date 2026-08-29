@@ -292,6 +292,31 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible interactive focus rings */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible,
+.dark textarea:focus-visible,
+html[data-theme='dark'] button:focus-visible,
+html[data-theme='dark'] a:focus-visible,
+html[data-theme='dark'] input:focus-visible,
+html[data-theme='dark'] select:focus-visible,
+html[data-theme='dark'] textarea:focus-visible {
+  outline-color: #60A5FA;
 }
 
 /* =========================================================
@@ -396,10 +421,20 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 3px;
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb,
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #334155;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: #94A3B8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+html[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

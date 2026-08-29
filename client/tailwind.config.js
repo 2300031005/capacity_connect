@@ -8,6 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        // --- Legacy tokens (preserved to avoid breaking existing pages) ---
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -21,21 +22,25 @@ export default {
         navy: {
           800: '#1e293b',
           900: '#0f172a',
-          950: '#080f1d',
         },
+        // --- PRAGATI SIH 2026 Institutional Color System ---
+        institutional: '#0B3D62',   // Deep institutional blue — headings, identity
+        action: '#005A8D',           // Action blue — buttons, links, active states
+        accent: '#E8751A',           // Saffron — warnings, attention, accent
+        success: '#16834B',          // Government green — verified, completed, certified
+        'dark-text': '#172B3A',      // Primary body text
+        muted: '#526575',            // Secondary / muted text
+        'pragati-surface': '#FFFFFF', // Card / panel surface
+        background: '#F7F9FB',       // App background
+        'pragati-border': '#D7E0E7', // Borders and dividers
+        // Additive upstream scale tokens
         teal: {
           50: '#f0fdfa',
           100: '#ccfbf1',
           500: '#14b8a6',
-          600: '#0f766e', // Secondary Teal
+          600: '#0f766e',
           700: '#0f766e',
           800: '#115e59',
-        },
-        success: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          600: '#15803d',
-          700: '#166534',
         },
         warning: {
           50: '#fffbeb',
@@ -55,15 +60,6 @@ export default {
           600: '#0369a1',
           700: '#075985',
         },
-        surface: {
-          light: '#ffffff',
-          dark: '#111827',
-          elevated: '#172033',
-        },
-        border: {
-          light: '#e2e8f0',
-          dark: '#263244',
-        }
       },
       boxShadow: {
         'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -82,3 +78,4 @@ export default {
   },
   plugins: [],
 }
+
